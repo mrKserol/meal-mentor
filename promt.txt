@@ -1,6 +1,5 @@
-Оцени что на изображении.
-Для изображений без еды - ответом должен быть пустой JSON-объект: {}
-Для изображений, содержащих еду, в качестве ответа посчитай пищевую ценность.
-Верни ответ в формате JSON с полями: calories, proteins, fats, carbohydrates
-Пример ожидаемого ответа: {"calories": 100, "proteins": 10, "fats": 20, "carbohydrates": 30}
-Возвращай только JSON, без лишнего текста.
+"Identify the food shown in the photo and write its nutritional value.",
+        "In response, return a JSON object with the following fields: calories, proteins, fats, carbohydrates.",
+        "If the image contains no food, return an empty JSON object.",
+        "Example of expected response for image with no food: {}",
+        "Just return the JSON object, don't write anything else.",

@@ -1,4 +1,4 @@
-from assistant_temp import LLMAssistant
+from assistant import LLMAssistant
 from utils import image_url_to_base64
 
 
@@ -12,7 +12,7 @@ system_prompt = '''Оцени что на изображении.
 
 assistant = LLMAssistant(system_prompt, model_id, temperature=0.01)
 
-food_image_url = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd"
+food_image_url = "https://art-lunch.ru/content/uploads/2018/07/Greek_salad_01.jpg"
 food_image_Base64 = image_url_to_base64(food_image_url)
 
 non_food_image_url = "https://images.unsplash.com/photo-1508356889337-11a080a10d06"

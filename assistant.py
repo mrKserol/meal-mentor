@@ -1,13 +1,10 @@
 import json
-from typing import Dict, Any
+import time
 import os
-import base64
-import binascii
+from typing import Dict, Any
 
 import replicate
 from dotenv import load_dotenv
-from fastapi import HTTPException
-from replicate.exceptions import ModelError
 
 
 class LLMAssistant:
@@ -16,13 +13,10 @@ class LLMAssistant:
     """
 
     def __init__(
-        self, system_prompt: str, model_id: str, temperature=0.01, max_tokens=1024
+            self, system_prompt: str, model_id: str, temperature=0.01, max_tokens=1024
     ):
         """
-        Initializes the LLMAssistant instance with a system prompt, model ID, temperature, and max tokens.
-
-        Raises:
-            ValueError: If the Replicate API token is not set in the environment variables.
+        Initializes the LLMAssistant instance.
         """
         load_dotenv()
 
@@ -41,58 +35,58 @@ class LLMAssistant:
         # Initialize replicate client
         self.client = replicate.Client(api_token=self.token)
 
-    def _generate_input(self, image_base64: str) -> Dict[str, Any]:
+    def _generate_input(self, image_Base64: str) -> Dict[str, Any]:
         """
         Generates the input payload for the model using the Base64-encoded image.
         """
-        input = {
+        # Clean Base64
+        clean_base64 = image_Base64.replace('\n', '').replace('\r', '')
+
+        input_payload = {
             "top_p": 1,
             "max_tokens": self.max_tokens,
             "temperature": self.temperature,
-            "image": f"data:image/jpeg;base64,{image_base64}",
+            "image": f"data:image/jpeg;base64,{clean_base64}",
             "prompt": self.system_prompt,
         }
 
-        return input
+        return input_payload
 
     def _parse_response(self, output) -> Dict[str, Any]:
         """
         Parses the model output into a JSON object.
         """
         try:
-            # 1. Если пришёл генератор или другой итерируемый объект (не str/bytes/dict)
-            # превращаем его в список
-            if not isinstance(output, (str, bytes, bytearray, dict, list)):
-                output = list(output)
+            full_text = ""
 
-            # 2. Если список
-            if isinstance(output, list):
-                # часто модели возвращают список строк → склеиваем
-                if len(output) == 0:
-                    return {"status": "success", "result": {}, "error": ""}
 
-                last = output[-1]
+            if isinstance(output, str):
+                full_text = output
+            elif isinstance(output, (list, tuple)) or hasattr(output, '__iter__'):
+                full_text = "".join(str(chunk) for chunk in output)
 
-                # если последний элемент уже dict — отлично
-                if isinstance(last, dict):
-                    return {"status": "success", "result": last, "error": ""}
 
-                # если строки → склеиваем в одну
-                text = "".join(str(chunk) for chunk in output)
-                parsed = json.loads(text)
-                return {"status": "success", "result": parsed, "error": ""}
-
-            # 3. Если dict сразу
             if isinstance(output, dict):
                 return {"status": "success", "result": output, "error": ""}
 
-            # 4. Если bytes/bytearray → декодируем
-            if isinstance(output, (bytes, bytearray)):
-                output = output.decode("utf-8")
+            # Take JSON
+            start_index = full_text.find('{')
+            end_index = full_text.rfind('}')
 
-            # 5. Обычный случай: строка с JSON
-            parsed = json.loads(output)
-            return {"status": "success", "result": parsed, "error": ""}
+            if start_index != -1 and end_index != -1 and end_index >= start_index:
+                json_str = full_text[start_index: end_index + 1]
+                parsed = json.loads(json_str)
+                return {"status": "success", "result": parsed, "error": ""}
+            else:
+
+                if not full_text.strip():
+                    return {"status": "success", "result": {}, "error": ""}
+
+                return {
+                    "status": "error",
+                    "result": {},
+                    "error": f"No JSON found in response: {full_text[:100]}"
+                }
 
         except Exception as e:
             return {
@@ -101,64 +95,46 @@ class LLMAssistant:
                 "error": f"Failed to parse model output: {e}",
             }
 
-    def generate_response(self, image_base64: str, timeout: int = 10) -> Dict[str, Any]:
+    def generate_response(self, image_Base64: str, timeout: int = 10) -> Dict[str, Any]:
         """
-        Generates a response from the LLM model using a Base64-encoded image.
-
-        This method sends a request to the model with a Base64-encoded image and system prompt,
-        waits for a response, and parses the result. It handles prediction timeouts and response
-        parsing, returning the structured output or error details.
-
-        Args:
-            image_base64 (str): The Base64-encoded image to be used for generating a response.
-            timeout (int, optional): The maximum amount of time (in seconds) to wait for the model's response. Defaults to 10 seconds.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing:
-                - 'status' (str): 'success' if the process completed successfully, or 'error' if any issues occurred.
-                - 'result' (Dict): The parsed model output if successful, or an empty dictionary if an error occurred.
-                - 'error' (str): The error message, if any.
-
-        Raises:
-            ValueError: If the timeout is less than 1 second.
-            TimeoutError: If the prediction process exceeds the specified timeout.
-
-        Internal Methods:
-            - `_generate_input`: Prepares the input payload with the Base64 image, system prompt, temperature, and max tokens.
-            - `_parse_response`: Converts the raw model output into a structured dictionary, or handles parsing errors.
+        Generates a response from the LLM model.
+        Uses manual prediction creation and polling to handle timeouts correctly.
         """
-
-        try:
-            base64.b64decode(image_base64)
-        except (binascii.Error, ValueError):
-            raise HTTPException(status_code=400, detail="Invalid Base64 image data")
-
-        # 4. Call assistant with error handling
+        # Validation timeout docstring
         if timeout < 1:
             raise ValueError("Timeout must be at least 1 second")
 
+
         try:
-            output = replicate.run( f"yorickvp/llava-13b:{self.model_id}",
-                input=self._generate_input(image_base64),
-                timeout=timeout,
+
+            prediction = self.client.predictions.create(
+                version=self.model_id,
+                input=self._generate_input(image_Base64)
             )
-        except ModelError as e:
-            return {
-                "status": "error",
-                "result": {},
-                "error": f"Model error: {e}",
-            }
-        except TimeoutError as e:
-            return {
-                "status": "error",
-                "result": {},
-                "error": f"Timeout error: {e}",
-            }
+
+
+            start_time = time.time()
+            while prediction.status not in ["succeeded", "failed", "canceled"]:
+                # Timeout checking
+                if time.time() - start_time > timeout:
+                    prediction.cancel()
+                    raise TimeoutError("Prediction timed out")
+
+                time.sleep(0.5)
+                prediction.reload()
+
+            if prediction.status == "succeeded":
+                return self._parse_response(prediction.output)
+            else:
+                return {
+                    "status": "error",
+                    "result": {},
+                    "error": f"Model error: {prediction.error}"
+                }
+
         except Exception as e:
             return {
                 "status": "error",
                 "result": {},
-                "error": f"Unexpected error: {e}",
+                "error": f"Process failed: {str(e)}",
             }
-
-        return self._parse_response(output)

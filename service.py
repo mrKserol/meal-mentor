@@ -1,35 +1,25 @@
-from typing import Any
-import base64
-import binascii
 from fastapi import FastAPI, HTTPException, Request
+import base64
+from typing import Any
 
-
-class LLMAssistant:
-    """
-    Stub class to simulate the behavior of a real LLM assistant.
-    """
-
-    def generate_response(self, image_data: str, timeout: int = 10) -> Any:
-        """
-        Simulates the generation of nutritional information based on image data.
-        """
-        return {
-            "status": "success",
-            "result": {
-                "calories": 100,
-                "proteins": 10,
-                "fats": 20,
-                "carbohydrates": 30,
-            },
-            "error": "",
-        }
-
+from assistant import LLMAssistant
 
 # Initialize FastAPI app
 app = FastAPI()
 
-# Instance of the stub assistant
-assistant = LLMAssistant()
+model_id = "80537f9eead1a5bfa72d5ac6ea6414379be41d4d4f6679fd776e9535d1eb58bb"
+
+system_prompt = "\n".join(
+    [
+        "Identify the food shown in the photo and write its nutritional value.",
+        "In response, return a JSON object with the following fields: calories, proteins, fats, carbohydrates.",
+        "If the image contains no food, return an empty JSON object.",
+        "Example of expected response for image with no food: {}",
+        "Just return the JSON object, don't write anything else.",
+    ]
+)
+
+assistant = LLMAssistant(system_prompt, model_id, temperature=0.01)
 
 
 @app.post("/generate_response")
@@ -50,30 +40,38 @@ async def generate_response(request: Request) -> Any:
             - 504: If a TimeoutError occurs.
             - 500: If an unexpected error occurs.
     """
-
-    # 1. Read JSON body
-    data = await request.json()
-
-    # 2. Validate
-    if "image_base64" not in data:
-        raise HTTPException(status_code=400, detail="'image_base64' field is required")
-
-    image_base64 = data["image_base64"]
-
-    # 3. Try to decode Base64
     try:
-        base64.b64decode(image_base64)
-    except (binascii.Error, ValueError):
-        raise HTTPException(status_code=400, detail="Invalid Base64 image data")
+        # Parse the JSON body and extract the Base64 string
+        data = await request.json()
+        image_base64 = data.get("image_base64")
 
-    # 4. Call assistant with error handling
-    try:
-        response = assistant.generate_response(image_base64)
+        if not image_base64:
+            raise HTTPException(
+                status_code=400, detail="Base64 image data is required."
+            )
 
-    except TimeoutError as detail:
-        raise HTTPException(status_code=504, detail=str(detail))
+        # Decode the base64 string to ensure it's valid
+        try:
+            base64.b64decode(image_base64)
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail=f"Invalid Base64 string: {str(e)}"
+            )
 
-    except Exception as detail:
-        raise HTTPException(status_code=500, detail=str(detail))
+        # Pass the Base64 data to the assistant
+        result = assistant.generate_response(image_base64)
 
-    return response
+        return result
+
+    except TimeoutError as te:
+        raise HTTPException(
+            status_code=504, detail="Request timed out: " + str(te)
+        ) from te
+
+    except HTTPException as he:
+        raise HTTPException(status_code=he.status_code, detail=he.detail) from he
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"An unexpected error occurred: {str(e)}"
+        ) from e
