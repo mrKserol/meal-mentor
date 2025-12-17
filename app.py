@@ -1,4 +1,3 @@
-import numpy as np
 import uvicorn
 from fastapi import FastAPI
 

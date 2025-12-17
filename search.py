@@ -59,7 +59,7 @@ class IngredientNutritionSearch:
             KeyError: If the expected columns are missing from the CSV.
             Exception: For any other errors that occur during file reading.
         """
-        pass
+
 
     def _fuzzy_search(self, ingredient_name: str, threshold: float) -> str:
         """
