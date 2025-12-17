@@ -1,12 +1,3 @@
-# import base64
-# import requests
-#
-#
-# def image_url_to_base64(image_url: str) -> str:
-#     response = requests.get(image_url)
-#     image_bytes = response.content
-#     return base64.b64encode(image_bytes).decode("utf-8")
-
 import requests
 import base64
 
