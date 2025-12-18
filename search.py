@@ -2,6 +2,7 @@ from typing import Dict, List, Any
 import csv
 from difflib import get_close_matches
 from sentence_transformers import SentenceTransformer, util
+import pandas as pd
 
 
 class IngredientNutritionSearch:
@@ -9,7 +10,7 @@ class IngredientNutritionSearch:
     A class used to search for nutrition information of ingredients using both fuzzy and semantic search methods.
     """
 
-    def __init__(self, dataset_path: str, model_name: str = "all-MiniLM-L6-v2"):
+    def __init__(self, dataset_path: str, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
         """
         Initializes the IngredientNutritionSearch with the dataset path and model name.
 
@@ -19,16 +20,18 @@ class IngredientNutritionSearch:
         """
         self.dataset_path = dataset_path
         self.data = self._load_data()
+
         self._ingredients = list(self.data.keys())
 
-        try:
-            self.encoder = SentenceTransformer(model_name)
-        except Exception as e:
-            raise RuntimeError(f"Failed to load `{model_name}`. Error: {e}") from e
-
-        self._embeddings = self.encoder.encode(
-            self._ingredients, convert_to_tensor=True
-        )
+        if self._ingredients:
+            self.model = SentenceTransformer(model_name)
+            self._embeddings = self.model.encode(
+                self._ingredients,
+                convert_to_tensor=True
+            )
+        else:
+            self.model = None
+            self._embeddings = None
 
     def _load_data(self) -> Dict[str, Dict[str, Any]]:
         """
@@ -60,6 +63,39 @@ class IngredientNutritionSearch:
             Exception: For any other errors that occur during file reading.
         """
 
+        data: Dict[str, Dict[str, Any]] = {}
+
+        with open(self.dataset_path, mode="r", encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+
+            expected_cols = {"name", "calories", "total_fat", "protein", "carbohydrate"}
+            missing = expected_cols - set(reader.fieldnames or [])
+            if missing:
+                raise KeyError(f"Missing expected columns: {missing}")
+
+            for row in reader:
+                ing = (row.get("name") or "").strip().lower()
+                if not ing:
+                    continue
+
+                try:
+                    calories = float(row["calories"])
+                    fats = float(row["total_fat"])
+                    proteins = float(row["protein"])
+                    carbohydrates = float(row["carbohydrate"])
+                except (TypeError, ValueError, KeyError):
+                    # пропускаем строки с битой/пустой числовой инфой
+                    continue
+
+                data[ing] = {
+                    "calories": calories,
+                    "fats": fats,
+                    "proteins": proteins,
+                    "carbohydrates": carbohydrates,
+                }
+
+        return data
+
 
     def _fuzzy_search(self, ingredient_name: str, threshold: float) -> str:
         """
@@ -82,7 +118,31 @@ class IngredientNutritionSearch:
                 Match found: "apple"
                 Result: 'apple'
         """
-        pass
+
+        def _normalize(self, text: str) -> str:
+            text = text.strip().lower()
+            if text.endswith("es"):
+                return text[:-2]
+            if text.endswith("s"):
+                return text[:-1]
+            return text
+
+        query = ingredient_name.lower().strip()
+        matches = get_close_matches(
+            query,
+            self.data.keys(),
+            n=1,
+            cutoff=threshold
+        )
+
+        if not matches and query.endswith("s"):
+            matches = get_close_matches(
+                query[:-1],
+                self.data.keys(),
+                n=1,
+                cutoff=threshold
+            )
+        return matches[0] if matches else None
 
     def _semantic_search(
         self, ingredient_name: str, threshold: float
@@ -108,7 +168,20 @@ class IngredientNutritionSearch:
                 Semantic match found: "green apple"
                 Result: 'green apple'
         """
-        pass
+        if not self._ingredients or self._embeddings is None:
+            return None
+        query = ingredient_name.lower().strip()
+        try:
+            query_emb = self.model.encode(query, convert_to_tensor=True)
+
+        except Exception:
+            return None
+        cos_scores = util.pytorch_cos_sim(query_emb, self._embeddings)[0]
+        best_val, best_idx = cos_scores.max(0)
+        score = float(best_val)
+        if score < threshold:
+            return None
+        return self._ingredients[int(best_idx)]
 
     def search(
         self,
@@ -152,4 +225,94 @@ class IngredientNutritionSearch:
             (e.g., 100 grams of a food gives full nutritional values, 50 grams will return half).
         - Rounded values: All nutritional values are rounded to the nearest whole number (0 decimal places).
         """
-        pass
+        search_type = search_type.lower()
+        if search_type not in ("fuzzy", "semantic"):
+            raise ValueError("search_type must be either 'fuzzy' or 'semantic'")
+
+        results: List[Dict[str, Any]] = []
+        for ingredient, weight in img_ingredients.items():
+            match: Any = None
+            if search_type == "fuzzy":
+                match = self._fuzzy_search(ingredient, threshold)
+            else:
+                match = self._semantic_search(ingredient, threshold)
+            if match and match in self.data:
+                # Scale nutrients based on weight (per 100g)
+                nutrition = self.data[match]
+                factor = (float(weight) / 100.0) if weight is not None else 0.0
+                scaled = {k: round(nutrition[k] * factor) for k in nutrition}
+                results.append({
+                    ingredient: {
+                        "match": match,
+                        "weight": weight,
+                        "calories": scaled["calories"],
+                        "fats": scaled["fats"],
+                        "proteins": scaled["proteins"],
+                        "carbohydrates": scaled["carbohydrates"],
+                    }
+                })
+            else:
+                results.append({ingredient: {}})
+        return results
+
+
+engine = IngredientNutritionSearch("nutrition.csv")
+
+test_ingredients = {
+    "tomatoes": 144,
+    "cheese": 125,
+    "beef": 133,
+    "sausages": 195,
+    "pepper": 171,
+    "onions": 178,
+    "mushrooms": 134,
+    "garlic": 133,
+    "basil": 191,
+    "olives": 166,
+}
+
+print("Fuzzy search results:")
+fuzzy_results = engine.search(test_ingredients, search_type="fuzzy")
+print(fuzzy_results[:1])
+
+for r in fuzzy_results:
+    for key, values in r.items():
+        print(f"search:{key} // dataset: {values.get('match', 'None')}")
+
+print("Semantic search results:")
+semantic_results = engine.search(test_ingredients, search_type="semantic")
+print(semantic_results[:1])
+
+for r in semantic_results:
+    for key, values in r.items():
+        # print(f'search:{key} // dataset: {values["match"]}')
+        print(f'search:{key} // dataset: {values.get("match")}')
+
+### Output:
+# Fuzzy search results:
+# sample: [{'tomatoes': {'match': 'tomato powder', 'weight': 144, 'calories': 435.0, 'fats': 1.0, 'proteins': 19.0, 'carbohydrates': 108.0}}]
+
+# search:tomatoes // dataset: tomato powder
+# search:cheese // dataset: cheese, feta
+# search:beef // dataset: None
+# search:sausages // dataset: blood sausage
+# search:pepper // dataset: None
+# search:onions // dataset: onions, raw
+# search:mushrooms // dataset: mushrooms, raw, white
+# search:garlic // dataset: garlic, raw
+# search:basil // dataset: None
+# search:olives // dataset: jellies
+
+# Semantic search results:
+# sample: [{'tomatoes': {'match': 'tomatoes, raw, orange', 'weight': 144, 'calories': 23.0, 'fats': 0.0, 'proteins': 2.0, 'carbohydrates': 5.0}}]
+
+# search:tomatoes // dataset: tomatoes, raw, orange
+# search:cheese // dataset: cheese, cheddar
+# search:beef // dataset: bologna, beef
+# search:sausages // dataset: blood sausage
+# search:pepper // dataset: pepper, raw, banana
+# search:onions // dataset: onions, raw
+# search:mushrooms // dataset: mushrooms, raw, white
+# search:garlic // dataset: garlic, raw
+# search:basil // dataset: basil, fresh
+# search:olives // dataset: olives, canned (small-extra large), ripe
