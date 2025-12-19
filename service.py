@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException, Request
 import base64
 from typing import Any
+from search import IngredientNutritionSearch
+
 
 from assistant import LLMAssistant
 
@@ -20,6 +22,7 @@ system_prompt = "\n".join(
 )
 
 assistant = LLMAssistant(system_prompt, model_id, temperature=0.01)
+engine = IngredientNutritionSearch("nutrition.csv")
 
 
 @app.post("/generate_response")
@@ -59,9 +62,16 @@ async def generate_response(request: Request) -> Any:
             )
 
         # Pass the Base64 data to the assistant
-        result = assistant.generate_response(image_base64)
+        llm_response = assistant.generate_response(image_base64)
 
-        return result
+        if llm_response["result"]:
+            search_results = engine.search(
+                llm_response["result"], search_type="semantic"
+            )
+
+            llm_response["result"] = search_results
+
+        return llm_response
 
     except TimeoutError as te:
         raise HTTPException(
