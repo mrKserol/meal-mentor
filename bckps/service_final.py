@@ -1,6 +1,4 @@
 from fastapi import FastAPI, HTTPException, Request
-from search import IngredientNutritionSearch
-
 import base64
 from typing import Any
 
@@ -10,13 +8,13 @@ from assistant import LLMAssistant
 app = FastAPI()
 
 model_id = "80537f9eead1a5bfa72d5ac6ea6414379be41d4d4f6679fd776e9535d1eb58bb"
-engine = IngredientNutritionSearch("nutrition.csv")
+
 system_prompt = "\n".join(
     [
-        "Identify the food shown in the photo and write the names of specific ingredients and their weights in grams.",
-        "In response, return a JSON object with the names of the ingredients and their weights in grams.",
+        "Identify the food shown in the photo and write its nutritional value.",
+        "In response, return a JSON object with the following fields: calories, proteins, fats, carbohydrates.",
         "If the image contains no food, return an empty JSON object.",
-        "Example of the expected response for an image with no food: {}",
+        "Example of expected response for image with no food: {}",
         "Just return the JSON object, don't write anything else.",
     ]
 )
@@ -26,7 +24,6 @@ assistant = LLMAssistant(system_prompt, model_id, temperature=0.01)
 
 @app.post("/generate_response")
 async def generate_response(request: Request) -> Any:
-
     """
     Generates a response based on the Base64-encoded image string provided in the request.
 
@@ -62,25 +59,9 @@ async def generate_response(request: Request) -> Any:
             )
 
         # Pass the Base64 data to the assistant
-
-        '''
-        # Old version:
         result = assistant.generate_response(image_base64)
 
         return result
-        '''
-
-        llm_response = assistant.generate_response(image_base64)
-
-        if llm_response["result"]:
-            search_results = engine.search(
-                llm_response["result"], search_type="semantic"
-            )
-
-            llm_response["result"] = search_results
-
-        return llm_response
-
 
     except TimeoutError as te:
         raise HTTPException(
