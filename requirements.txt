@@ -7,3 +7,5 @@ uvicorn==0.31.0
 streamlit==1.39.0
 matplotlib==3.9.2
 sentence_transformers==2.4.0
+python-telegram-bot>=21.0
+sqlalchemy>=1.4.0

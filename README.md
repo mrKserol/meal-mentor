@@ -1,25 +1,55 @@
-# calorie-tracker
-Calorie tracker with FastAPI backend and image-based food recognition
+# Meal Mentor
 
-Для фронтенда пока используется Streamlit: пользователи загружают фотографии еды, они отправляются на бэкенд, а результат (состав продуктов, вес и при наличии датасета — калории и БЖУ) отображается в интерфейсе.
+Трекер калорий и состава еды по фото: FastAPI-бэкенд, Telegram-бот и Streamlit для демо/админки.
 
-**Как это работает:**
+## Структура проекта
 
-- Пользователь загружает фото через Streamlit.
-- Streamlit отправляет фото на FastAPI-сервис.
-- FastAPI передаёт изображение в vision-модель (OpenAI). Модель возвращает **состав блюда и вес ингредиентов в граммах**.
-- При необходимости бэкенд подставляет нутриенты из CSV (поиск по названиям ингредиентов) и считает суммарные калории, белки, жиры и углеводы.
-- Фронтенд показывает список ингредиентов с весом и (если настроен датасет) круговую диаграмму БЖУ и калории.
+```
+meal-mentor/
+├── app/
+│   ├── api/           # Эндпоинты: users, meals, reports
+│   ├── bot/           # Telegram-бот и обработчики (start, photo, report)
+│   ├── core/          # config, промпты для vision
+│   ├── db/            # Модели, сессия, репозиторий
+│   ├── services/      # openai_vision, nutrition, meal, recommendation, report
+│   └── main.py        # FastAPI-приложение
+├── nutrition.csv      # Опционально: нутриенты на 100 г
+├── promt.txt          # Промпт для распознавания состава и веса
+├── service.py         # Точка входа для uvicorn service:app
+├── ui.py              # Streamlit (демо/админ), не основной клиент
+├── assistant.py       # Оставлен для совместимости; логика в app/services/openai_vision.py
+├── search.py          # Оставлен для совместимости; логика в app/services/nutrition_service.py
+├── .env
+├── requirements.txt
+└── README.md
+```
 
-**Распознавание изображений:** используется **OpenAI Vision API** (модель gpt-4o), которая по фото еды возвращает JSON с названиями ингредиентов и их весом в граммах. Это даёт более корректные оценки веса по сравнению с предыдущим решением на Replicate.
+## Как работает
 
-**Переменные окружения:**
+- **Telegram:** пользователь отправляет фото еды → бот скачивает файл → переводит в base64 → вызывает бэкенд `POST /meals/log` → распознавание (OpenAI Vision) + при наличии CSV расчёт БЖУ/калорий → запись в БД → ответ пользователю; `/report [дней]` — сводка за период.
+- **Streamlit (ui.py):** демо/админ: загрузка фото → запрос к `POST /generate_response` → вывод состава, веса и при наличии CSV — диаграмма БЖУ.
 
-- `OPENAI_API_KEY` — обязательный ключ для OpenAI API.
-- `NUTRITION_CSV_PATH` — необязательный путь к CSV с нутриентами продуктов (на 100 г). Если задан, по ингредиентам и весу считается общая калорийность и БЖУ. Формат CSV: колонки `name`, `calories`, `total_fat`, `protein`, `carbohydrate` (как в `search.py`).
+## Переменные окружения
 
-**Запуск:**
+- `OPENAI_API_KEY` — ключ OpenAI (обязательно для vision).
+- `NUTRITION_CSV_PATH` — путь к CSV с нутриентами на 100 г (колонки: `name`, `calories`, `total_fat`, `protein`, `carbohydrate`). Необязательно.
+- `TELEGRAM_BOT_TOKEN` — токен бота (для запуска бота).
+- `BASE_URL` — URL бэкенда (по умолчанию `http://127.0.0.1:8000`). Нужен боту для вызова API.
+- `DATABASE_URL` — БД (по умолчанию `sqlite:///./meal_mentor.db`).
 
-- Бэкенд: `uvicorn service:app --reload`
-- Фронтенд: `streamlit run ui.py`
-- Или через Makefile: `make run_app`
+## Запуск
+
+1. Установка: `pip install -r requirements.txt`
+2. Бэкенд: `uvicorn service:app --reload` или `uvicorn app.main:app --reload`
+3. Telegram-бот: `python -m app.bot.telegram_bot` (предварительно запустить бэкенд)
+4. Streamlit (демо): `streamlit run ui.py`
+
+Можно по-прежнему использовать `make run_app` (бэкенд + Streamlit).
+
+## API
+
+- `POST /generate_response` — тело `{ "image_base64": "..." }` — состав и вес, при наличии CSV — поле `nutrition` (для ui.py).
+- `POST /meals/analyze` — то же по полю `image_base64`.
+- `POST /meals/log` — тело `{ "telegram_id", "username?", "image_base64", "telegram_file_id?" }` — анализ + запись приёма пищи в дневник (используется ботом).
+- `POST /users/register` — регистрация по `telegram_id` / `username`.
+- `GET /reports/summary?telegram_id=&days=` — сводка за последние N дней.
