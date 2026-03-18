@@ -13,12 +13,11 @@ meal-mentor/
 │   ├── db/            # Модели, сессия, репозиторий
 │   ├── services/      # openai_vision, nutrition, meal, recommendation, report
 │   └── main.py        # FastAPI-приложение
-├── nutrition.csv      # Опционально: нутриенты на 100 г
-├── promt.txt          # Промпт для распознавания состава и веса
+├── data/
+│   ├── nutrition.csv  # Опционально: нутриенты на 100 г
+│   └── promt.txt      # Промпт для распознавания состава и веса
 ├── service.py         # Точка входа для uvicorn service:app
 ├── ui.py              # Streamlit (демо/админ), не основной клиент
-├── assistant.py       # Оставлен для совместимости; логика в app/services/openai_vision.py
-├── search.py          # Оставлен для совместимости; логика в app/services/nutrition_service.py
 ├── .env
 ├── requirements.txt
 └── README.md
@@ -32,7 +31,8 @@ meal-mentor/
 ## Переменные окружения
 
 - `OPENAI_API_KEY` — ключ OpenAI (обязательно для vision).
-- `NUTRITION_CSV_PATH` — путь к CSV с нутриентами на 100 г (колонки: `name`, `calories`, `total_fat`, `protein`, `carbohydrate`). Необязательно.
+- `PROMPT_PATH` — путь к файлу промпта (по умолчанию `./data/promt.txt`).
+- `NUTRITION_CSV_PATH` — путь к CSV с нутриентами на 100 г (по умолчанию `./data/nutrition.csv`, колонки: `name`, `calories`, `total_fat`, `protein`, `carbohydrate`). Необязательно.
 - `TELEGRAM_BOT_TOKEN` — токен бота (для запуска бота).
 - `BASE_URL` — URL бэкенда (по умолчанию `http://127.0.0.1:8000`). Нужен боту для вызова API.
 - `DATABASE_URL` — БД (по умолчанию `sqlite:///./meal_mentor.db`).

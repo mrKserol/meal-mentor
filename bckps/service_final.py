@@ -2,7 +2,8 @@ from fastapi import FastAPI, HTTPException, Request
 import base64
 from typing import Any
 
-from assistant import LLMAssistant
+# legacy backup file; main code lives in app/
+from app.services.openai_vision import OpenAIVisionService
 
 # Initialize FastAPI app
 app = FastAPI()

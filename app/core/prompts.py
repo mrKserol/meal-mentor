@@ -1,9 +1,9 @@
 from pathlib import Path
 
-PROMPT_PATH = Path(__file__).resolve().parent.parent.parent / "promt.txt"
+from app.core.config import PROMPT_PATH as _PROMPT_PATH
 
-if PROMPT_PATH.exists():
-    VISION_SYSTEM_PROMPT = PROMPT_PATH.read_text(encoding="utf-8").strip()
+if _PROMPT_PATH and Path(_PROMPT_PATH).exists():
+    VISION_SYSTEM_PROMPT = Path(_PROMPT_PATH).read_text(encoding="utf-8").strip()
 else:
     VISION_SYSTEM_PROMPT = (
         "Identify the food shown in the photo and write the names of specific "

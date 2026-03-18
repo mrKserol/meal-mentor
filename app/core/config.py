@@ -5,6 +5,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+DATA_DIR = Path(os.getenv("DATA_DIR", REPO_ROOT / "data"))
+
 # API
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
@@ -14,13 +17,34 @@ BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8000")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
 
+# Prompt (optional env override)
+_default_prompt = DATA_DIR / "promt.txt"
+_prompt_env = os.getenv("PROMPT_PATH")
+_prompt_candidate = Path(_prompt_env) if _prompt_env else _default_prompt
+if not _prompt_candidate.is_absolute():
+    _prompt_candidate = REPO_ROOT / _prompt_candidate
+if _prompt_candidate.exists():
+    PROMPT_PATH = str(_prompt_candidate)
+else:
+    _fallback = _default_prompt
+    if not _fallback.is_absolute():
+        _fallback = REPO_ROOT / _fallback
+    PROMPT_PATH = str(_fallback) if _fallback.exists() else None
+
 # Nutrition CSV (optional)
-NUTRITION_CSV_PATH = os.getenv("NUTRITION_CSV_PATH")
-if NUTRITION_CSV_PATH:
-    _path = Path(NUTRITION_CSV_PATH)
-    if not _path.is_absolute():
-        _path = Path(__file__).resolve().parent.parent.parent / _path
-    NUTRITION_CSV_PATH = str(_path) if _path.exists() else None
+_default_nutrition = DATA_DIR / "nutrition.csv"
+_nutrition_env = os.getenv("NUTRITION_CSV_PATH")
+_nutrition_candidate = Path(_nutrition_env) if _nutrition_env else _default_nutrition
+if not _nutrition_candidate.is_absolute():
+    _nutrition_candidate = REPO_ROOT / _nutrition_candidate
+if _nutrition_candidate.exists():
+    NUTRITION_CSV_PATH = str(_nutrition_candidate)
+else:
+    # If env path is stale/missing, fall back to default if present
+    _fallback = _default_nutrition
+    if not _fallback.is_absolute():
+        _fallback = REPO_ROOT / _fallback
+    NUTRITION_CSV_PATH = str(_fallback) if _fallback.exists() else None
 
 # Telegram
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
