@@ -1,0 +1,5 @@
+"Identify the food shown in the photo and write the names of specific ingredients and their weights in grams.",
+"In response, return a JSON object with the names of the ingredients and their weights in grams.",
+"If the image contains no food, return an empty JSON object.",
+"Example of the expected response for an image with no food: {}",
+"Just return the JSON object, don't write anything else."

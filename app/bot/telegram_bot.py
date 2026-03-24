@@ -1,11 +1,18 @@
 import logging
+
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler, MessageHandler, filters
 
 from app.core.config import TELEGRAM_BOT_TOKEN
+from app.bot.states import USER_STATES
 from app.bot.handlers_start import cmd_start
 from app.bot.handlers_photo import handle_photo
 from app.bot.handlers_reports import cmd_report
+from app.bot.handlers_callbacks import handle_meal_callback
+from app.bot.handlers_text_flow import handle_text_flow, meal_flow_text
+
+# Алиас для отладки (тот же объект, что USER_STATES)
+user_states = USER_STATES
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -20,6 +27,13 @@ def build_application() -> Application:
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("report", cmd_report))
+    app.add_handler(CallbackQueryHandler(handle_meal_callback, pattern=r"^meal_(yes|no)$"))
+    app.add_handler(
+        MessageHandler(
+            meal_flow_text & filters.TEXT & ~filters.COMMAND,
+            handle_text_flow,
+        )
+    )
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     return app
 

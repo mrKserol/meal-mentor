@@ -29,7 +29,9 @@ def get_nutritional_info(image_base64: str):
             st.error(f"Unable to get result: {response.get('error', response)}")
             return None
 
-        result = response.get("result")
+        result = response.get("ingredients")
+        if result is None:
+            result = response.get("result")
         if isinstance(result, str):
             result = json.loads(result) if result else {}
         if not result:

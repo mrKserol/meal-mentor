@@ -17,7 +17,7 @@ def _get_nutrition() -> NutritionService:
 
 
 def _build_meal_items(ingredients: dict[str, Any], nutrition_svc: NutritionService) -> list[dict[str, Any]]:
-    """Map vision ingredients dict to rows for create_meal."""
+    """Map ingredients dict to rows for create_meal."""
     items: list[dict[str, Any]] = []
     lookup: dict[str, dict[str, Any]] = {}
     if nutrition_svc.is_available and ingredients:
@@ -52,24 +52,69 @@ def _build_meal_items(ingredients: dict[str, Any], nutrition_svc: NutritionServi
     return items
 
 
+def _attach_nutrition(out: dict[str, Any]) -> dict[str, Any]:
+    ingredients = out.get("ingredients") or {}
+    if not isinstance(ingredients, dict):
+        ingredients = {}
+    nutrition_svc = _get_nutrition()
+    if nutrition_svc.is_available and ingredients:
+        agg = nutrition_svc.aggregate_nutrition(ingredients)
+        if agg is not None:
+            out["nutrition"] = agg
+    return out
+
+
 def analyze_photo(image_base64: str) -> dict[str, Any]:
     """
-    Runs vision on photo and optionally nutrition aggregation.
-    Returns { status, result: { ingredient: weight }, nutrition?: { calories, ... }, error? }.
+    Vision analysis. Returns:
+      status, ingredients, confidence, result (alias of ingredients), nutrition?, error
     """
     vision = _get_vision()
     out = vision.analyze_image(image_base64)
     if out["status"] != "success":
         return out
-    ingredients = out.get("result") or {}
-    if not isinstance(ingredients, dict):
-        ingredients = {}
+    return _attach_nutrition(out)
+
+
+def analyze_text(user_text: str) -> dict[str, Any]:
+    """Text-only analysis; same response shape as analyze_photo."""
+    vision = _get_vision()
+    out = vision.analyze_text(user_text)
+    if out["status"] != "success":
+        return out
+    return _attach_nutrition(out)
+
+
+def save_meal_to_db(
+    db: Session,
+    telegram_id: int,
+    username: str | None,
+    ingredients: dict[str, Any],
+    source_type: str,
+    telegram_file_id: str | None = None,
+    *,
+    first_name: str | None = None,
+) -> dict[str, Any]:
+    """Persist Meal + MealItem + MealItemNutrition after user confirmation."""
+    if not ingredients or not isinstance(ingredients, dict):
+        return {"status": "error", "error": "ingredients required"}
+    user = get_or_create_user(
+        db,
+        telegram_id=telegram_id,
+        username=username,
+        first_name=first_name,
+    )
     nutrition_svc = _get_nutrition()
-    if nutrition_svc.is_available:
-        agg = nutrition_svc.aggregate_nutrition(ingredients)
-        if agg is not None:
-            out["nutrition"] = agg
-    return out
+    items = _build_meal_items(ingredients, nutrition_svc)
+    create_meal(
+        db,
+        user.id,
+        source_type=source_type,
+        meal_datetime=datetime.utcnow(),
+        telegram_file_id=telegram_file_id,
+        items=items,
+    )
+    return {"status": "success"}
 
 
 def log_meal(
@@ -82,30 +127,22 @@ def log_meal(
     first_name: str | None = None,
 ) -> dict[str, Any]:
     """
-    Analyze photo, persist Meal + MealItem + MealItemNutrition, return same payload as analyze_photo.
+    One-shot: analyze photo + save (legacy /meals/log). Prefer analyze + save for Telegram UX.
     """
     payload = analyze_photo(image_base64)
     if payload["status"] != "success":
         return payload
-    ingredients = payload.get("result") or {}
-    if not isinstance(ingredients, dict):
-        ingredients = {}
-
-    user = get_or_create_user(
+    ingredients = payload.get("ingredients") or {}
+    save = save_meal_to_db(
         db,
         telegram_id=telegram_id,
         username=username,
+        ingredients=ingredients,
+        source_type="photo",
+        telegram_file_id=telegram_file_id,
         first_name=first_name,
     )
-    nutrition_svc = _get_nutrition()
-    items = _build_meal_items(ingredients, nutrition_svc)
-
-    create_meal(
-        db,
-        user.id,
-        source_type="photo",
-        meal_datetime=datetime.utcnow(),
-        telegram_file_id=telegram_file_id,
-        items=items,
-    )
+    if save.get("status") != "success":
+        payload["status"] = "error"
+        payload["error"] = save.get("error", "save failed")
     return payload

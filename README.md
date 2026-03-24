@@ -26,13 +26,15 @@ meal-mentor/
 
 ## Как работает
 
-- **Telegram:** пользователь отправляет фото еды → бот скачивает файл → переводит в base64 → вызывает бэкенд `POST /meals/log` → распознавание (OpenAI Vision) + при наличии CSV расчёт БЖУ по каждому ингредиенту → в БД создаются `Meal`, `MealItem`, `MealItemNutrition` → ответ пользователю; `/report [дней]` — сводка за период (суммы по `MealItemNutrition`).
+- **Telegram:** фото → `POST /meals/analyze` (без записи в БД) → ответ с составом и БЖУ → пользователь подтверждает «Да» → `POST /meals/save`. Если пустой результат или низкая уверенность — бот просит **текстовое описание** → `POST /meals/analyze-text` → снова подтверждение. Состояние диалога хранится в памяти процесса бота (`USER_STATES`); при нескольких репликах бота нужен общий store (Redis). `/report [дней]` — сводка (суммы по `MealItemNutrition`).
 - **Streamlit (ui.py):** демо/админ: загрузка фото → запрос к `POST /generate_response` → вывод состава, веса и при наличии CSV — диаграмма БЖУ.
 
 ## Переменные окружения
 
 - `OPENAI_API_KEY` — ключ OpenAI (обязательно для vision).
-- `PROMPT_PATH` — путь к файлу промпта (по умолчанию `./data/promt.txt`).
+- `PROMPT_PATH` — промпт для анализа **фото** (по умолчанию `./data/promt.txt`).
+- `PROMPT2_PATH` — промпт для анализа **текста** (по умолчанию `./data/promt2.txt`).
+- `LOW_CONFIDENCE_THRESHOLD` — порог уверенности 0–1; ниже — бот просит описать еду текстом (по умолчанию `0.5`).
 - `NUTRITION_CSV_PATH` — путь к CSV с нутриентами на 100 г (по умолчанию `./data/nutrition.csv`, колонки: `name`, `calories`, `total_fat`, `protein`, `carbohydrate`). Необязательно.
 - `NUTRITION_ENABLE_SEMANTIC` — если `true`, при семантическом поиске ингредиентов подгружается модель с Hugging Face (на Railway часто таймаут). По умолчанию **выключено**; для расчёта БЖУ достаточно **fuzzy**-поиска по CSV.
 - `TELEGRAM_BOT_TOKEN` — токен бота (для запуска бота).
@@ -68,6 +70,8 @@ alembic upgrade head
 
 - `POST /generate_response` — тело `{ "image_base64": "..." }` — состав и вес, при наличии CSV — поле `nutrition` (для ui.py).
 - `POST /meals/analyze` — то же по полю `image_base64`.
-- `POST /meals/log` — тело `{ "telegram_id", "username?", "first_name?", "image_base64", "telegram_file_id?" }` — анализ + запись приёма пищи в дневник (используется ботом).
+- `POST /meals/analyze-text` — тело `{ "text": "..." }` — разбор описания блюда (без записи в БД).
+- `POST /meals/save` — тело `{ "telegram_id", "ingredients": { ... }, "source_type", "username?", "first_name?", "telegram_file_id?" }` — запись подтверждённого приёма пищи.
+- `POST /meals/log` — устаревший сценарий «анализ фото + сразу запись» в один запрос.
 - `POST /users/register` — регистрация / обновление профиля: `telegram_id`, `username`, опционально `first_name`, `sex`, `birth_date`, `height_cm`, `weight_kg`, `goal`, `activity_level`, `timezone`.
 - `GET /reports/summary?telegram_id=&days=` — сводка за последние N дней.

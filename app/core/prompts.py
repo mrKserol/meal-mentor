@@ -1,13 +1,18 @@
 from pathlib import Path
 
-from app.core.config import PROMPT_PATH as _PROMPT_PATH
+from app.core.config import PROMPT_PATH as _PHOTO_PATH, PROMPT2_PATH as _TEXT_PATH
 
-if _PROMPT_PATH and Path(_PROMPT_PATH).exists():
-    VISION_SYSTEM_PROMPT = Path(_PROMPT_PATH).read_text(encoding="utf-8").strip()
+if _PHOTO_PATH and Path(_PHOTO_PATH).exists():
+    PHOTO_PROMPT = Path(_PHOTO_PATH).read_text(encoding="utf-8").strip()
 else:
-    VISION_SYSTEM_PROMPT = (
-        "Identify the food shown in the photo and write the names of specific "
-        "ingredients and their weights in grams. Return a JSON object with "
-        "ingredient names as keys and weights in grams as numbers. "
-        "If the image contains no food, return {}. Return only the JSON object."
+    PHOTO_PROMPT = (
+        'Return ONLY JSON: {"ingredients": {"name": grams}, "confidence": 0.0-1.0} or {} if no food.'
     )
+
+if _TEXT_PATH and Path(_TEXT_PATH).exists():
+    TEXT_PROMPT = Path(_TEXT_PATH).read_text(encoding="utf-8").strip()
+else:
+    TEXT_PROMPT = PHOTO_PROMPT
+
+# Backward compatibility
+VISION_SYSTEM_PROMPT = PHOTO_PROMPT

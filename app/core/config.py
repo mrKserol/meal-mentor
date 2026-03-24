@@ -17,7 +17,7 @@ BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8000")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
 
-# Prompt (optional env override)
+# Prompts (optional env override)
 _default_prompt = DATA_DIR / "promt.txt"
 _prompt_env = os.getenv("PROMPT_PATH")
 _prompt_candidate = Path(_prompt_env) if _prompt_env else _default_prompt
@@ -30,6 +30,24 @@ else:
     if not _fallback.is_absolute():
         _fallback = REPO_ROOT / _fallback
     PROMPT_PATH = str(_fallback) if _fallback.exists() else None
+
+_default_text_prompt = DATA_DIR / "promt2.txt"
+_text_prompt_env = os.getenv("PROMPT2_PATH")
+_text_prompt_candidate = Path(_text_prompt_env) if _text_prompt_env else _default_text_prompt
+if not _text_prompt_candidate.is_absolute():
+    _text_prompt_candidate = REPO_ROOT / _text_prompt_candidate
+if _text_prompt_candidate.exists():
+    PROMPT2_PATH = str(_text_prompt_candidate)
+else:
+    _tfb = _default_text_prompt
+    if not _tfb.is_absolute():
+        _tfb = REPO_ROOT / _tfb
+    PROMPT2_PATH = str(_tfb) if _tfb.exists() else None
+
+try:
+    LOW_CONFIDENCE_THRESHOLD = float(os.getenv("LOW_CONFIDENCE_THRESHOLD", "0.5"))
+except ValueError:
+    LOW_CONFIDENCE_THRESHOLD = 0.5
 
 # Nutrition CSV (optional)
 _default_nutrition = DATA_DIR / "nutrition.csv"
