@@ -1,11 +1,14 @@
+import logging
 from typing import Any
 
 from difflib import get_close_matches
 import pandas as pd
 
-from app.core.config import NUTRITION_CSV_PATH
+from app.core.config import NUTRITION_CSV_PATH, NUTRITION_ENABLE_SEMANTIC
 
-# Optional: sentence_transformers for semantic search (heavy dependency)
+logger = logging.getLogger(__name__)
+
+# Optional: sentence_transformers for semantic search (downloads from Hugging Face)
 try:
     from sentence_transformers import SentenceTransformer, util
     _HAS_SENTENCE_TRANSFORMERS = True
@@ -22,6 +25,7 @@ class NutritionService:
         self._ingredients: list[str] = []
         self._model = None
         self._embeddings = None
+        self._semantic_load_failed = False
         if self._path:
             self._load_data()
 
@@ -36,9 +40,32 @@ class NutritionService:
         dataset = data.set_index("name")
         self._data = dataset.to_dict("index")
         self._ingredients = list(self._data.keys())
-        if _HAS_SENTENCE_TRANSFORMERS and self._ingredients:
+        # Do NOT load SentenceTransformer here — it blocks on huggingface.co (bad on Railway).
+
+    def _ensure_semantic_model(self) -> bool:
+        """Lazy-load embeddings only when semantic search is used and enabled."""
+        if not NUTRITION_ENABLE_SEMANTIC:
+            return False
+        if not _HAS_SENTENCE_TRANSFORMERS or not self._ingredients:
+            return False
+        if self._embeddings is not None:
+            return True
+        if self._semantic_load_failed:
+            return False
+        try:
             self._model = SentenceTransformer("all-MiniLM-L6-v2")
-            self._embeddings = self._model.encode(self._ingredients, convert_to_tensor=True)
+            self._embeddings = self._model.encode(
+                self._ingredients,
+                convert_to_tensor=True,
+            )
+            return True
+        except Exception as e:
+            self._semantic_load_failed = True
+            logger.warning(
+                "Semantic nutrition search disabled (could not load model): %s",
+                e,
+            )
+            return False
 
     def _fuzzy_match(self, name: str, threshold: float = 0.6) -> str | None:
         q = name.lower().strip()
@@ -48,7 +75,7 @@ class NutritionService:
         return matches[0] if matches else None
 
     def _semantic_match(self, name: str, threshold: float = 0.6) -> str | None:
-        if not _HAS_SENTENCE_TRANSFORMERS or not self._ingredients or self._embeddings is None:
+        if not self._ensure_semantic_model() or self._embeddings is None:
             return None
         q = name.lower().strip()
         try:

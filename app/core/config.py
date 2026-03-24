@@ -46,6 +46,14 @@ else:
         _fallback = REPO_ROOT / _fallback
     NUTRITION_CSV_PATH = str(_fallback) if _fallback.exists() else None
 
+# If true, sentence-transformers may download from huggingface.co on first semantic search.
+# Default false: production (Railway) often times out on HF; fuzzy matching needs no download.
+NUTRITION_ENABLE_SEMANTIC = os.getenv("NUTRITION_ENABLE_SEMANTIC", "false").lower() in (
+    "1",
+    "true",
+    "yes",
+)
+
 # Telegram
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 

@@ -34,6 +34,7 @@ meal-mentor/
 - `OPENAI_API_KEY` — ключ OpenAI (обязательно для vision).
 - `PROMPT_PATH` — путь к файлу промпта (по умолчанию `./data/promt.txt`).
 - `NUTRITION_CSV_PATH` — путь к CSV с нутриентами на 100 г (по умолчанию `./data/nutrition.csv`, колонки: `name`, `calories`, `total_fat`, `protein`, `carbohydrate`). Необязательно.
+- `NUTRITION_ENABLE_SEMANTIC` — если `true`, при семантическом поиске ингредиентов подгружается модель с Hugging Face (на Railway часто таймаут). По умолчанию **выключено**; для расчёта БЖУ достаточно **fuzzy**-поиска по CSV.
 - `TELEGRAM_BOT_TOKEN` — токен бота (для запуска бота).
 - `BASE_URL` — URL бэкенда (по умолчанию `http://127.0.0.1:8000`). Нужен боту для вызова API.
 - `DATABASE_URL` — БД (по умолчанию `sqlite:///./meal_mentor.db`).
