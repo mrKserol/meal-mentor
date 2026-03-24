@@ -15,7 +15,13 @@ def _photo_to_base64(photo_bytes: bytes) -> str:
     return base64.b64encode(photo_bytes).decode("utf-8")
 
 
-def _call_backend_log(telegram_id: int, username: str | None, image_base64: str, file_id: str | None) -> tuple[dict | None, str | None]:
+def _call_backend_log(
+    telegram_id: int,
+    username: str | None,
+    first_name: str | None,
+    image_base64: str,
+    file_id: str | None,
+) -> tuple[dict | None, str | None]:
     """
     Returns (response_dict, None) on success, or (None, error_message) on failure.
     error_message is user-friendly (e.g. "backend_unavailable").
@@ -24,6 +30,7 @@ def _call_backend_log(telegram_id: int, username: str | None, image_base64: str,
     payload = {
         "telegram_id": telegram_id,
         "username": username,
+        "first_name": first_name,
         "image_base64": image_base64,
         "telegram_file_id": file_id,
     }
@@ -64,6 +71,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     data, err = _call_backend_log(
         telegram_id=user.id,
         username=user.username,
+        first_name=user.first_name,
         image_base64=image_base64,
         file_id=photo.file_id,
     )

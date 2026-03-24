@@ -1,5 +1,16 @@
-from datetime import datetime
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from datetime import date, datetime
+
+from sqlalchemy import (
+    Column,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -12,19 +23,124 @@ class User(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     telegram_id = Column(Integer, unique=True, index=True, nullable=False)
     username = Column(String(255), nullable=True)
+    first_name = Column(String(255), nullable=True)
+    sex = Column(String(20), nullable=True)
+    birth_date = Column(Date, nullable=True)
+    height_cm = Column(Integer, nullable=True)
+    weight_kg = Column(Float, nullable=True)
+    goal = Column(String(100), nullable=True)
+    activity_level = Column(String(50), nullable=True)
+    timezone = Column(String(64), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    meal_logs = relationship("MealLog", back_populates="user")
+    meals = relationship("Meal", back_populates="user")
 
 
-class MealLog(Base):
-    __tablename__ = "meal_logs"
+class Meal(Base):
+    __tablename__ = "meals"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(ForeignKey("users.id"), nullable=False, index=True)
     telegram_file_id = Column(String(255), nullable=True)
-    ingredients_json = Column(Text, nullable=False, default="{}")
-    nutrition_json = Column(Text, nullable=False, default="{}")
+    meal_type = Column(String(50), nullable=True)  # breakfast, lunch, dinner, snack
+    source_type = Column(String(50), nullable=True)  # photo, text, manual
+    meal_datetime = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    notes = Column(Text, nullable=True)
+
+    user = relationship("User", back_populates="meals")
+    items = relationship(
+        "MealItem",
+        back_populates="meal",
+        cascade="all, delete-orphan",
+    )
+
+
+class MealItem(Base):
+    __tablename__ = "meal_items"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    meal_id = Column(ForeignKey("meals.id"), nullable=False, index=True)
+    item_name = Column(String(255), nullable=False)
+    estimated_weight_g = Column(Integer, nullable=True)
+    quantity = Column(Integer, nullable=True)
+    confidence = Column(Integer, nullable=True)
+    raw_recognition_text = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship("User", back_populates="meal_logs")
+    meal = relationship("Meal", back_populates="items")
+    nutrition = relationship(
+        "MealItemNutrition",
+        back_populates="item",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
+
+class MealItemNutrition(Base):
+    __tablename__ = "meal_item_nutrition"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    meal_item_id = Column(
+        ForeignKey("meal_items.id"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    calories = Column(Integer, nullable=True)
+    protein_g = Column(Integer, nullable=True)
+    fat_g = Column(Integer, nullable=True)
+    carbs_g = Column(Integer, nullable=True)
+    fiber_g = Column(Integer, nullable=True)
+    sugar_g = Column(Integer, nullable=True)
+    sodium_mg = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    item = relationship("MealItem", back_populates="nutrition")
+
+
+class DailySummary(Base):
+    __tablename__ = "daily_summary"
+    __table_args__ = (UniqueConstraint("user_id", "date", name="uq_daily_summary_user_date"),)
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(ForeignKey("users.id"), nullable=False, index=True)
+    date = Column(Date, nullable=False, index=True)
+    total_calories = Column(Integer, nullable=True)
+    total_protein_g = Column(Integer, nullable=True)
+    total_fat_g = Column(Integer, nullable=True)
+    total_carbs_g = Column(Integer, nullable=True)
+    meal_count = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User")
+
+
+class RecommendationsLog(Base):
+    __tablename__ = "recommendations_log"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(ForeignKey("users.id"), nullable=False, index=True)
+    date = Column(Date, nullable=False, index=True)
+    recommendation_text = Column(Text, nullable=False)
+    reason_json = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+
+
+class UserMeasurement(Base):
+    __tablename__ = "user_measurements"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(ForeignKey("users.id"), nullable=False, index=True)
+    measured_at = Column(DateTime, nullable=False)
+    weight_kg = Column(Float, nullable=True)
+    waist_cm = Column(Float, nullable=True)
+    body_fat_percent = Column(Float, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")

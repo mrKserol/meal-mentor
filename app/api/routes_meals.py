@@ -16,6 +16,7 @@ class AnalyzeBody(BaseModel):
 class LogMealBody(BaseModel):
     telegram_id: int
     username: str | None = None
+    first_name: str | None = None
     image_base64: str
     telegram_file_id: str | None = None
 
@@ -47,4 +48,5 @@ def log_meal_from_photo(body: LogMealBody, db: Session = Depends(get_db)):
         username=body.username,
         image_base64=body.image_base64,
         telegram_file_id=body.telegram_file_id,
+        first_name=body.first_name,
     )
