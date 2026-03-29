@@ -7,7 +7,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from app.core.config import BASE_URL, LOW_CONFIDENCE_THRESHOLD
-from app.interfaces.telegram.states import USER_STATES, FlowState
+from app.interfaces.telegram.states import USER_STATES, FlowState, UIMode
 from app.interfaces.telegram.meal_messages import CONFIRM_KEYBOARD, format_meal_reply
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,10 @@ def _store_confirmation_state(
     meal_data: dict,
     state: str = FlowState.AWAITING_CONFIRMATION,
 ) -> None:
-    USER_STATES[user_id] = {"state": state, "meal_data": meal_data}
+    st = USER_STATES.setdefault(user_id, {})
+    st["mode"] = UIMode.DIARY_ADD_MEAL
+    st["state"] = state
+    st["meal_data"] = meal_data
 
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -56,7 +59,10 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if not user:
         return
 
-    USER_STATES.pop(user.id, None)
+    st = USER_STATES.setdefault(user.id, {})
+    st["mode"] = UIMode.DIARY_ADD_MEAL
+    for k in ("state", "meal_data", "context"):
+        st.pop(k, None)
 
     await update.message.reply_text("Обрабатываю фото…")
     photo = update.message.photo[-1]
@@ -94,13 +100,16 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     nutrition = data.get("nutrition")
 
     if _needs_user_description(ingredients, confidence):
-        USER_STATES[user.id] = {
-            "state": FlowState.AWAITING_DESCRIPTION,
-            "context": {
-                "telegram_file_id": photo.file_id,
-                "source_type": "photo",
-            },
-        }
+        USER_STATES.setdefault(user.id, {})["mode"] = UIMode.DIARY_ADD_MEAL
+        USER_STATES[user.id].update(
+            {
+                "state": FlowState.AWAITING_DESCRIPTION,
+                "context": {
+                    "telegram_file_id": photo.file_id,
+                    "source_type": "photo",
+                },
+            }
+        )
         await update.message.reply_text(
             "Я не смог распознать еду 😕\n\n"
             "Можешь описать, что на изображении? Например: «паста с курицей и брокколи — одна тарелка»."

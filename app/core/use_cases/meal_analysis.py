@@ -22,6 +22,53 @@ def _get_nutrition() -> NutritionService:
     return NutritionService()
 
 
+def _scaled_row_to_nutrition_dict(row: dict[str, Any]) -> dict[str, Any]:
+    """Map CSV search row (scaled) to MealItemNutrition kwargs."""
+    skip = frozenset({"match", "weight"})
+    out: dict[str, Any] = {}
+    if "calories" in row and row["calories"] is not None:
+        out["calories"] = int(row["calories"])
+    if "proteins" in row and row["proteins"] is not None:
+        out["protein_g"] = int(row["proteins"])
+    if "fats" in row and row["fats"] is not None:
+        out["fat_g"] = int(row["fats"])
+    if "carbohydrates" in row and row["carbohydrates"] is not None:
+        out["carbs_g"] = int(row["carbohydrates"])
+    int_micro = ("fiber_g", "sugar_g", "sodium_mg")
+    for k in int_micro:
+        if k in row and row[k] is not None:
+            out[k] = int(round(float(row[k])))
+    float_keys = (
+        "saturated_fat_g",
+        "calcium_mg",
+        "magnesium_mg",
+        "potassium_mg",
+        "phosphorus_mg",
+        "iron_mg",
+        "zinc_mg",
+        "selenium_mcg",
+        "copper_mg",
+        "manganese_mg",
+        "vitamin_a_mcg",
+        "vitamin_c_mg",
+        "vitamin_d_mcg",
+        "vitamin_e_mg",
+        "vitamin_k_mcg",
+        "vitamin_b6_mg",
+        "vitamin_b12_mcg",
+        "folate_mcg",
+        "thiamin_mg",
+        "riboflavin_mg",
+        "niacin_mg",
+        "pantothenic_acid_mg",
+        "choline_mg",
+    )
+    for k in float_keys:
+        if k in row and row[k] is not None and k not in skip:
+            out[k] = float(row[k])
+    return out
+
+
 def _build_meal_items(ingredients: dict[str, Any], nutrition_svc: NutritionService) -> list[dict[str, Any]]:
     """Map ingredients dict to rows for create_meal."""
     items: list[dict[str, Any]] = []
@@ -40,14 +87,9 @@ def _build_meal_items(ingredients: dict[str, Any], nutrition_svc: NutritionServi
         except (TypeError, ValueError):
             w = None
         row = lookup.get(name, {})
-        nutrition = None
-        if row:
-            nutrition = {
-                "calories": row.get("calories"),
-                "protein_g": row.get("proteins"),
-                "fat_g": row.get("fats"),
-                "carbs_g": row.get("carbohydrates"),
-            }
+        nutrition = _scaled_row_to_nutrition_dict(row) if row else None
+        if nutrition == {}:
+            nutrition = None
         items.append(
             {
                 "item_name": name,

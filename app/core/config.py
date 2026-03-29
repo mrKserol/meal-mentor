@@ -75,6 +75,9 @@ NUTRITION_ENABLE_SEMANTIC = os.getenv("NUTRITION_ENABLE_SEMANTIC", "false").lowe
 # Telegram
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
+# Subscriptions: if true, POST /subscriptions/order activates plan without Robokassa (demo only)
+SUBSCRIPTION_DEMO_AUTO = os.getenv("SUBSCRIPTION_DEMO_AUTO", "0").lower() in ("1", "true", "yes")
+
 # DB
 DATABASE_URL = os.getenv(
     "DATABASE_URL",

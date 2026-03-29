@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.ext import ContextTypes, filters
 
 from app.core.config import BASE_URL, LOW_CONFIDENCE_THRESHOLD
-from app.interfaces.telegram.states import USER_STATES, FlowState
+from app.interfaces.telegram.states import USER_STATES, FlowState, UIMode
 from app.interfaces.telegram.meal_messages import format_meal_reply
 from app.interfaces.telegram.meal_messages import CONFIRM_KEYBOARD
 from app.interfaces.telegram.handlers_callbacks import save_confirmed_meal
@@ -24,6 +24,8 @@ class MealFlowTextFilter(filters.MessageFilter):
             return False
         st = USER_STATES.get(user.id)
         if not st:
+            return False
+        if st.get("mode") != UIMode.DIARY_ADD_MEAL:
             return False
         return st.get("state") in (
             FlowState.AWAITING_DESCRIPTION,
@@ -108,10 +110,13 @@ async def handle_text_flow(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             "telegram_file_id": ctx.get("telegram_file_id"),
             "source_type": "text",
         }
-        USER_STATES[user.id] = {
-            "state": FlowState.AWAITING_CONFIRMATION_AFTER_TEXT,
-            "meal_data": meal_data,
-        }
+        USER_STATES.setdefault(user.id, {})["mode"] = UIMode.DIARY_ADD_MEAL
+        USER_STATES[user.id].update(
+            {
+                "state": FlowState.AWAITING_CONFIRMATION_AFTER_TEXT,
+                "meal_data": meal_data,
+            }
+        )
         await update.message.reply_text(
             format_meal_reply(ingredients, nutrition),
             reply_markup=CONFIRM_KEYBOARD,
@@ -123,7 +128,7 @@ async def handle_text_flow(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         if low in ("да", "yes", "y"):
             await save_confirmed_meal(update, context, user)
         elif low in ("нет", "no", "n"):
-            USER_STATES.pop(user.id, None)
+            USER_STATES[user.id] = {"mode": UIMode.IDLE}
             await update.message.reply_text("Ок, не записываю в дневник.")
         else:
             await update.message.reply_text(

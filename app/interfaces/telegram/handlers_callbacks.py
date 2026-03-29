@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from app.core.config import BASE_URL
-from app.interfaces.telegram.states import USER_STATES, FlowState
+from app.interfaces.telegram.states import USER_STATES, FlowState, UIMode
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ async def save_confirmed_meal(
     meal_data = st.get("meal_data") or {}
     ingredients = meal_data.get("ingredients") or {}
     if not ingredients:
-        USER_STATES.pop(user.id, None)
+        USER_STATES[user.id] = {"mode": UIMode.IDLE}
         await context.bot.send_message(chat_id=user.id, text="Нечего записывать. Отправь фото ещё раз.")
         return False
 
@@ -60,7 +60,7 @@ async def save_confirmed_meal(
         )
         return False
 
-    USER_STATES.pop(user.id, None)
+    USER_STATES[user.id] = {"mode": UIMode.IDLE}
     await context.bot.send_message(chat_id=user.id, text="Записал приём пищи в дневник.")
     return True
 
@@ -76,7 +76,7 @@ async def handle_meal_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         return
 
     if query.data == "meal_no":
-        USER_STATES.pop(user.id, None)
+        USER_STATES[user.id] = {"mode": UIMode.IDLE}
         try:
             await query.edit_message_reply_markup(reply_markup=None)
         except Exception:

@@ -7,6 +7,8 @@ from app.db.session import init_db
 from app.interfaces.api.routes_users import router as users_router
 from app.interfaces.api.routes_meals import router as meals_router
 from app.interfaces.api.routes_reports import router as reports_router
+from app.interfaces.api.routes_nutrition import router as nutrition_router
+from app.interfaces.api.routes_subscriptions import router as subscriptions_router
 from app.core.use_cases.meal_analysis import analyze_meal_from_image_base64
 
 
@@ -23,6 +25,8 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 app.include_router(users_router)
 app.include_router(meals_router)
 app.include_router(reports_router)
+app.include_router(nutrition_router)
+app.include_router(subscriptions_router)
 
 
 # Legacy: Streamlit (ui.py) calls POST /generate_response
