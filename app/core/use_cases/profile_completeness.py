@@ -22,3 +22,8 @@ def missing_profile_fields(user: User | None) -> list[str]:
     if user is None:
         return list(REQUIRED_ONBOARDING_FIELDS)
     return [f for f in REQUIRED_ONBOARDING_FIELDS if getattr(user, f, None) is None]
+
+
+def get_missing_profile_fields(user: User | None) -> list[str]:
+    """Alias for API / clarity (same as missing_profile_fields)."""
+    return missing_profile_fields(user)

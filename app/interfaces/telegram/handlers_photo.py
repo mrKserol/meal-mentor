@@ -8,7 +8,7 @@ from telegram.ext import ContextTypes
 
 from app.core.config import BASE_URL, LOW_CONFIDENCE_THRESHOLD
 from app.interfaces.telegram.states import USER_STATES, FlowState, UIMode
-from app.interfaces.telegram.meal_messages import CONFIRM_KEYBOARD, format_meal_reply
+from app.interfaces.telegram.telegram_formatters import format_recognition_question, kb_recognition_confirm
 
 logger = logging.getLogger(__name__)
 
@@ -41,17 +41,6 @@ def _needs_user_description(ingredients: dict, confidence: float | None) -> bool
     return False
 
 
-def _store_confirmation_state(
-    user_id: int,
-    meal_data: dict,
-    state: str = FlowState.AWAITING_CONFIRMATION,
-) -> None:
-    st = USER_STATES.setdefault(user_id, {})
-    st["mode"] = UIMode.DIARY_ADD_MEAL
-    st["state"] = state
-    st["meal_data"] = meal_data
-
-
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message or not update.message.photo:
         return
@@ -59,9 +48,14 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if not user:
         return
 
+    st = USER_STATES.get(user.id) or {}
+    if st.get("state") != FlowState.MEAL_ADD_WAITING_INPUT:
+        return
+
     st = USER_STATES.setdefault(user.id, {})
     st["mode"] = UIMode.DIARY_ADD_MEAL
-    for k in ("state", "meal_data", "context"):
+    st["state"] = FlowState.MEAL_ADD_WAITING_INPUT
+    for k in ("meal_data", "context"):
         st.pop(k, None)
 
     await update.message.reply_text("Обрабатываю фото…")
@@ -100,10 +94,10 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     nutrition = data.get("nutrition")
 
     if _needs_user_description(ingredients, confidence):
-        USER_STATES.setdefault(user.id, {})["mode"] = UIMode.DIARY_ADD_MEAL
         USER_STATES[user.id].update(
             {
-                "state": FlowState.AWAITING_DESCRIPTION,
+                "mode": UIMode.DIARY_ADD_MEAL,
+                "state": FlowState.MEAL_ADD_TEXT_MANUAL,
                 "context": {
                     "telegram_file_id": photo.file_id,
                     "source_type": "photo",
@@ -111,8 +105,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             }
         )
         await update.message.reply_text(
-            "Я не смог распознать еду 😕\n\n"
-            "Можешь описать, что на изображении? Например: «паста с курицей и брокколи — одна тарелка»."
+            "Распознавание неуверенное или пустое.\n"
+            "Опиши блюдо текстом — что на фото и примерные порции."
         )
         return
 
@@ -123,6 +117,9 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "telegram_file_id": photo.file_id,
         "source_type": "photo",
     }
-    _store_confirmation_state(user.id, meal_data, FlowState.AWAITING_CONFIRMATION)
-    text = format_meal_reply(ingredients, nutrition)
-    await update.message.reply_text(text, reply_markup=CONFIRM_KEYBOARD)
+    USER_STATES[user.id]["meal_data"] = meal_data
+    USER_STATES[user.id]["state"] = FlowState.MEAL_ADD_RECOGNITION_CHECK
+    await update.message.reply_text(
+        format_recognition_question(ingredients),
+        reply_markup=kb_recognition_confirm(),
+    )

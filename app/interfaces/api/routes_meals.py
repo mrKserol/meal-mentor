@@ -20,6 +20,10 @@ from app.db.repository import (
     get_user_by_telegram_id,
 )
 from app.core.use_cases.meal_item_edit import recalculate_meal_item_weight
+from app.core.use_cases.meal_items_mutations import (
+    add_meal_items_from_text_description,
+    remove_meal_item,
+)
 
 router = APIRouter(prefix="/meals", tags=["meals"])
 
@@ -47,6 +51,11 @@ class LogMealBody(BaseModel):
     first_name: str | None = None
     image_base64: str
     telegram_file_id: str | None = None
+
+
+class AddMealItemBody(BaseModel):
+    telegram_id: int
+    description: str
 
 
 @router.post("/analyze")
@@ -194,4 +203,31 @@ def meal_item_patch_weight(
     out = recalculate_meal_item_weight(db, telegram_id, meal_id, item_id, weight_g)
     if out.get("status") != "ok":
         raise HTTPException(400, out.get("error", "update failed"))
+    return out
+
+
+@router.delete("/{meal_id}/items/{item_id}")
+def meal_item_delete_row(
+    meal_id: int,
+    item_id: int,
+    telegram_id: int = Query(...),
+    db: Session = Depends(get_db),
+):
+    out = remove_meal_item(db, telegram_id, meal_id, item_id)
+    if out.get("status") != "ok":
+        raise HTTPException(404, out.get("error", "not found"))
+    return {"status": "ok"}
+
+
+@router.post("/{meal_id}/items")
+def meal_item_add_from_text(
+    meal_id: int,
+    body: AddMealItemBody,
+    db: Session = Depends(get_db),
+):
+    if not body.description.strip():
+        raise HTTPException(400, "description required")
+    out = add_meal_items_from_text_description(db, body.telegram_id, meal_id, body.description)
+    if out.get("status") != "ok":
+        raise HTTPException(400, out.get("error", "failed"))
     return out

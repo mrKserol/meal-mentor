@@ -100,6 +100,11 @@ def _build_meal_items(ingredients: dict[str, Any], nutrition_svc: NutritionServi
     return items
 
 
+def build_meal_item_specs_from_ingredients(ingredients: dict[str, Any]) -> list[dict[str, Any]]:
+    """Build persistable line items from an ingredients dict (for appending to an existing meal)."""
+    return _build_meal_items(ingredients, _get_nutrition())
+
+
 def _meal_result_from_vision_dict(out: dict[str, Any]) -> MealAnalysisResult:
     if out.get("status") != "success":
         return MealAnalysisResult(

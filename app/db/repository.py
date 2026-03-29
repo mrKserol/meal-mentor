@@ -190,6 +190,50 @@ def update_meal_item_weight(
     return True
 
 
+def delete_meal_item_for_user(db: Session, meal_id: int, user_id: int, item_id: int) -> bool:
+    meal = db.query(Meal).filter(Meal.id == meal_id, Meal.user_id == user_id).first()
+    if not meal:
+        return False
+    item = db.query(MealItem).filter(MealItem.id == item_id, MealItem.meal_id == meal_id).first()
+    if not item:
+        return False
+    db.delete(item)
+    db.commit()
+    return True
+
+
+def append_meal_item_rows(
+    db: Session,
+    meal_id: int,
+    user_id: int,
+    items: list[dict[str, Any]],
+) -> bool:
+    """Append MealItem (+ nutrition) rows to an existing meal."""
+    meal = db.query(Meal).filter(Meal.id == meal_id, Meal.user_id == user_id).first()
+    if not meal:
+        return False
+    for spec in items or []:
+        name = spec.get("item_name")
+        if not name:
+            continue
+        row = MealItem(
+            meal_id=meal.id,
+            item_name=name,
+            estimated_weight_g=spec.get("estimated_weight_g"),
+            quantity=spec.get("quantity"),
+            confidence=spec.get("confidence"),
+            raw_recognition_text=spec.get("raw_recognition_text"),
+        )
+        db.add(row)
+        db.flush()
+        nut = spec.get("nutrition") or {}
+        payload = {k: nut[k] for k in MEAL_ITEM_NUTRITION_KEYS if k in nut and nut[k] is not None}
+        if payload:
+            db.add(MealItemNutrition(meal_item_id=row.id, **payload))
+    db.commit()
+    return True
+
+
 def get_user_by_telegram_id(db: Session, telegram_id: int) -> Optional[User]:
     return db.query(User).filter(User.telegram_id == telegram_id).first()
 

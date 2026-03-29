@@ -6,6 +6,7 @@ from telegram.ext import ContextTypes
 
 from app.core.config import BASE_URL
 from app.interfaces.telegram.states import USER_STATES, FlowState, UIMode
+from app.interfaces.telegram.telegram_formatters import format_meal_analyzed_detail, kb_save_meal_confirm
 
 logger = logging.getLogger(__name__)
 
@@ -23,21 +24,18 @@ async def save_confirmed_meal(
 
     st = USER_STATES.get(user.id)
     if not st:
-        await context.bot.send_message(chat_id=user.id, text="Нет данных для записи. Отправь фото ещё раз.")
+        await context.bot.send_message(chat_id=user.id, text="Нет данных для записи. Открой «Добавить приём пищи» снова.")
         return False
 
-    if st.get("state") not in (
-        FlowState.AWAITING_CONFIRMATION,
-        FlowState.AWAITING_CONFIRMATION_AFTER_TEXT,
-    ):
-        await context.bot.send_message(chat_id=user.id, text="Сессия устарела. Отправь фото ещё раз.")
+    if st.get("state") != FlowState.MEAL_ADD_SAVE_CONFIRMATION:
+        await context.bot.send_message(chat_id=user.id, text="Сессия устарела. Начни добавление приёма заново.")
         return False
 
     meal_data = st.get("meal_data") or {}
     ingredients = meal_data.get("ingredients") or {}
     if not ingredients:
         USER_STATES[user.id] = {"mode": UIMode.IDLE}
-        await context.bot.send_message(chat_id=user.id, text="Нечего записывать. Отправь фото ещё раз.")
+        await context.bot.send_message(chat_id=user.id, text="Нечего записывать.")
         return False
 
     url = f"{BASE_URL.rstrip('/')}/meals/save"
@@ -67,7 +65,7 @@ async def save_confirmed_meal(
 
 async def handle_meal_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    if not query:
+    if not query or not query.data:
         return
     await query.answer()
 
@@ -75,7 +73,40 @@ async def handle_meal_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     if not user:
         return
 
-    if query.data == "meal_no":
+    data = query.data
+
+    if data == "meal_rec_yes":
+        st = USER_STATES.get(user.id)
+        if not st or st.get("state") != FlowState.MEAL_ADD_RECOGNITION_CHECK:
+            await context.bot.send_message(chat_id=user.id, text="Сессия устарела. Начни с «Добавить приём пищи».")
+            return
+        md = st.get("meal_data") or {}
+        ingredients = md.get("ingredients") or {}
+        nutrition = md.get("nutrition")
+        st["state"] = FlowState.MEAL_ADD_SAVE_CONFIRMATION
+        text = format_meal_analyzed_detail(ingredients, nutrition)
+        await context.bot.send_message(
+            chat_id=user.id,
+            text=text,
+            reply_markup=kb_save_meal_confirm(),
+        )
+        return
+
+    if data == "meal_rec_no":
+        st = USER_STATES.setdefault(user.id, {})
+        st["mode"] = UIMode.DIARY_ADD_MEAL
+        st["state"] = FlowState.MEAL_ADD_TEXT_MANUAL
+        await context.bot.send_message(
+            chat_id=user.id,
+            text="Опиши блюдо текстом: что на фото или что ты съел.",
+        )
+        return
+
+    if data == "meal_no":
+        st = USER_STATES.get(user.id)
+        if not st or st.get("state") != FlowState.MEAL_ADD_SAVE_CONFIRMATION:
+            await context.bot.send_message(chat_id=user.id, text="Сессия устарела. Начни с «Добавить приём пищи».")
+            return
         USER_STATES[user.id] = {"mode": UIMode.IDLE}
         try:
             await query.edit_message_reply_markup(reply_markup=None)
@@ -84,7 +115,7 @@ async def handle_meal_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await context.bot.send_message(chat_id=user.id, text="Ок, не записываю в дневник.")
         return
 
-    if query.data != "meal_yes":
+    if data != "meal_yes":
         return
 
     ok = await save_confirmed_meal(update, context, user)

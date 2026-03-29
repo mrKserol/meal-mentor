@@ -4,7 +4,7 @@ from telegram import Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 from app.core.config import TELEGRAM_BOT_TOKEN
-from app.interfaces.telegram.states import USER_STATES
+from app.interfaces.telegram.states import USER_STATES, FlowState
 from app.interfaces.telegram.handlers_menu import (
     build_profile_numeric_handler,
     cmd_start,
@@ -29,7 +29,11 @@ logger = logging.getLogger(__name__)
 async def _photo_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     st = USER_STATES.get(user.id) if user else None
-    if st and st.get("mode") == UIMode.DIARY_ADD_MEAL:
+    if (
+        st
+        and st.get("mode") == UIMode.DIARY_ADD_MEAL
+        and st.get("state") == FlowState.MEAL_ADD_WAITING_INPUT
+    ):
         await handle_photo(update, context)
     else:
         await photo_outside_diary(update, context)
@@ -41,8 +45,8 @@ def build_application() -> Application:
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("report", cmd_report))
-    app.add_handler(CallbackQueryHandler(menu_callback, pattern=r"^m:"))
-    app.add_handler(CallbackQueryHandler(handle_meal_callback, pattern=r"^meal_(yes|no)$"))
+    app.add_handler(CallbackQueryHandler(menu_callback, pattern=r"^(m:|c:)"))
+    app.add_handler(CallbackQueryHandler(handle_meal_callback, pattern=r"^meal_(yes|no|rec_yes|rec_no)$"))
     app.add_handler(build_profile_numeric_handler())
     app.add_handler(
         MessageHandler(
