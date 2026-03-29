@@ -7,26 +7,34 @@
 ```
 meal-mentor/
 ├── app/
-│   ├── api/           # Эндпоинты: users, meals, reports
-│   ├── bot/           # Telegram-бот и обработчики (start, photo, report)
-│   ├── core/          # config, промпты для vision
-│   ├── db/            # Модели, сессия, репозиторий
-│   ├── services/      # openai_vision, nutrition, meal, recommendation, report
-│   └── main.py        # FastAPI-приложение
-├── alembic/             # Миграции схемы БД (Alembic)
+│   ├── core/              # Схемы данных, use cases (анализ приёма пищи без Telegram)
+│   ├── infrastructure/    # OpenAI (vision/text), nutrition.csv provider
+│   ├── interfaces/        # Слой интерфейсов: FastAPI (api/), Telegram (telegram/), заготовка MAX
+│   ├── api/               # Шимы для старых импортов → interfaces.api
+│   ├── bot/               # Шимы → interfaces.telegram (точка входа бота без изменений)
+│   ├── db/                # Модели, сессия, репозиторий
+│   ├── services/          # meal_service (фасад), отчёты, рекомендации; шимы openai/nutrition
+│   └── main.py            # FastAPI-приложение
+├── docs/
+│   ├── architecture.md           # Как устроены core / interfaces / flow
+│   ├── architecture_audit.md     # Аудит до/после рефакторинга
+│   └── refactor_next_steps.md    # Следующие этапы (без реализации)
+├── alembic/               # Миграции схемы БД
 ├── data/
-│   ├── nutrition.csv  # Опционально: нутриенты на 100 г
-│   └── promt.txt      # Промпт для распознавания состава и веса
-├── service.py         # Точка входа для uvicorn service:app
-├── ui.py              # Streamlit (демо/админ), не основной клиент
-├── .env
+│   ├── nutrition.csv
+│   └── promt.txt, promt2.txt
+├── service.py             # Точка входа для uvicorn service:app
+├── ui.py                  # Streamlit (демо), клиент к API
 ├── requirements.txt
 └── README.md
 ```
 
+Подробнее: [docs/architecture.md](docs/architecture.md).
+
 ## Как работает
 
 - **Telegram:** фото → `POST /meals/analyze` (без записи в БД) → ответ с составом и БЖУ → пользователь подтверждает «Да» → `POST /meals/save`. Если пустой результат или низкая уверенность — бот просит **текстовое описание** → `POST /meals/analyze-text` → снова подтверждение. Состояние диалога хранится в памяти процесса бота (`USER_STATES`); при нескольких репликах бота нужен общий store (Redis). `/report [дней]` — сводка (суммы по `MealItemNutrition`).
+- **Ядро:** сценарий анализа сосредоточен в `app/core/use_cases/meal_analysis.py` (без типов Telegram).
 - **Streamlit (ui.py):** демо/админ: загрузка фото → запрос к `POST /generate_response` → вывод состава, веса и при наличии CSV — диаграмма БЖУ.
 
 ## Переменные окружения

@@ -3,12 +3,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.core.config import BASE_URL
-from app.db.session import init_db, get_db
-from app.api.routes_users import router as users_router
-from app.api.routes_meals import router as meals_router
-from app.api.routes_reports import router as reports_router
-from app.services.meal_service import analyze_photo
+from app.db.session import init_db
+from app.interfaces.api.routes_users import router as users_router
+from app.interfaces.api.routes_meals import router as meals_router
+from app.interfaces.api.routes_reports import router as reports_router
+from app.core.use_cases.meal_analysis import analyze_meal_from_image_base64
 
 
 @asynccontextmanager
@@ -40,7 +39,7 @@ async def generate_response(request: Request):
             b64.b64decode(image_base64)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Invalid Base64: {e}") from e
-        return analyze_photo(image_base64)
+        return analyze_meal_from_image_base64(image_base64).to_api_dict()
     except HTTPException:
         raise
     except Exception as e:
