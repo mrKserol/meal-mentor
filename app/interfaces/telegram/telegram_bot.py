@@ -1,12 +1,13 @@
 import logging
 
-from telegram import Update
+from telegram import BotCommand, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 from app.core.config import TELEGRAM_BOT_TOKEN
 from app.interfaces.telegram.states import USER_STATES, FlowState
 from app.interfaces.telegram.handlers_menu import (
     build_profile_numeric_handler,
+    cmd_add_meal,
     cmd_start,
     menu_callback,
     photo_outside_diary,
@@ -26,6 +27,16 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+async def _post_init_set_commands(application: Application) -> None:
+    await application.bot.set_my_commands(
+        [
+            BotCommand("start", "Главное меню"),
+            BotCommand("add_meal", "Добавить приём пищи"),
+            BotCommand("report", "Статистика"),
+        ]
+    )
+
+
 async def _photo_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     st = USER_STATES.get(user.id) if user else None
@@ -42,8 +53,14 @@ async def _photo_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 def build_application() -> Application:
     if not TELEGRAM_BOT_TOKEN:
         raise ValueError("TELEGRAM_BOT_TOKEN is not set")
-    app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    app = (
+        Application.builder()
+        .token(TELEGRAM_BOT_TOKEN)
+        .post_init(_post_init_set_commands)
+        .build()
+    )
     app.add_handler(CommandHandler("start", cmd_start))
+    app.add_handler(CommandHandler("add_meal", cmd_add_meal))
     app.add_handler(CommandHandler("report", cmd_report))
     app.add_handler(CallbackQueryHandler(menu_callback, pattern=r"^(m:|c:)"))
     app.add_handler(CallbackQueryHandler(handle_meal_callback, pattern=r"^meal_(yes|no|rec_yes|rec_no)$"))

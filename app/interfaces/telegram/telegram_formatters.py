@@ -60,6 +60,18 @@ def format_diary_intro() -> str:
     )
 
 
+def format_add_meal_prompt(*, extended: bool = False) -> str:
+    """Текст приглашения в сценарий добавления приёма (команда /add_meal или кнопка меню)."""
+    short = "Отправь фото еды или напиши описание блюда текстом."
+    if not extended:
+        return short
+    return (
+        short
+        + "\n\n"
+        + "После распознавания спрошу, всё ли верно, затем покажу детали и предложу записать приём."
+    )
+
+
 def format_weight_monitoring_intro() -> str:
     return (
         "Контрольное взвешивание проводить минимум раз в неделю. "

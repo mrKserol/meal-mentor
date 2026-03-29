@@ -16,6 +16,7 @@ from app.interfaces.telegram.inline_calendar import birth_date_calendar_keyboard
 from app.interfaces.telegram.states import USER_STATES, FlowState, UIMode
 from app.interfaces.telegram import tg_api
 from app.interfaces.telegram.telegram_formatters import (
+    format_add_meal_prompt,
     format_diary_intro,
     format_profile_card,
     format_weight_correction_intro,
@@ -100,6 +101,18 @@ def kb_main(*, sub_active: bool) -> InlineKeyboardMarkup:
     else:
         rows.append([InlineKeyboardButton("Тарифы подписок", callback_data="m:sub:tariffs")])
     return InlineKeyboardMarkup(rows)
+
+
+def kb_meal_add_back() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([[InlineKeyboardButton("⬅ В дневник", callback_data="m:diary")]])
+
+
+def enter_add_meal_flow(telegram_user_id: int) -> None:
+    """Единый вход в сценарий добавления приёма (кнопка «Добавить приём пищи», /add_meal). Сбрасывает локальное UI-состояние пользователя."""
+    USER_STATES[telegram_user_id] = {
+        "mode": UIMode.DIARY_ADD_MEAL,
+        "state": FlowState.MEAL_ADD_WAITING_INPUT,
+    }
 
 
 def kb_diary() -> InlineKeyboardMarkup:
@@ -207,6 +220,27 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
     sub = _has_active_sub(u.id)
     await update.message.reply_text(text, reply_markup=kb_main(sub_active=sub))
+
+
+async def cmd_add_meal(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_user or not update.message:
+        return
+    u = update.effective_user
+    _ensure_registered(u.id, u.username, u.first_name)
+    try:
+        pr = _profile(u.id)
+    except Exception as e:
+        logger.exception("profile fetch: %s", e)
+        await update.message.reply_text("Не удалось связаться с сервером. Проверь BASE_URL и запуск API.")
+        return
+    if not pr.get("profile_complete"):
+        await update.message.reply_text(
+            "Сначала заполни профиль, чтобы я мог корректно рассчитывать показатели.",
+            reply_markup=kb_onboarding(),
+        )
+        return
+    enter_add_meal_flow(u.id)
+    await update.message.reply_text(format_add_meal_prompt(extended=False), reply_markup=kb_meal_add_back())
 
 
 async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -346,14 +380,10 @@ async def _dispatch_menu(q, uid: int, uname: str | None, fname: str | None, data
         return
 
     if data == "m:diary:add":
-        USER_STATES[uid] = {
-            "mode": UIMode.DIARY_ADD_MEAL,
-            "state": FlowState.MEAL_ADD_WAITING_INPUT,
-        }
+        enter_add_meal_flow(uid)
         await q.edit_message_text(
-            "Пришли фото блюда или опиши его текстом — я проанализирую состав.\n\n"
-            "После распознавания спрошу, всё ли верно, затем покажу детали и предложу записать приём.",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅ В дневник", callback_data="m:diary")]]),
+            format_add_meal_prompt(extended=True),
+            reply_markup=kb_meal_add_back(),
         )
         return
 
