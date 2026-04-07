@@ -12,6 +12,7 @@ from app.interfaces.telegram.handlers_menu import (
     menu_callback,
     photo_outside_diary,
 )
+from app.interfaces.telegram.handlers_ingredients_check import cmd_check_ingredients, handle_ingredients_label_photo
 from app.interfaces.telegram.handlers_photo import handle_photo
 from app.interfaces.telegram.handlers_reports import cmd_report
 from app.interfaces.telegram.handlers_callbacks import handle_meal_callback
@@ -32,6 +33,7 @@ async def _post_init_set_commands(application: Application) -> None:
         [
             BotCommand("start", "Главное меню"),
             BotCommand("add_meal", "Добавить приём пищи"),
+            BotCommand("check_ingredients", "Проверка состава по этикетке"),
             BotCommand("report", "Статистика"),
         ]
     )
@@ -40,7 +42,9 @@ async def _post_init_set_commands(application: Application) -> None:
 async def _photo_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     st = USER_STATES.get(user.id) if user else None
-    if (
+    if st and st.get("mode") == UIMode.CHECK_INGREDIENTS:
+        await handle_ingredients_label_photo(update, context)
+    elif (
         st
         and st.get("mode") == UIMode.DIARY_ADD_MEAL
         and st.get("state") == FlowState.MEAL_ADD_WAITING_INPUT
@@ -61,6 +65,7 @@ def build_application() -> Application:
     )
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("add_meal", cmd_add_meal))
+    app.add_handler(CommandHandler("check_ingredients", cmd_check_ingredients))
     app.add_handler(CommandHandler("report", cmd_report))
     app.add_handler(CallbackQueryHandler(menu_callback, pattern=r"^(m:|c:)"))
     app.add_handler(CallbackQueryHandler(handle_meal_callback, pattern=r"^meal_(yes|no|rec_yes|rec_no)$"))

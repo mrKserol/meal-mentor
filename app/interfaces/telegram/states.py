@@ -20,3 +20,4 @@ class FlowState:
 class UIMode:
     IDLE = "idle"
     DIARY_ADD_MEAL = "diary_add_meal"
+    CHECK_INGREDIENTS = "check_ingredients"
