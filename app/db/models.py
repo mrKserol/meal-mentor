@@ -21,8 +21,11 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    telegram_id = Column(Integer, unique=True, index=True, nullable=False)
+    email = Column(String(255), unique=True, index=True, nullable=True)
     username = Column(String(255), nullable=True)
+    hashed_password = Column(String(255), nullable=True)
+    telegram_id = Column(Integer, unique=True, index=True, nullable=True)
+    subscription_status = Column(String(32), nullable=False, default="free")
     first_name = Column(String(255), nullable=True)
     sex = Column(String(20), nullable=True)
     birth_date = Column(Date, nullable=True)
@@ -38,6 +41,7 @@ class User(Base):
     meals = relationship("Meal", back_populates="user")
     measurements = relationship("UserMeasurement", back_populates="user")
     subscriptions = relationship("Subscription", back_populates="user")
+    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
 
 
 class Meal(Base):
@@ -188,3 +192,17 @@ class UserMeasurement(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="measurements")
+
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(ForeignKey("users.id"), nullable=False, index=True)
+    token_hash = Column(String(255), nullable=False, unique=True, index=True)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    revoked_at = Column(DateTime, nullable=True)
+    replaced_by_token_id = Column(ForeignKey("refresh_tokens.id"), nullable=True)
+
+    user = relationship("User", back_populates="refresh_tokens", foreign_keys=[user_id])

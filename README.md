@@ -48,6 +48,10 @@ meal-mentor/
 - `TELEGRAM_BOT_TOKEN` — токен бота (для запуска бота).
 - `BASE_URL` — URL бэкенда (по умолчанию `http://127.0.0.1:8000`). Нужен боту для вызова API.
 - `DATABASE_URL` — БД (по умолчанию `sqlite:///./meal_mentor.db`).
+- `JWT_SECRET_KEY` — секрет подписи JWT (обязательно для прода/Railway).
+- `JWT_ALGORITHM` — алгоритм JWT (по умолчанию `HS256`).
+- `ACCESS_TOKEN_EXPIRE_MINUTES` — TTL access token (по умолчанию `15`).
+- `REFRESH_TOKEN_EXPIRE_DAYS` — TTL refresh token (по умолчанию `30`).
 
 ## Запуск
 
@@ -83,3 +87,8 @@ alembic upgrade head
 - `POST /meals/log` — устаревший сценарий «анализ фото + сразу запись» в один запрос.
 - `POST /users/register` — регистрация / обновление профиля: `telegram_id`, `username`, опционально `first_name`, `sex`, `birth_date`, `height_cm`, `weight_kg`, `goal`, `activity_level`, `timezone`.
 - `GET /reports/summary?telegram_id=&days=` — сводка за последние N дней.
+- `POST /auth/register` — регистрация веб-пользователя (email/username/password), возвращает access+refresh.
+- `POST /auth/login` — логин веб-пользователя (email/password), возвращает access+refresh.
+- `POST /auth/refresh` — rotation refresh token, возвращает новую пару токенов.
+- `POST /auth/logout` — отзывает refresh token.
+- `GET /users/me` — профиль текущего пользователя по Bearer access token.
