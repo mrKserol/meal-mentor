@@ -1,14 +1,25 @@
 # Meal Mentor Frontend
 
-Placeholder directory for the upcoming web UI.
+Standalone frontend service for Meal Mentor auth flow.
 
-## Planned stack
+## Stack
 
-- React/Next.js or Vite SPA
-- Auth flow with `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout`
-- Profile screen backed by `GET /users/me`
+- React + Vite + TypeScript
+- React Router
+- Tailwind CSS
+- Axios
 
-## Notes
+## Environment
 
-- Keep access token in memory (short-lived).
-- Store refresh token securely and rotate via `/auth/refresh`.
+Create `.env` from `.env.example`:
+
+```bash
+VITE_API_URL=https://your-backend-url.up.railway.app
+```
+
+## Scripts
+
+- `npm run dev` - local development
+- `npm run build` - production build
+- `npm run preview` - preview local build
+- `npm run start` - static server command for Railway
