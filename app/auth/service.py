@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -11,19 +11,44 @@ from app.auth.security import (
     refresh_token_expire_at,
     verify_password,
 )
+from app.auth.telegram import verify_telegram_login
 from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.db.models import RefreshToken, User
-from app.schemas.auth import AuthTokenPair
+from app.schemas.auth import AuthTelegramRequest, AuthTokenPair
 
 
-def register_user(db: Session, *, email: str, username: str, password: str) -> User:
+def register_user(
+    db: Session,
+    *,
+    telegram_username: str | None,
+    first_name: str | None,
+    sex: str | None,
+    birth_date: date | None,
+    height_cm: int | None,
+    weight_kg: float | None,
+    goal: str | None,
+    activity_level: str | None,
+    target_weight_kg: float | None,
+    timezone: str | None,
+    email: str,
+    password: str,
+) -> User:
     existing = db.query(User).filter(User.email == email).first()
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
     user = User(
         email=email,
-        username=username,
+        username=telegram_username,
+        first_name=first_name,
+        sex=sex,
+        birth_date=birth_date,
+        height_cm=height_cm,
+        weight_kg=weight_kg,
+        goal=goal,
+        activity_level=activity_level,
+        target_weight_kg=target_weight_kg,
+        timezone=timezone,
         hashed_password=hash_password(password),
         subscription_status="free",
     )
@@ -37,6 +62,29 @@ def login_user(db: Session, *, email: str, password: str) -> tuple[User, AuthTok
     user = db.query(User).filter(User.email == email).first()
     if not user or not user.hashed_password or not verify_password(password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    return user, _issue_token_pair(db, user)
+
+
+def login_with_telegram(db: Session, payload: AuthTelegramRequest) -> tuple[User, AuthTokenPair]:
+    raw_payload = payload.model_dump()
+    if not verify_telegram_login(raw_payload):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Telegram auth payload")
+
+    user = db.query(User).filter(User.telegram_id == payload.id).first()
+    if not user:
+        user = User(
+            telegram_id=payload.id,
+            username=payload.username,
+            first_name=payload.first_name,
+            timezone=payload.timezone or "UTC",
+            subscription_status="free",
+            hashed_password=None,
+            email=None,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
     return user, _issue_token_pair(db, user)
 
 

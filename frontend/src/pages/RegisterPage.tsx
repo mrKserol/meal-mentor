@@ -2,10 +2,18 @@ import axios from "axios";
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { registerRequest } from "../api/authApi";
+import { register } from "../api/authApi";
 
 interface RegisterFormState {
-  full_name: string;
+  telegram_username: string;
+  first_name: string;
+  sex: "male" | "female" | "other";
+  birth_date: string;
+  height_cm: string;
+  weight_kg: string;
+  goal: "lose_weight" | "maintain_weight" | "gain_weight";
+  activity_level: "low" | "moderate" | "high";
+  target_weight_kg: string;
   email: string;
   password: string;
   confirm_password: string;
@@ -13,7 +21,15 @@ interface RegisterFormState {
 }
 
 const initialForm: RegisterFormState = {
-  full_name: "",
+  telegram_username: "",
+  first_name: "",
+  sex: "male",
+  birth_date: "",
+  height_cm: "",
+  weight_kg: "",
+  goal: "maintain_weight",
+  activity_level: "moderate",
+  target_weight_kg: "",
   email: "",
   password: "",
   confirm_password: "",
@@ -30,7 +46,17 @@ export function RegisterPage() {
     event.preventDefault();
     setError(null);
 
-    if (!form.full_name || !form.email || !form.password || !form.confirm_password) {
+    if (
+      !form.telegram_username ||
+      !form.first_name ||
+      !form.birth_date ||
+      !form.height_cm ||
+      !form.weight_kg ||
+      !form.target_weight_kg ||
+      !form.email ||
+      !form.password ||
+      !form.confirm_password
+    ) {
       setError("Пожалуйста, заполните все обязательные поля.");
       return;
     }
@@ -45,8 +71,17 @@ export function RegisterPage() {
 
     setIsSubmitting(true);
     try {
-      await registerRequest({
-        full_name: form.full_name,
+      await register({
+        telegram_username: form.telegram_username,
+        first_name: form.first_name,
+        sex: form.sex,
+        birth_date: form.birth_date,
+        height_cm: Number(form.height_cm),
+        weight_kg: Number(form.weight_kg),
+        goal: form.goal,
+        activity_level: form.activity_level,
+        target_weight_kg: Number(form.target_weight_kg),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
         email: form.email,
         password: form.password,
       });
@@ -81,22 +116,142 @@ export function RegisterPage() {
 
           <form className="w-full space-y-md" onSubmit={onSubmit}>
             <div className="space-y-xs">
-              <label className="font-label-sm text-label-sm text-on-surface-variant ml-1" htmlFor="full_name">
-                Полное имя
+              <label className="font-label-sm text-label-sm text-on-surface-variant ml-1" htmlFor="telegram_username">
+                Telegram username
               </label>
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">
                   person
                 </span>
                 <input
-                  id="full_name"
-                  value={form.full_name}
-                  onChange={(e) => setForm((prev) => ({ ...prev, full_name: e.target.value }))}
+                  id="telegram_username"
+                  value={form.telegram_username}
+                  onChange={(e) => setForm((prev) => ({ ...prev, telegram_username: e.target.value }))}
                   className="w-full pl-10 pr-4 py-3 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary-container focus:border-primary border-solid transition-all outline-none text-on-surface"
-                  placeholder="Иван Иванов"
+                  placeholder="my_username"
                   type="text"
                 />
               </div>
+            </div>
+
+            <div className="space-y-xs">
+              <label className="font-label-sm text-label-sm text-on-surface-variant ml-1" htmlFor="first_name">
+                Имя
+              </label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">
+                  badge
+                </span>
+                <input
+                  id="first_name"
+                  value={form.first_name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, first_name: e.target.value }))}
+                  className="w-full pl-10 pr-4 py-3 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary-container focus:border-primary border-solid transition-all outline-none text-on-surface"
+                  placeholder="Иван"
+                  type="text"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-xs">
+              <label className="font-label-sm text-label-sm text-on-surface-variant ml-1" htmlFor="sex">
+                Пол
+              </label>
+              <select
+                id="sex"
+                value={form.sex}
+                onChange={(e) => setForm((prev) => ({ ...prev, sex: e.target.value as RegisterFormState["sex"] }))}
+                className="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary-container focus:border-primary transition-all outline-none text-on-surface"
+              >
+                <option value="male">male</option>
+                <option value="female">female</option>
+                <option value="other">other</option>
+              </select>
+            </div>
+
+            <div className="space-y-xs">
+              <label className="font-label-sm text-label-sm text-on-surface-variant ml-1" htmlFor="birth_date">
+                Дата рождения
+              </label>
+              <input
+                id="birth_date"
+                value={form.birth_date}
+                onChange={(e) => setForm((prev) => ({ ...prev, birth_date: e.target.value }))}
+                className="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary-container focus:border-primary transition-all outline-none text-on-surface"
+                type="date"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm">
+              <div className="relative">
+                <input
+                  id="height_cm"
+                  value={form.height_cm}
+                  onChange={(e) => setForm((prev) => ({ ...prev, height_cm: e.target.value }))}
+                  className="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary-container focus:border-primary transition-all outline-none text-on-surface"
+                  placeholder="Рост (см)"
+                  type="number"
+                />
+              </div>
+              <div className="relative">
+                <input
+                  id="weight_kg"
+                  value={form.weight_kg}
+                  onChange={(e) => setForm((prev) => ({ ...prev, weight_kg: e.target.value }))}
+                  className="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary-container focus:border-primary transition-all outline-none text-on-surface"
+                  placeholder="Вес (кг)"
+                  type="number"
+                  step="0.1"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-xs">
+              <label className="font-label-sm text-label-sm text-on-surface-variant ml-1" htmlFor="goal">
+                Цель
+              </label>
+              <select
+                id="goal"
+                value={form.goal}
+                onChange={(e) => setForm((prev) => ({ ...prev, goal: e.target.value as RegisterFormState["goal"] }))}
+                className="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary-container focus:border-primary transition-all outline-none text-on-surface"
+              >
+                <option value="lose_weight">lose_weight</option>
+                <option value="maintain_weight">maintain_weight</option>
+                <option value="gain_weight">gain_weight</option>
+              </select>
+            </div>
+
+            <div className="space-y-xs">
+              <label className="font-label-sm text-label-sm text-on-surface-variant ml-1" htmlFor="activity_level">
+                Активность
+              </label>
+              <select
+                id="activity_level"
+                value={form.activity_level}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, activity_level: e.target.value as RegisterFormState["activity_level"] }))
+                }
+                className="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary-container focus:border-primary transition-all outline-none text-on-surface"
+              >
+                <option value="low">low</option>
+                <option value="moderate">moderate</option>
+                <option value="high">high</option>
+              </select>
+            </div>
+
+            <div className="space-y-xs">
+              <label className="font-label-sm text-label-sm text-on-surface-variant ml-1" htmlFor="target_weight_kg">
+                Целевой вес (кг)
+              </label>
+              <input
+                id="target_weight_kg"
+                value={form.target_weight_kg}
+                onChange={(e) => setForm((prev) => ({ ...prev, target_weight_kg: e.target.value }))}
+                className="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary-container focus:border-primary transition-all outline-none text-on-surface"
+                type="number"
+                step="0.1"
+              />
             </div>
 
             <div className="space-y-xs">
@@ -104,9 +259,7 @@ export function RegisterPage() {
                 Электронная почта
               </label>
               <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">
-                  mail
-                </span>
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">mail</span>
                 <input
                   id="email"
                   value={form.email}
@@ -123,9 +276,7 @@ export function RegisterPage() {
                 Пароль
               </label>
               <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">
-                  lock
-                </span>
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">lock</span>
                 <input
                   id="password"
                   value={form.password}

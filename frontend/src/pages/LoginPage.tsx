@@ -2,7 +2,9 @@ import axios from "axios";
 import { FormEvent, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
+import { TelegramLoginButton } from "../components/TelegramLoginButton";
 import { useAuth } from "../hooks/useAuth";
+import type { TelegramAuthPayload } from "../types/auth";
 
 interface LoginFormState {
   email: string;
@@ -10,11 +12,13 @@ interface LoginFormState {
 }
 
 export function LoginPage() {
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, login, loginWithTelegram } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState<LoginFormState>({ email: "", password: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTelegramSubmitting, setIsTelegramSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? "";
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -41,6 +45,23 @@ export function LoginPage() {
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const onTelegramAuth = async (payload: TelegramAuthPayload) => {
+    setError(null);
+    setIsTelegramSubmitting(true);
+    try {
+      await loginWithTelegram(payload);
+      navigate("/dashboard", { replace: true });
+    } catch (requestError) {
+      if (axios.isAxiosError(requestError)) {
+        setError(requestError.response?.data?.detail ?? "Не удалось войти через Telegram.");
+      } else {
+        setError("Произошла неизвестная ошибка.");
+      }
+    } finally {
+      setIsTelegramSubmitting(false);
     }
   };
 
@@ -142,6 +163,13 @@ export function LoginPage() {
             <div className="relative flex justify-center text-label-sm">
               <span className="bg-surface-container-lowest px-4 text-on-surface-variant font-label-sm">или через</span>
             </div>
+          </div>
+
+          <div className="mb-md">
+            <TelegramLoginButton botUsername={botUsername} onAuth={onTelegramAuth} />
+            {isTelegramSubmitting ? (
+              <p className="text-label-sm text-on-surface-variant text-center mt-2">Выполняется вход через Telegram...</p>
+            ) : null}
           </div>
 
           <div className="relative bg-secondary-container/30 p-md rounded-xl border border-secondary-container/50 flex gap-md items-start mb-md">

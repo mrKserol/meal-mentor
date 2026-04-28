@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { AuthLoginPayload, AuthRegisterPayload, AuthTokenPair, MeUser } from "../types/auth";
+import type { AuthResponse, LoginPayload, RegisterPayload, TelegramAuthPayload, User } from "../types/auth";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -16,33 +16,34 @@ const authClient = axios.create({
   },
 });
 
-export const registerRequest = async (payload: AuthRegisterPayload): Promise<AuthTokenPair> => {
-  const response = await authClient.post<AuthTokenPair>("/auth/register", {
-    email: payload.email,
-    username: payload.full_name,
-    password: payload.password,
-  });
+export const register = async (payload: RegisterPayload): Promise<AuthResponse> => {
+  const response = await authClient.post<AuthResponse>("/auth/register", payload);
   return response.data;
 };
 
-export const loginRequest = async (payload: AuthLoginPayload): Promise<AuthTokenPair> => {
-  const response = await authClient.post<AuthTokenPair>("/auth/login", payload);
+export const login = async (payload: LoginPayload): Promise<AuthResponse> => {
+  const response = await authClient.post<AuthResponse>("/auth/login", payload);
   return response.data;
 };
 
-export const refreshRequest = async (refreshToken: string): Promise<AuthTokenPair> => {
-  const response = await authClient.post<AuthTokenPair>("/auth/refresh", {
+export const loginWithTelegram = async (payload: TelegramAuthPayload): Promise<AuthResponse> => {
+  const response = await authClient.post<AuthResponse>("/auth/telegram", payload);
+  return response.data;
+};
+
+export const refresh = async (refreshToken: string): Promise<AuthResponse> => {
+  const response = await authClient.post<AuthResponse>("/auth/refresh", {
     refresh_token: refreshToken,
   });
   return response.data;
 };
 
-export const logoutRequest = async (refreshToken: string): Promise<void> => {
+export const logout = async (refreshToken: string): Promise<void> => {
   await authClient.post("/auth/logout", { refresh_token: refreshToken });
 };
 
-export const meRequest = async (accessToken: string): Promise<MeUser> => {
-  const response = await authClient.get<MeUser>("/users/me", {
+export const getMe = async (accessToken: string): Promise<User> => {
+  const response = await authClient.get<User>("/users/me", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   return response.data;

@@ -1,24 +1,25 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import axios from "axios";
 
-import { loginRequest, logoutRequest, meRequest, refreshRequest } from "../api/authApi";
-import type { AuthLoginPayload, AuthTokenPair, MeUser } from "../types/auth";
+import { getMe, login, loginWithTelegram, logout, refresh } from "../api/authApi";
+import type { AuthResponse, LoginPayload, TelegramAuthPayload, User } from "../types/auth";
 
 const ACCESS_TOKEN_KEY = "meal_mentor_access_token";
 const REFRESH_TOKEN_KEY = "meal_mentor_refresh_token";
 
 interface AuthContextValue {
-  user: MeUser | null;
+  user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (payload: AuthLoginPayload) => Promise<void>;
+  login: (payload: LoginPayload) => Promise<void>;
+  loginWithTelegram: (payload: TelegramAuthPayload) => Promise<void>;
   logout: () => Promise<void>;
   validateSession: () => Promise<boolean>;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-function saveTokens(tokens: AuthTokenPair): void {
+function saveTokens(tokens: AuthResponse): void {
   localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access_token);
   localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token);
 }
@@ -36,7 +37,7 @@ function clearTokens(): void {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<MeUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const validateSession = useCallback(async (): Promise<boolean> => {
@@ -48,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (accessToken) {
       try {
-        const me = await meRequest(accessToken);
+        const me = await getMe(accessToken);
         setUser(me);
         return true;
       } catch (error) {
@@ -66,9 +67,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const refreshed = await refreshRequest(refreshToken);
+      const refreshed = await refresh(refreshToken);
       saveTokens(refreshed);
-      const me = await meRequest(refreshed.access_token);
+      const me = await getMe(refreshed.access_token);
       setUser(me);
       return true;
     } catch {
@@ -86,18 +87,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void bootstrap();
   }, [validateSession]);
 
-  const login = useCallback(async (payload: AuthLoginPayload) => {
-    const tokens = await loginRequest(payload);
+  const loginHandler = useCallback(async (payload: LoginPayload) => {
+    const tokens = await login(payload);
     saveTokens(tokens);
-    const me = await meRequest(tokens.access_token);
+    const me = await getMe(tokens.access_token);
     setUser(me);
   }, []);
 
-  const logout = useCallback(async () => {
+  const telegramLoginHandler = useCallback(async (payload: TelegramAuthPayload) => {
+    const tokens = await loginWithTelegram(payload);
+    saveTokens(tokens);
+    const me = await getMe(tokens.access_token);
+    setUser(me);
+  }, []);
+
+  const logoutHandler = useCallback(async () => {
     const { refreshToken } = getTokens();
     if (refreshToken) {
       try {
-        await logoutRequest(refreshToken);
+        await logout(refreshToken);
       } catch {
         // We still clear local session even if revoke request fails.
       }
@@ -111,11 +119,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isAuthenticated: Boolean(user),
       isLoading,
-      login,
-      logout,
+      login: loginHandler,
+      loginWithTelegram: telegramLoginHandler,
+      logout: logoutHandler,
       validateSession,
     }),
-    [isLoading, login, logout, user, validateSession],
+    [isLoading, loginHandler, logoutHandler, telegramLoginHandler, user, validateSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
