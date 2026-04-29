@@ -24,31 +24,27 @@ from app.core.config import TELEGRAM_CLIENT_ID, TELEGRAM_CLIENT_SECRET, TELEGRAM
 logger = logging.getLogger(__name__)
 
 
-def _parse_telegram_id(raw_value) -> int | None:
-    if raw_value is None:
-        return None
-    if isinstance(raw_value, int):
-        return raw_value
-    text = str(raw_value).strip()
-    if text.isdigit():
-        return int(text)
-    digits = "".join(ch for ch in text if ch.isdigit())
-    if digits:
-        return int(digits)
-    return None
-
-
 def _extract_telegram_id(claims: dict) -> int | None:
-    for key in ("sub", "id", "user_id"):
-        parsed = _parse_telegram_id(claims.get(key))
-        if parsed is not None:
-            return parsed
+    candidates = [
+        claims.get("id"),
+        claims.get("user_id"),
+        claims.get("telegram_id"),
+    ]
     user_obj = claims.get("user")
     if isinstance(user_obj, dict):
-        for key in ("id", "sub", "user_id"):
-            parsed = _parse_telegram_id(user_obj.get(key))
-            if parsed is not None:
-                return parsed
+        candidates.append(user_obj.get("id"))
+
+    for value in candidates:
+        if value is None:
+            continue
+        try:
+            telegram_id = int(value)
+        except (TypeError, ValueError):
+            continue
+        if telegram_id <= 0:
+            continue
+        return telegram_id
+
     return None
 
 
@@ -200,10 +196,18 @@ def login_with_telegram_oauth(
             pass
 
     logger.info("telegram userinfo keys: %s", sorted(list(claims.keys())))
+    logger.info("sub claim present: %s (ignored for telegram_id)", "sub" in claims)
+    logger.info(
+        "telegram id candidates present: id=%s user_id=%s telegram_id=%s nested_user_id=%s",
+        claims.get("id") is not None,
+        claims.get("user_id") is not None,
+        claims.get("telegram_id") is not None,
+        isinstance(claims.get("user"), dict) and claims.get("user", {}).get("id") is not None,
+    )
     telegram_id = _extract_telegram_id(claims)
     logger.info("telegram_id parsed: %s", telegram_id)
     if telegram_id is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Telegram user id missing")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Telegram user id not found in OAuth claims")
 
     first_name = claims.get("given_name") or claims.get("first_name")
     username = claims.get("preferred_username") or claims.get("username")
