@@ -31,6 +31,9 @@ export interface AuthResponse {
   refresh_token: string;
   token_type: string;
   access_token_expires_in: number;
+  user?: User;
+  is_new_user?: boolean;
+  profile_completed?: boolean;
 }
 
 export interface User {
@@ -50,4 +53,17 @@ export interface User {
   subscription_status: string;
   created_at: string;
   updated_at: string | null;
+  profile_completed: boolean;
+}
+
+export interface ProfileUpdatePayload {
+  email?: string;
+  password?: string;
+  sex?: "male" | "female" | "other";
+  birth_date?: string;
+  height_cm?: number;
+  weight_kg?: number;
+  goal?: "lose_weight" | "maintain_weight" | "gain_weight";
+  activity_level?: "low" | "moderate" | "high";
+  target_weight_kg?: number;
 }

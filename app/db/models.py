@@ -25,7 +25,7 @@ class User(Base):
     username = Column(String(255), nullable=True)
     hashed_password = Column(String(255), nullable=True)
     telegram_id = Column(Integer, unique=True, index=True, nullable=True)
-    subscription_status = Column(String(32), nullable=False, default="free")
+    subscription_status = Column(String(32), nullable=False, default="Free")
     first_name = Column(String(255), nullable=True)
     sex = Column(String(20), nullable=True)
     birth_date = Column(Date, nullable=True)

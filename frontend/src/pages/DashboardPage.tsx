@@ -28,9 +28,26 @@ export function DashboardPage() {
         <h1 className="text-h1 font-h1 text-on-surface">Meal Mentor</h1>
         <p className="text-body-md font-body-md text-on-surface-variant">Авторизация успешно работает</p>
         {user ? (
-          <p className="text-label-sm font-label-sm text-outline">
-            Вы вошли как: <span className="text-on-surface">{user.email ?? user.username ?? "пользователь"}</span>
-          </p>
+          <div className="space-y-1">
+            <p className="text-label-sm font-label-sm text-outline">
+              Вы вошли как: <span className="text-on-surface">{user.first_name ?? user.username ?? "пользователь"}</span>
+            </p>
+            <p className="text-label-sm font-label-sm text-outline">
+              Тариф: <span className="text-on-surface">{user.subscription_status}</span>
+            </p>
+          </div>
+        ) : null}
+        {user && !user.profile_completed ? (
+          <div className="bg-secondary-container/30 border border-secondary-container/60 rounded-lg p-4">
+            <p className="text-sm text-on-secondary-container mb-2">Профиль питания не заполнен</p>
+            <button
+              type="button"
+              onClick={() => navigate("/onboarding/profile")}
+              className="text-primary font-semibold hover:underline"
+            >
+              Заполнить профиль
+            </button>
+          </div>
         ) : null}
         <button
           onClick={onLogout}

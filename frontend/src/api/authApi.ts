@@ -1,6 +1,13 @@
 import axios from "axios";
 
-import type { AuthResponse, LoginPayload, RegisterPayload, TelegramCallbackPayload, User } from "../types/auth";
+import type {
+  AuthResponse,
+  LoginPayload,
+  ProfileUpdatePayload,
+  RegisterPayload,
+  TelegramCallbackPayload,
+  User,
+} from "../types/auth";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -44,6 +51,13 @@ export const logout = async (refreshToken: string): Promise<void> => {
 
 export const getMe = async (accessToken: string): Promise<User> => {
   const response = await authClient.get<User>("/users/me", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  return response.data;
+};
+
+export const updateMyProfile = async (accessToken: string, payload: ProfileUpdatePayload): Promise<User> => {
+  const response = await authClient.patch<User>("/users/me/profile", payload, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   return response.data;

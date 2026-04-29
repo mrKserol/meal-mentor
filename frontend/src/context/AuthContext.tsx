@@ -1,8 +1,8 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import axios from "axios";
 
-import { getMe, login, loginWithTelegram, logout, refresh } from "../api/authApi";
-import type { AuthResponse, LoginPayload, TelegramCallbackPayload, User } from "../types/auth";
+import { getMe, login, loginWithTelegram, logout, refresh, updateMyProfile } from "../api/authApi";
+import type { AuthResponse, LoginPayload, ProfileUpdatePayload, TelegramCallbackPayload, User } from "../types/auth";
 
 const ACCESS_TOKEN_KEY = "meal_mentor_access_token";
 const REFRESH_TOKEN_KEY = "meal_mentor_refresh_token";
@@ -12,7 +12,8 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (payload: LoginPayload) => Promise<void>;
-  loginWithTelegram: (payload: TelegramCallbackPayload) => Promise<void>;
+  loginWithTelegram: (payload: TelegramCallbackPayload) => Promise<{ isNewUser: boolean; profileCompleted: boolean }>;
+  updateProfile: (payload: ProfileUpdatePayload) => Promise<User>;
   logout: () => Promise<void>;
   validateSession: () => Promise<boolean>;
 }
@@ -29,6 +30,14 @@ function getTokens(): { accessToken: string | null; refreshToken: string | null 
     accessToken: localStorage.getItem(ACCESS_TOKEN_KEY),
     refreshToken: localStorage.getItem(REFRESH_TOKEN_KEY),
   };
+}
+
+function getAccessTokenOrThrow(): string {
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+  if (!token) {
+    throw new Error("Access token missing");
+  }
+  return token;
 }
 
 function clearTokens(): void {
@@ -97,9 +106,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const telegramLoginHandler = useCallback(async (payload: TelegramCallbackPayload) => {
     const tokens = await loginWithTelegram(payload);
     saveTokens(tokens);
-    const me = await getMe(tokens.access_token);
+    const me = tokens.user ?? (await getMe(tokens.access_token));
     setUser(me);
+    return {
+      isNewUser: Boolean(tokens.is_new_user),
+      profileCompleted: Boolean(tokens.profile_completed ?? me.profile_completed),
+    };
   }, []);
+
+  const updateProfileHandler = useCallback(
+    async (payload: ProfileUpdatePayload) => {
+      const sessionOk = await validateSession();
+      if (!sessionOk) {
+        throw new Error("Session expired");
+      }
+      const accessToken = getAccessTokenOrThrow();
+      const updated = await updateMyProfile(accessToken, payload);
+      setUser(updated);
+      return updated;
+    },
+    [validateSession],
+  );
 
   const logoutHandler = useCallback(async () => {
     const { refreshToken } = getTokens();
@@ -121,10 +148,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       login: loginHandler,
       loginWithTelegram: telegramLoginHandler,
+      updateProfile: updateProfileHandler,
       logout: logoutHandler,
       validateSession,
     }),
-    [isLoading, loginHandler, logoutHandler, telegramLoginHandler, user, validateSession],
+    [isLoading, loginHandler, logoutHandler, telegramLoginHandler, updateProfileHandler, user, validateSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

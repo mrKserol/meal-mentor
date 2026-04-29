@@ -27,7 +27,7 @@ export function TelegramCallbackPage() {
       }
 
       try {
-        await loginWithTelegram({
+        const result = await loginWithTelegram({
           code,
           state,
           code_verifier: codeVerifier,
@@ -36,7 +36,11 @@ export function TelegramCallbackPage() {
         });
         sessionStorage.removeItem("telegram_oauth_state");
         sessionStorage.removeItem("telegram_oauth_code_verifier");
-        navigate("/dashboard", { replace: true });
+        if (result.isNewUser || !result.profileCompleted) {
+          navigate("/onboarding/profile", { replace: true });
+        } else {
+          navigate("/dashboard", { replace: true });
+        }
       } catch (requestError) {
         if (axios.isAxiosError(requestError)) {
           setError(requestError.response?.data?.detail ?? "Telegram login failed.");

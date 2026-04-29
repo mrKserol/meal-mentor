@@ -76,3 +76,22 @@ class UserMeResponse(BaseModel):
     subscription_status: str
     created_at: datetime
     updated_at: datetime | None
+    profile_completed: bool
+
+
+class TelegramAuthResponse(AuthTokenPair):
+    user: UserMeResponse
+    is_new_user: bool
+    profile_completed: bool
+
+
+class ProfilePatchRequest(BaseModel):
+    email: EmailStr | None = None
+    password: str | None = None
+    sex: str | None = None
+    birth_date: date | None = None
+    height_cm: int | None = None
+    weight_kg: float | None = None
+    goal: str | None = None
+    activity_level: str | None = None
+    target_weight_kg: float | None = None

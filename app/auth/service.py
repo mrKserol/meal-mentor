@@ -14,6 +14,7 @@ from app.auth.security import (
     verify_password,
 )
 from app.auth.telegram import verify_telegram_login
+from app.auth.profile import is_profile_completed
 from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.db.models import RefreshToken, User
 from app.schemas.auth import AuthTelegramCallbackRequest, AuthTelegramRequest, AuthTokenPair
@@ -53,7 +54,7 @@ def register_user(
         target_weight_kg=target_weight_kg,
         timezone=timezone,
         hashed_password=hash_password(password),
-        subscription_status="free",
+        subscription_status="Free",
     )
     db.add(user)
     db.commit()
@@ -80,7 +81,7 @@ def login_with_telegram(db: Session, payload: AuthTelegramRequest) -> tuple[User
             username=payload.username,
             first_name=payload.first_name,
             timezone=payload.timezone or "UTC",
-            subscription_status="free",
+            subscription_status="Free",
             hashed_password=None,
             email=None,
         )
@@ -91,7 +92,9 @@ def login_with_telegram(db: Session, payload: AuthTelegramRequest) -> tuple[User
     return user, _issue_token_pair(db, user)
 
 
-def login_with_telegram_oauth(db: Session, payload: AuthTelegramCallbackRequest) -> tuple[User, AuthTokenPair]:
+def login_with_telegram_oauth(
+    db: Session, payload: AuthTelegramCallbackRequest
+) -> tuple[User, AuthTokenPair, bool, bool]:
     if not TELEGRAM_CLIENT_ID or not TELEGRAM_CLIENT_SECRET or not TELEGRAM_REDIRECT_URI:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Telegram OAuth is not configured")
 
@@ -135,13 +138,15 @@ def login_with_telegram_oauth(db: Session, payload: AuthTelegramCallbackRequest)
     username = claims.get("preferred_username") or claims.get("username")
 
     user = db.query(User).filter(User.telegram_id == telegram_id).first()
+    is_new_user = False
     if not user:
+        is_new_user = True
         user = User(
             telegram_id=telegram_id,
             username=username,
             first_name=first_name,
             timezone=payload.timezone or "UTC",
-            subscription_status="free",
+            subscription_status="Free",
             email=None,
             hashed_password=None,
         )
@@ -149,7 +154,7 @@ def login_with_telegram_oauth(db: Session, payload: AuthTelegramCallbackRequest)
         db.commit()
         db.refresh(user)
 
-    return user, _issue_token_pair(db, user)
+    return user, _issue_token_pair(db, user), is_new_user, is_profile_completed(user)
 
 
 def refresh_tokens(db: Session, *, refresh_token: str) -> AuthTokenPair:
