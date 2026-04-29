@@ -1,4 +1,5 @@
 from datetime import date, datetime
+import logging
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -19,6 +20,8 @@ from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.db.models import RefreshToken, User
 from app.schemas.auth import AuthTelegramCallbackRequest, AuthTelegramRequest, AuthTokenPair
 from app.core.config import TELEGRAM_CLIENT_ID, TELEGRAM_CLIENT_SECRET, TELEGRAM_REDIRECT_URI
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_telegram_id(raw_value) -> int | None:
@@ -47,6 +50,39 @@ def _extract_telegram_id(claims: dict) -> int | None:
             if parsed is not None:
                 return parsed
     return None
+
+
+def get_or_create_telegram_user(
+    db: Session,
+    *,
+    telegram_id: int,
+    username: str | None,
+    first_name: str | None,
+    timezone: str | None = None,
+) -> tuple[User, bool]:
+    user = db.query(User).filter(User.telegram_id == telegram_id).first()
+    logger.info("existing user found: %s", bool(user))
+    if user:
+        return user, False
+
+    logger.info("creating new web telegram user")
+    user = User(
+        telegram_id=telegram_id,
+        username=username,
+        first_name=first_name,
+        timezone=timezone or "UTC",
+        subscription_status="Free",
+        email=None,
+        hashed_password=None,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    logger.info("new user created id: %s", user.id)
+    logger.info("commit success")
+    return user, True
 
 
 def register_user(
@@ -102,20 +138,13 @@ def login_with_telegram(db: Session, payload: AuthTelegramRequest) -> tuple[User
     if not verify_telegram_login(raw_payload):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Telegram auth payload")
 
-    user = db.query(User).filter(User.telegram_id == payload.id).first()
-    if not user:
-        user = User(
-            telegram_id=payload.id,
-            username=payload.username,
-            first_name=payload.first_name,
-            timezone=payload.timezone or "UTC",
-            subscription_status="Free",
-            hashed_password=None,
-            email=None,
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+    user, _ = get_or_create_telegram_user(
+        db,
+        telegram_id=int(payload.id),
+        username=payload.username,
+        first_name=payload.first_name,
+        timezone=payload.timezone,
+    )
 
     return user, _issue_token_pair(db, user)
 
@@ -123,7 +152,7 @@ def login_with_telegram(db: Session, payload: AuthTelegramRequest) -> tuple[User
 def login_with_telegram_oauth(
     db: Session, payload: AuthTelegramCallbackRequest
 ) -> tuple[User, AuthTokenPair, bool, bool]:
-    print("Telegram callback started")
+    logger.info("telegram callback started")
     if not TELEGRAM_CLIENT_ID or not TELEGRAM_CLIENT_SECRET or not TELEGRAM_REDIRECT_URI:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Telegram OAuth is not configured")
 
@@ -141,6 +170,7 @@ def login_with_telegram_oauth(
     )
     if token_response.status_code >= 400:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Telegram code exchange failed")
+    logger.info("telegram token exchange success")
 
     token_data = token_response.json()
     id_token = token_data.get("id_token")
@@ -169,37 +199,25 @@ def login_with_telegram_oauth(
         except Exception:
             pass
 
+    logger.info("telegram userinfo keys: %s", sorted(list(claims.keys())))
     telegram_id = _extract_telegram_id(claims)
-    print(f"telegram_id received: {telegram_id}")
+    logger.info("telegram_id parsed: %s", telegram_id)
     if telegram_id is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Telegram user id missing")
 
     first_name = claims.get("given_name") or claims.get("first_name")
     username = claims.get("preferred_username") or claims.get("username")
 
-    user = db.query(User).filter(User.telegram_id == telegram_id).first()
-    print(f"existing user found: {bool(user)}")
-    is_new_user = False
-    if not user:
-        is_new_user = True
-        user = User(
-            telegram_id=telegram_id,
-            username=username,
-            first_name=first_name,
-            timezone=payload.timezone or "UTC",
-            subscription_status="Free",
-            email=None,
-            hashed_password=None,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-        print(f"new user created with id: {user.id}")
+    user, is_new_user = get_or_create_telegram_user(
+        db,
+        telegram_id=telegram_id,
+        username=username,
+        first_name=first_name,
+        timezone=payload.timezone,
+    )
 
     profile_completed = is_profile_completed(user)
-    print(f"profile_completed value: {profile_completed}")
+    logger.info("profile_completed value: %s", profile_completed)
     return user, _issue_token_pair(db, user), is_new_user, profile_completed
 
 
