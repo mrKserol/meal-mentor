@@ -5,7 +5,7 @@ Main menu, onboarding, diary/profile/subscription (Telegram UI only).
 from __future__ import annotations
 
 import logging
-from datetime import date
+from datetime import date, datetime
 from io import BytesIO
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -351,11 +351,8 @@ async def _dispatch_menu(q, uid: int, uname: str | None, fname: str | None, data
         return
 
     if data == "m:onb:bd":
-        t = date.today()
-        await q.edit_message_text(
-            "Выберите дату рождения:",
-            reply_markup=birth_date_calendar_keyboard(t.year, t.month),
-        )
+        USER_STATES.setdefault(uid, {})["awaiting_field"] = "birth_date"
+        await q.edit_message_text("Введите дату рождения в формате DD.MM.YYYY (например: 20.05.1995).")
         return
 
     if data == "m:onb:height":
@@ -642,6 +639,20 @@ async def handle_profile_numeric(update: Update, context: ContextTypes.DEFAULT_T
             return
         tg_api.patch_json("/users/profile", {"telegram_id": uid, "height_cm": v})
         await update.message.reply_text("Рост сохранён.", reply_markup=kb_onboarding())
+        await _send_main_if_complete(context, uid, update.effective_chat.id)
+        return
+
+    if field == "birth_date":
+        try:
+            bd = datetime.strptime(text, "%d.%m.%Y").date()
+            if bd > date.today():
+                raise ValueError()
+        except ValueError:
+            await update.message.reply_text("Неверный формат даты! Введите как DD.MM.YYYY, например 20.05.1995.")
+            st["awaiting_field"] = "birth_date"
+            return
+        tg_api.patch_json("/users/profile", {"telegram_id": uid, "birth_date": bd.isoformat()})
+        await update.message.reply_text("Дата рождения сохранена.", reply_markup=kb_onboarding())
         await _send_main_if_complete(context, uid, update.effective_chat.id)
         return
 
