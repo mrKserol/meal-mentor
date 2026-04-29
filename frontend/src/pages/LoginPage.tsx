@@ -5,6 +5,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { TelegramLoginButton } from "../components/TelegramLoginButton";
 import { useAuth } from "../hooks/useAuth";
 import type { TelegramAuthPayload } from "../types/auth";
+import { InstallPwaHint } from "../components/InstallPwaHint";
 
 interface LoginFormState {
   email: string;
@@ -193,6 +194,8 @@ export function LoginPage() {
           </p>
         </div>
       </main>
+
+      <InstallPwaHint />
     </div>
   );
 }

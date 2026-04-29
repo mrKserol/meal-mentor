@@ -3,6 +3,7 @@ import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { register } from "../api/authApi";
+import { InstallPwaHint } from "../components/InstallPwaHint";
 
 interface RegisterFormState {
   telegram_username: string;
@@ -358,6 +359,8 @@ export function RegisterPage() {
           </p>
         </footer>
       </main>
+
+      <InstallPwaHint />
     </div>
   );
 }
