@@ -1,6 +1,7 @@
 from datetime import date, datetime
 
 from sqlalchemy import (
+    BigInteger,
     Column,
     Date,
     DateTime,
@@ -24,7 +25,7 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=True)
     username = Column(String(255), nullable=True)
     hashed_password = Column(String(255), nullable=True)
-    telegram_id = Column(Integer, unique=True, index=True, nullable=True)
+    telegram_id = Column(BigInteger, unique=True, index=True, nullable=True)
     subscription_status = Column(String(32), nullable=False, default="Free")
     first_name = Column(String(255), nullable=True)
     sex = Column(String(20), nullable=True)
