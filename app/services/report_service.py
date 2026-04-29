@@ -23,6 +23,7 @@ def get_report(
             "total_proteins": 0,
             "total_fats": 0,
             "total_carbohydrates": 0,
+            "total_fiber_g": 0,
             "meals_count": 0,
             "daily_avg": {},
         }
@@ -40,6 +41,7 @@ def get_report(
     total_proteins = 0
     total_fats = 0
     total_carbs = 0
+    total_fiber_g = 0
 
     for meal in meals:
         for item in meal.items:
@@ -50,6 +52,7 @@ def get_report(
             total_proteins += n.protein_g or 0
             total_fats += n.fat_g or 0
             total_carbs += n.carbs_g or 0
+            total_fiber_g += n.fiber_g or 0
 
     daily = (
         {
@@ -57,6 +60,7 @@ def get_report(
             "proteins": round(total_proteins / days, 0),
             "fats": round(total_fats / days, 0),
             "carbohydrates": round(total_carbs / days, 0),
+            "fiber_g": round(total_fiber_g / days, 0),
         }
         if days > 0
         else {}
@@ -66,6 +70,7 @@ def get_report(
         "total_proteins": total_proteins,
         "total_fats": total_fats,
         "total_carbohydrates": total_carbs,
+        "total_fiber_g": total_fiber_g,
         "meals_count": len(meals),
         "days": days,
         "daily_avg": daily,

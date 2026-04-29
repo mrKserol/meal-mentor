@@ -74,9 +74,22 @@ NUTRITION_ENABLE_SEMANTIC = os.getenv("NUTRITION_ENABLE_SEMANTIC", "false").lowe
 
 # Telegram
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_AUTH_MAX_AGE_SECONDS = int(os.getenv("TELEGRAM_AUTH_MAX_AGE_SECONDS", "86400"))
+TELEGRAM_CLIENT_ID = os.getenv("TELEGRAM_CLIENT_ID")
+TELEGRAM_CLIENT_SECRET = os.getenv("TELEGRAM_CLIENT_SECRET")
+TELEGRAM_REDIRECT_URI = os.getenv("TELEGRAM_REDIRECT_URI")
+
+# Subscriptions: if true, POST /subscriptions/order activates plan without Robokassa (demo only)
+SUBSCRIPTION_DEMO_AUTO = os.getenv("SUBSCRIPTION_DEMO_AUTO", "0").lower() in ("1", "true", "yes")
 
 # DB
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "sqlite:///./meal_mentor.db",
 )
+
+# Auth / JWT
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change-me-in-production")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30"))
