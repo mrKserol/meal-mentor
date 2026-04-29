@@ -21,6 +21,34 @@ from app.schemas.auth import AuthTelegramCallbackRequest, AuthTelegramRequest, A
 from app.core.config import TELEGRAM_CLIENT_ID, TELEGRAM_CLIENT_SECRET, TELEGRAM_REDIRECT_URI
 
 
+def _parse_telegram_id(raw_value) -> int | None:
+    if raw_value is None:
+        return None
+    if isinstance(raw_value, int):
+        return raw_value
+    text = str(raw_value).strip()
+    if text.isdigit():
+        return int(text)
+    digits = "".join(ch for ch in text if ch.isdigit())
+    if digits:
+        return int(digits)
+    return None
+
+
+def _extract_telegram_id(claims: dict) -> int | None:
+    for key in ("sub", "id", "user_id"):
+        parsed = _parse_telegram_id(claims.get(key))
+        if parsed is not None:
+            return parsed
+    user_obj = claims.get("user")
+    if isinstance(user_obj, dict):
+        for key in ("id", "sub", "user_id"):
+            parsed = _parse_telegram_id(user_obj.get(key))
+            if parsed is not None:
+                return parsed
+    return None
+
+
 def register_user(
     db: Session,
     *,
@@ -95,6 +123,7 @@ def login_with_telegram(db: Session, payload: AuthTelegramRequest) -> tuple[User
 def login_with_telegram_oauth(
     db: Session, payload: AuthTelegramCallbackRequest
 ) -> tuple[User, AuthTokenPair, bool, bool]:
+    print("Telegram callback started")
     if not TELEGRAM_CLIENT_ID or not TELEGRAM_CLIENT_SECRET or not TELEGRAM_REDIRECT_URI:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Telegram OAuth is not configured")
 
@@ -116,6 +145,7 @@ def login_with_telegram_oauth(
     token_data = token_response.json()
     id_token = token_data.get("id_token")
     userinfo = token_data.get("userinfo")
+    access_token = token_data.get("access_token")
     claims = {}
     if isinstance(id_token, str):
         try:
@@ -125,19 +155,30 @@ def login_with_telegram_oauth(
     if isinstance(userinfo, dict):
         claims.update(userinfo)
 
-    telegram_sub = claims.get("sub") or claims.get("id")
-    if telegram_sub is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Telegram user id missing")
+    if isinstance(access_token, str):
+        try:
+            userinfo_response = requests.get(
+                "https://oauth.telegram.org/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=15,
+            )
+            if userinfo_response.status_code < 400:
+                remote_userinfo = userinfo_response.json()
+                if isinstance(remote_userinfo, dict):
+                    claims.update(remote_userinfo)
+        except Exception:
+            pass
 
-    try:
-        telegram_id = int(str(telegram_sub))
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Telegram user id") from exc
+    telegram_id = _extract_telegram_id(claims)
+    print(f"telegram_id received: {telegram_id}")
+    if telegram_id is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Telegram user id missing")
 
     first_name = claims.get("given_name") or claims.get("first_name")
     username = claims.get("preferred_username") or claims.get("username")
 
     user = db.query(User).filter(User.telegram_id == telegram_id).first()
+    print(f"existing user found: {bool(user)}")
     is_new_user = False
     if not user:
         is_new_user = True
@@ -149,12 +190,17 @@ def login_with_telegram_oauth(
             subscription_status="Free",
             email=None,
             hashed_password=None,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
         )
         db.add(user)
         db.commit()
         db.refresh(user)
+        print(f"new user created with id: {user.id}")
 
-    return user, _issue_token_pair(db, user), is_new_user, is_profile_completed(user)
+    profile_completed = is_profile_completed(user)
+    print(f"profile_completed value: {profile_completed}")
+    return user, _issue_token_pair(db, user), is_new_user, profile_completed
 
 
 def refresh_tokens(db: Session, *, refresh_token: str) -> AuthTokenPair:

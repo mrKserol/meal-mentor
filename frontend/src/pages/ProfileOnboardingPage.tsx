@@ -85,7 +85,18 @@ export function ProfileOnboardingPage() {
             <option value="other">other</option>
           </select>
 
-          <input className="w-full border border-outline-variant rounded-lg p-3" type="date" value={form.birth_date} onChange={(e)=>setForm((p)=>({...p,birth_date:e.target.value}))}/>
+          <div className="space-y-1">
+            <label htmlFor="birth_date" className="block text-sm text-on-surface-variant">
+              Дата рождения
+            </label>
+            <input
+              id="birth_date"
+              className="w-full border border-outline-variant rounded-lg p-3"
+              type="date"
+              value={form.birth_date}
+              onChange={(e)=>setForm((p)=>({...p,birth_date:e.target.value}))}
+            />
+          </div>
           <input className="w-full border border-outline-variant rounded-lg p-3" type="number" placeholder="height_cm" value={form.height_cm} onChange={(e)=>setForm((p)=>({...p,height_cm:e.target.value}))}/>
           <input className="w-full border border-outline-variant rounded-lg p-3" type="number" step="0.1" placeholder="weight_kg" value={form.weight_kg} onChange={(e)=>setForm((p)=>({...p,weight_kg:e.target.value}))}/>
 
