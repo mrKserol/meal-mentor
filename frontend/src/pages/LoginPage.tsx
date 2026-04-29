@@ -2,9 +2,7 @@ import axios from "axios";
 import { FormEvent, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
-import { TelegramLoginButton } from "../components/TelegramLoginButton";
 import { useAuth } from "../hooks/useAuth";
-import type { TelegramAuthPayload } from "../types/auth";
 import { InstallPwaHint } from "../components/InstallPwaHint";
 
 interface LoginFormState {
@@ -13,13 +11,13 @@ interface LoginFormState {
 }
 
 export function LoginPage() {
-  const { isAuthenticated, login, loginWithTelegram } = useAuth();
+  const { isAuthenticated, login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState<LoginFormState>({ email: "", password: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isTelegramSubmitting, setIsTelegramSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? "";
+  const telegramClientId = import.meta.env.VITE_TELEGRAM_CLIENT_ID ?? "";
+  const telegramRedirectUri = import.meta.env.VITE_TELEGRAM_REDIRECT_URI ?? "";
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -49,21 +47,42 @@ export function LoginPage() {
     }
   };
 
-  const onTelegramAuth = async (payload: TelegramAuthPayload) => {
-    setError(null);
-    setIsTelegramSubmitting(true);
-    try {
-      await loginWithTelegram(payload);
-      navigate("/dashboard", { replace: true });
-    } catch (requestError) {
-      if (axios.isAxiosError(requestError)) {
-        setError(requestError.response?.data?.detail ?? "Не удалось войти через Telegram.");
-      } else {
-        setError("Произошла неизвестная ошибка.");
-      }
-    } finally {
-      setIsTelegramSubmitting(false);
+  const base64Url = (data: ArrayBuffer) =>
+    btoa(String.fromCharCode(...new Uint8Array(data)))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/g, "");
+
+  const randomString = (length: number) => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+    const bytes = crypto.getRandomValues(new Uint8Array(length));
+    return Array.from(bytes, (b) => chars[b % chars.length]).join("");
+  };
+
+  const onTelegramOAuth = async () => {
+    if (!telegramClientId || !telegramRedirectUri) {
+      setError("Telegram OAuth не настроен. Проверьте VITE_TELEGRAM_CLIENT_ID и VITE_TELEGRAM_REDIRECT_URI.");
+      return;
     }
+    setError(null);
+    const state = randomString(48);
+    const codeVerifier = randomString(96);
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(codeVerifier));
+    const codeChallenge = base64Url(digest);
+
+    sessionStorage.setItem("telegram_oauth_state", state);
+    sessionStorage.setItem("telegram_oauth_code_verifier", codeVerifier);
+
+    const url = new URL("https://oauth.telegram.org/auth");
+    url.searchParams.set("client_id", telegramClientId);
+    url.searchParams.set("redirect_uri", telegramRedirectUri);
+    url.searchParams.set("response_type", "code");
+    url.searchParams.set("scope", "openid profile");
+    url.searchParams.set("state", state);
+    url.searchParams.set("code_challenge", codeChallenge);
+    url.searchParams.set("code_challenge_method", "S256");
+
+    window.location.assign(url.toString());
   };
 
   return (
@@ -167,10 +186,13 @@ export function LoginPage() {
           </div>
 
           <div className="mb-md">
-            <TelegramLoginButton botUsername={botUsername} onAuth={onTelegramAuth} />
-            {isTelegramSubmitting ? (
-              <p className="text-label-sm text-on-surface-variant text-center mt-2">Выполняется вход через Telegram...</p>
-            ) : null}
+            <button
+              type="button"
+              onClick={() => void onTelegramOAuth()}
+              className="w-full bg-[#229ED9] hover:opacity-90 text-white py-3 rounded-lg font-semibold transition"
+            >
+              Login with Telegram
+            </button>
           </div>
 
           <div className="relative bg-secondary-container/30 p-md rounded-xl border border-secondary-container/50 flex gap-md items-start mb-md">

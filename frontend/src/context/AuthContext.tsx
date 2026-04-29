@@ -2,7 +2,7 @@ import { createContext, useCallback, useEffect, useMemo, useState, type ReactNod
 import axios from "axios";
 
 import { getMe, login, loginWithTelegram, logout, refresh } from "../api/authApi";
-import type { AuthResponse, LoginPayload, TelegramAuthPayload, User } from "../types/auth";
+import type { AuthResponse, LoginPayload, TelegramCallbackPayload, User } from "../types/auth";
 
 const ACCESS_TOKEN_KEY = "meal_mentor_access_token";
 const REFRESH_TOKEN_KEY = "meal_mentor_refresh_token";
@@ -12,7 +12,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (payload: LoginPayload) => Promise<void>;
-  loginWithTelegram: (payload: TelegramAuthPayload) => Promise<void>;
+  loginWithTelegram: (payload: TelegramCallbackPayload) => Promise<void>;
   logout: () => Promise<void>;
   validateSession: () => Promise<boolean>;
 }
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(me);
   }, []);
 
-  const telegramLoginHandler = useCallback(async (payload: TelegramAuthPayload) => {
+  const telegramLoginHandler = useCallback(async (payload: TelegramCallbackPayload) => {
     const tokens = await loginWithTelegram(payload);
     saveTokens(tokens);
     const me = await getMe(tokens.access_token);

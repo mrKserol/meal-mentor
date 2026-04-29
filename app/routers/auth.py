@@ -1,13 +1,21 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.auth.service import login_user, login_with_telegram, logout_user, refresh_tokens, register_user
+from app.auth.service import (
+    login_user,
+    login_with_telegram,
+    login_with_telegram_oauth,
+    logout_user,
+    refresh_tokens,
+    register_user,
+)
 from app.db.session import get_db
 from app.schemas.auth import (
     AuthLoginRequest,
     AuthLogoutRequest,
     AuthRefreshRequest,
     AuthRegisterRequest,
+    AuthTelegramCallbackRequest,
     AuthTelegramRequest,
     AuthTokenPair,
 )
@@ -55,4 +63,10 @@ def logout(payload: AuthLogoutRequest, db: Session = Depends(get_db)):
 @router.post("/telegram", response_model=AuthTokenPair)
 def telegram_login(payload: AuthTelegramRequest, db: Session = Depends(get_db)):
     _, tokens = login_with_telegram(db, payload)
+    return tokens
+
+
+@router.post("/telegram/callback", response_model=AuthTokenPair)
+def telegram_callback(payload: AuthTelegramCallbackRequest, db: Session = Depends(get_db)):
+    _, tokens = login_with_telegram_oauth(db, payload)
     return tokens

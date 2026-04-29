@@ -49,6 +49,14 @@ class AuthTelegramRequest(BaseModel):
     timezone: str | None = None
 
 
+class AuthTelegramCallbackRequest(BaseModel):
+    code: str
+    state: str
+    code_verifier: str
+    redirect_uri: str
+    timezone: str | None = None
+
+
 class UserMeResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

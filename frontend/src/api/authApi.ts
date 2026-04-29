@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { AuthResponse, LoginPayload, RegisterPayload, TelegramAuthPayload, User } from "../types/auth";
+import type { AuthResponse, LoginPayload, RegisterPayload, TelegramCallbackPayload, User } from "../types/auth";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -26,8 +26,8 @@ export const login = async (payload: LoginPayload): Promise<AuthResponse> => {
   return response.data;
 };
 
-export const loginWithTelegram = async (payload: TelegramAuthPayload): Promise<AuthResponse> => {
-  const response = await authClient.post<AuthResponse>("/auth/telegram", payload);
+export const loginWithTelegram = async (payload: TelegramCallbackPayload): Promise<AuthResponse> => {
+  const response = await authClient.post<AuthResponse>("/auth/telegram/callback", payload);
   return response.data;
 };
 

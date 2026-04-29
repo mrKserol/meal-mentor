@@ -2,6 +2,8 @@ from datetime import date, datetime
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+import requests
+from jose import jwt
 
 from app.auth.security import (
     create_access_token,
@@ -14,7 +16,8 @@ from app.auth.security import (
 from app.auth.telegram import verify_telegram_login
 from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.db.models import RefreshToken, User
-from app.schemas.auth import AuthTelegramRequest, AuthTokenPair
+from app.schemas.auth import AuthTelegramCallbackRequest, AuthTelegramRequest, AuthTokenPair
+from app.core.config import TELEGRAM_CLIENT_ID, TELEGRAM_CLIENT_SECRET, TELEGRAM_REDIRECT_URI
 
 
 def register_user(
@@ -80,6 +83,67 @@ def login_with_telegram(db: Session, payload: AuthTelegramRequest) -> tuple[User
             subscription_status="free",
             hashed_password=None,
             email=None,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    return user, _issue_token_pair(db, user)
+
+
+def login_with_telegram_oauth(db: Session, payload: AuthTelegramCallbackRequest) -> tuple[User, AuthTokenPair]:
+    if not TELEGRAM_CLIENT_ID or not TELEGRAM_CLIENT_SECRET or not TELEGRAM_REDIRECT_URI:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Telegram OAuth is not configured")
+
+    token_response = requests.post(
+        "https://oauth.telegram.org/token",
+        data={
+            "grant_type": "authorization_code",
+            "client_id": TELEGRAM_CLIENT_ID,
+            "client_secret": TELEGRAM_CLIENT_SECRET,
+            "code": payload.code,
+            "redirect_uri": payload.redirect_uri,
+            "code_verifier": payload.code_verifier,
+        },
+        timeout=15,
+    )
+    if token_response.status_code >= 400:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Telegram code exchange failed")
+
+    token_data = token_response.json()
+    id_token = token_data.get("id_token")
+    userinfo = token_data.get("userinfo")
+    claims = {}
+    if isinstance(id_token, str):
+        try:
+            claims = jwt.get_unverified_claims(id_token)
+        except Exception:
+            claims = {}
+    if isinstance(userinfo, dict):
+        claims.update(userinfo)
+
+    telegram_sub = claims.get("sub") or claims.get("id")
+    if telegram_sub is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Telegram user id missing")
+
+    try:
+        telegram_id = int(str(telegram_sub))
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Telegram user id") from exc
+
+    first_name = claims.get("given_name") or claims.get("first_name")
+    username = claims.get("preferred_username") or claims.get("username")
+
+    user = db.query(User).filter(User.telegram_id == telegram_id).first()
+    if not user:
+        user = User(
+            telegram_id=telegram_id,
+            username=username,
+            first_name=first_name,
+            timezone=payload.timezone or "UTC",
+            subscription_status="free",
+            email=None,
+            hashed_password=None,
         )
         db.add(user)
         db.commit()

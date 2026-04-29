@@ -18,15 +18,12 @@ export interface LoginPayload {
   password: string;
 }
 
-export interface TelegramAuthPayload {
-  id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  photo_url?: string;
-  auth_date: number;
-  hash: string;
-  timezone?: string;
+export interface TelegramCallbackPayload {
+  code: string;
+  state: string;
+  code_verifier: string;
+  redirect_uri: string;
+  timezone: string;
 }
 
 export interface AuthResponse {

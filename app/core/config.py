@@ -75,6 +75,9 @@ NUTRITION_ENABLE_SEMANTIC = os.getenv("NUTRITION_ENABLE_SEMANTIC", "false").lowe
 # Telegram
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_AUTH_MAX_AGE_SECONDS = int(os.getenv("TELEGRAM_AUTH_MAX_AGE_SECONDS", "86400"))
+TELEGRAM_CLIENT_ID = os.getenv("TELEGRAM_CLIENT_ID")
+TELEGRAM_CLIENT_SECRET = os.getenv("TELEGRAM_CLIENT_SECRET")
+TELEGRAM_REDIRECT_URI = os.getenv("TELEGRAM_REDIRECT_URI")
 
 # Subscriptions: if true, POST /subscriptions/order activates plan without Robokassa (demo only)
 SUBSCRIPTION_DEMO_AUTO = os.getenv("SUBSCRIPTION_DEMO_AUTO", "0").lower() in ("1", "true", "yes")
