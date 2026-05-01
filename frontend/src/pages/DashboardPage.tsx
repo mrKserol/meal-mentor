@@ -49,6 +49,51 @@ export function DashboardPage() {
             </button>
           </div>
         ) : null}
+        {user?.nutrition_target ? (
+          <div className="text-left bg-surface-container border border-outline-variant/50 rounded-lg p-5 space-y-3">
+            <h2 className="text-h3 font-h3 text-on-surface">Ваша дневная цель</h2>
+            <ul className="space-y-1 text-body-md text-on-surface-variant">
+              <li>
+                Калории:{" "}
+                <span className="font-semibold text-on-surface">
+                  {user.nutrition_target.target_calories} kcal
+                </span>
+              </li>
+              <li>
+                Белки:{" "}
+                <span className="font-semibold text-on-surface">
+                  {user.nutrition_target.target_protein_g} g
+                </span>
+              </li>
+              <li>
+                Жиры:{" "}
+                <span className="font-semibold text-on-surface">
+                  {user.nutrition_target.target_fat_g} g
+                </span>
+              </li>
+              <li>
+                Углеводы:{" "}
+                <span className="font-semibold text-on-surface">
+                  {user.nutrition_target.target_carbs_g} g
+                </span>
+              </li>
+            </ul>
+          </div>
+        ) : user ? (
+          <div className="text-left bg-surface-container border border-outline-variant/50 rounded-lg p-5 space-y-3">
+            <h2 className="text-h3 font-h3 text-on-surface">Ваша дневная цель</h2>
+            <p className="text-body-md text-on-surface-variant">
+              Заполните профиль, чтобы рассчитать дневную цель
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate("/onboarding/profile")}
+              className="inline-flex items-center justify-center bg-primary-container text-on-primary py-2 px-5 rounded-lg font-semibold"
+            >
+              Заполнить профиль
+            </button>
+          </div>
+        ) : null}
         <button
           onClick={onLogout}
           className="inline-flex items-center justify-center bg-primary-container hover:opacity-90 text-on-primary py-3 px-8 rounded-lg font-semibold transition"

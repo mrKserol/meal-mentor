@@ -1,6 +1,7 @@
 from datetime import date, datetime
 
 from sqlalchemy import (
+    Boolean,
     BigInteger,
     Column,
     Date,
@@ -43,6 +44,34 @@ class User(Base):
     measurements = relationship("UserMeasurement", back_populates="user")
     subscriptions = relationship("Subscription", back_populates="user")
     refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
+    nutrition_targets = relationship(
+        "NutritionTarget",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+
+class NutritionTarget(Base):
+    __tablename__ = "nutrition_targets"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    bmr_kcal = Column(Integer, nullable=False)
+    tdee_kcal = Column(Integer, nullable=False)
+    target_calories = Column(Integer, nullable=False)
+    target_protein_g = Column(Integer, nullable=False)
+    target_fat_g = Column(Integer, nullable=False)
+    target_carbs_g = Column(Integer, nullable=False)
+    formula_name = Column(String(64), nullable=False, default="mifflin_st_jeor")
+    goal = Column(String(100), nullable=True)
+    activity_level = Column(String(50), nullable=True)
+    weight_kg = Column(Float, nullable=True)
+    target_weight_kg = Column(Float, nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", back_populates="nutrition_targets")
 
 
 class Meal(Base):

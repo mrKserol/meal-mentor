@@ -3,37 +3,35 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.auth.profile import is_profile_completed
 from app.auth.dependencies import get_current_user
 from app.auth.security import hash_password
+from app.auth.user_me_payload import serialize_user_me
 from app.db.models import User
 from app.db.session import get_db
-from app.schemas.auth import ProfilePatchRequest, UserMeResponse
+from app.schemas.auth import (
+    MyNutritionTargetResponse,
+    NutritionTargetResponse,
+    ProfilePatchRequest,
+    UserMeResponse,
+)
+from app.services.nutrition_targets import (
+    create_or_update_active_nutrition_target,
+    get_active_nutrition_target,
+)
 
 router = APIRouter(prefix="/users", tags=["users-web"])
 
 
 @router.get("/me", response_model=UserMeResponse)
-def get_me(current_user: User = Depends(get_current_user)):
-    return {
-        "id": current_user.id,
-        "email": current_user.email,
-        "username": current_user.username,
-        "first_name": current_user.first_name,
-        "sex": current_user.sex,
-        "birth_date": current_user.birth_date,
-        "height_cm": current_user.height_cm,
-        "weight_kg": current_user.weight_kg,
-        "goal": current_user.goal,
-        "activity_level": current_user.activity_level,
-        "target_weight_kg": current_user.target_weight_kg,
-        "timezone": current_user.timezone,
-        "telegram_id": current_user.telegram_id,
-        "subscription_status": current_user.subscription_status,
-        "created_at": current_user.created_at,
-        "updated_at": current_user.updated_at,
-        "profile_completed": is_profile_completed(current_user),
-    }
+def get_me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return serialize_user_me(db, current_user)
+
+
+@router.get("/me/nutrition-target", response_model=MyNutritionTargetResponse)
+def get_my_nutrition_target(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    active = get_active_nutrition_target(db, user_id=current_user.id)
+    nt = NutritionTargetResponse.model_validate(active, from_attributes=True) if active is not None else None
+    return {"nutrition_target": nt}
 
 
 @router.patch("/me/profile", response_model=UserMeResponse)
@@ -61,25 +59,10 @@ def patch_my_profile(
 
     current_user.updated_at = datetime.utcnow()
     db.add(current_user)
+
+    create_or_update_active_nutrition_target(db, current_user)
+
     db.commit()
     db.refresh(current_user)
 
-    return {
-        "id": current_user.id,
-        "email": current_user.email,
-        "username": current_user.username,
-        "first_name": current_user.first_name,
-        "sex": current_user.sex,
-        "birth_date": current_user.birth_date,
-        "height_cm": current_user.height_cm,
-        "weight_kg": current_user.weight_kg,
-        "goal": current_user.goal,
-        "activity_level": current_user.activity_level,
-        "target_weight_kg": current_user.target_weight_kg,
-        "timezone": current_user.timezone,
-        "telegram_id": current_user.telegram_id,
-        "subscription_status": current_user.subscription_status,
-        "created_at": current_user.created_at,
-        "updated_at": current_user.updated_at,
-        "profile_completed": is_profile_completed(current_user),
-    }
+    return serialize_user_me(db, current_user)

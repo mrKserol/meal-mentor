@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.auth.profile import is_profile_completed
 from app.auth.service import (
     login_user,
     login_with_telegram,
@@ -10,7 +9,7 @@ from app.auth.service import (
     refresh_tokens,
     register_user,
 )
-from app.db.models import User
+from app.auth.user_me_payload import serialize_user_me
 from app.db.session import get_db
 from app.schemas.auth import (
     AuthLoginRequest,
@@ -22,30 +21,9 @@ from app.schemas.auth import (
     AuthTokenPair,
     TelegramAuthResponse,
 )
+from app.services.nutrition_targets import create_or_update_active_nutrition_target
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-
-def _user_payload(user: User) -> dict:
-    return {
-        "id": user.id,
-        "email": user.email,
-        "username": user.username,
-        "first_name": user.first_name,
-        "sex": user.sex,
-        "birth_date": user.birth_date,
-        "height_cm": user.height_cm,
-        "weight_kg": user.weight_kg,
-        "goal": user.goal,
-        "activity_level": user.activity_level,
-        "target_weight_kg": user.target_weight_kg,
-        "timezone": user.timezone,
-        "telegram_id": user.telegram_id,
-        "subscription_status": user.subscription_status,
-        "created_at": user.created_at,
-        "updated_at": user.updated_at,
-        "profile_completed": is_profile_completed(user),
-    }
 
 
 @router.post("/register", response_model=AuthTokenPair, status_code=status.HTTP_201_CREATED)
@@ -65,6 +43,9 @@ def register(payload: AuthRegisterRequest, db: Session = Depends(get_db)):
         email=payload.email,
         password=payload.password,
     )
+    create_or_update_active_nutrition_target(db, user)
+    db.commit()
+    db.refresh(user)
     _, tokens = login_user(db, email=user.email, password=payload.password)
     return tokens
 
@@ -99,7 +80,7 @@ def telegram_callback(payload: AuthTelegramCallbackRequest, db: Session = Depend
         "refresh_token": tokens.refresh_token,
         "token_type": tokens.token_type,
         "access_token_expires_in": tokens.access_token_expires_in,
-        "user": _user_payload(user),
+        "user": serialize_user_me(db, user),
         "is_new_user": is_new_user,
         "profile_completed": profile_completed,
     }
