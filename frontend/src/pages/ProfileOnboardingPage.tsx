@@ -7,12 +7,12 @@ import { useAuth } from "../hooks/useAuth";
 interface FormState {
   email: string;
   password: string;
-  sex: "male" | "female" | "other" | "";
+  sex: "male" | "female" | "";
   birth_date: string;
   height_cm: string;
   weight_kg: string;
   goal: "lose_weight" | "maintain_weight" | "gain_weight" | "";
-  activity_level: "low" | "moderate" | "high" | "";
+  activity_level: "1" | "1.3" | "1.5" | "";
   target_weight_kg: string;
 }
 
@@ -82,7 +82,6 @@ export function ProfileOnboardingPage() {
             <option value="">sex (опционально)</option>
             <option value="male">male</option>
             <option value="female">female</option>
-            <option value="other">other</option>
           </select>
 
           <div className="space-y-1">
@@ -97,24 +96,24 @@ export function ProfileOnboardingPage() {
               onChange={(e)=>setForm((p)=>({...p,birth_date:e.target.value}))}
             />
           </div>
-          <input className="w-full border border-outline-variant rounded-lg p-3" type="number" placeholder="height_cm" value={form.height_cm} onChange={(e)=>setForm((p)=>({...p,height_cm:e.target.value}))}/>
-          <input className="w-full border border-outline-variant rounded-lg p-3" type="number" step="0.1" placeholder="weight_kg" value={form.weight_kg} onChange={(e)=>setForm((p)=>({...p,weight_kg:e.target.value}))}/>
+          <input className="w-full border border-outline-variant rounded-lg p-3" type="number" placeholder="Рост (height_cm)" value={form.height_cm} onChange={(e)=>setForm((p)=>({...p,height_cm:e.target.value}))}/>
+          <input className="w-full border border-outline-variant rounded-lg p-3" type="number" step="0.1" placeholder="Вес (weight_kg)" value={form.weight_kg} onChange={(e)=>setForm((p)=>({...p,weight_kg:e.target.value}))}/>
 
           <select className="w-full border border-outline-variant rounded-lg p-3" value={form.goal} onChange={(e)=>setForm((p)=>({...p,goal:e.target.value as FormState["goal"]}))}>
-            <option value="">goal (опционально)</option>
-            <option value="lose_weight">lose_weight</option>
-            <option value="maintain_weight">maintain_weight</option>
-            <option value="gain_weight">gain_weight</option>
+            <option value="">Цель (опционально)</option>
+            <option value="lose_weight">Сброс веса</option>
+            <option value="maintain_weight">Удержание веса</option>
+            <option value="gain_weight">Набор веса</option>
           </select>
 
           <select className="w-full border border-outline-variant rounded-lg p-3" value={form.activity_level} onChange={(e)=>setForm((p)=>({...p,activity_level:e.target.value as FormState["activity_level"]}))}>
-            <option value="">activity_level (опционально)</option>
-            <option value="low">low</option>
-            <option value="moderate">moderate</option>
-            <option value="high">high</option>
+            <option value="">Активность (опционально)</option>
+            <option value="1">низкая</option>
+            <option value="1.3">средняя</option>
+            <option value="1.5">высокая</option>
           </select>
 
-          <input className="w-full border border-outline-variant rounded-lg p-3" type="number" step="0.1" placeholder="target_weight_kg" value={form.target_weight_kg} onChange={(e)=>setForm((p)=>({...p,target_weight_kg:e.target.value}))}/>
+          <input className="w-full border border-outline-variant rounded-lg p-3" type="number" step="0.1" placeholder="Желаемый вес" value={form.target_weight_kg} onChange={(e)=>setForm((p)=>({...p,target_weight_kg:e.target.value}))}/>
 
           {error ? <p className="text-label-sm text-error">{error}</p> : null}
 

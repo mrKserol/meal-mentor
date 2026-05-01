@@ -64,6 +64,6 @@ export interface ProfileUpdatePayload {
   height_cm?: number;
   weight_kg?: number;
   goal?: "lose_weight" | "maintain_weight" | "gain_weight";
-  activity_level?: "low" | "moderate" | "high";
+  activity_level?: "low" | "moderate" | "high" | "1" | "1.3" | "1.5";
   target_weight_kg?: number;
 }
