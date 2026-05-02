@@ -2,7 +2,26 @@ import axios from "axios";
 import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Info, Save, Target, UserRound } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Bean,
+  Cherry,
+  CircleCheck,
+  Citrus,
+  Egg,
+  Fish,
+  Info,
+  Milk,
+  Nut,
+  Plus,
+  Save,
+  Shrimp,
+  Target,
+  Trees,
+  TriangleAlert,
+  UserRound,
+  Wheat,
+} from "lucide-react";
 
 import { AppShell } from "../components/layout/AppShell";
 import { defaultNewMealHandler } from "../components/layout/appNav";
@@ -43,6 +62,20 @@ function userToForm(u: User): ProfileFormState {
   };
 }
 
+const ALLERGEN_OPTIONS: { id: string; label: string; Icon: LucideIcon }[] = [
+  { id: "dairy", label: "Молочные продукты", Icon: Milk },
+  { id: "eggs", label: "Яйца", Icon: Egg },
+  { id: "peanuts", label: "Арахис", Icon: Nut },
+  { id: "shellfish", label: "Моллюски", Icon: Shrimp },
+  { id: "gluten", label: "Глютен", Icon: Wheat },
+  { id: "fish", label: "Рыба", Icon: Fish },
+  { id: "soy", label: "Соя", Icon: Bean },
+  { id: "tree_nuts", label: "Древесные орехи", Icon: Trees },
+  { id: "citrus", label: "Цитрусовые", Icon: Citrus },
+  { id: "nightshades", label: "Помидоры / пасленовые", Icon: Cherry },
+  { id: "other", label: "Другое", Icon: Plus },
+];
+
 function buildPayload(form: ProfileFormState): ProfileUpdatePayload {
   const payload: ProfileUpdatePayload = {};
   if (form.sex) payload.sex = form.sex as ProfileUpdatePayload["sex"];
@@ -61,6 +94,8 @@ export function ProfileOnboardingPage() {
   const navigate = useNavigate();
   const { user, updateProfile, validateSession, logout } = useAuth();
   const [form, setForm] = useState<ProfileFormState>(emptyForm);
+  /** Local only until PATCH /users/me/profile supports allergens. */
+  const [selectedAllergens, setSelectedAllergens] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -79,11 +114,18 @@ export function ProfileOnboardingPage() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const toggleAllergen = (id: string) => {
+    setSelectedAllergens((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  };
+
   const handleSave = async () => {
     setError(null);
     setSuccess(null);
     setIsSaving(true);
     try {
+      // TODO: send allergens to profile save API when backend is ready (e.g. allergens: string[])
       await updateProfile(buildPayload(form));
       setSuccess("Профиль обновлен");
       window.setTimeout(() => setSuccess(null), 5000);
@@ -253,6 +295,59 @@ export function ProfileOnboardingPage() {
                     </option>
                   </select>
                 </label>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-6 flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                  <TriangleAlert className="h-6 w-6 text-amber-700" aria-hidden />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-semibold text-slate-900">Аллергены</h2>
+                  <p className="text-sm text-slate-500">
+                    Выберите продукты, которые вам противопоказаны.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                {ALLERGEN_OPTIONS.map(({ id, label, Icon }) => {
+                  const selected = selectedAllergens.includes(id);
+                  return (
+                    <label
+                      key={id}
+                      htmlFor={`allergen-${id}`}
+                      className={`group relative flex cursor-pointer flex-col items-center overflow-hidden rounded-xl border p-4 transition-colors ${
+                        selected
+                          ? "border-green-600 bg-green-50/80 shadow-sm"
+                          : "border-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      <input
+                        id={`allergen-${id}`}
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => toggleAllergen(id)}
+                        className="sr-only"
+                      />
+                      <div
+                        className={`mb-2 flex h-12 w-12 items-center justify-center rounded-lg ${
+                          selected ? "bg-white shadow-sm" : "bg-slate-50"
+                        }`}
+                      >
+                        <Icon className="h-7 w-7 text-slate-600" aria-hidden />
+                      </div>
+                      <span className="text-center text-sm font-medium text-slate-800">{label}</span>
+                      {selected ? (
+                        <CircleCheck
+                          className="absolute right-1 top-1 h-5 w-5 text-green-600"
+                          aria-hidden
+                        />
+                      ) : null}
+                    </label>
+                  );
+                })}
               </div>
             </div>
           </section>
