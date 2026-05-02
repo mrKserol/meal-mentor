@@ -13,9 +13,10 @@ interface AppSideNavProps {
   activeItem: AppNavItem;
   onLogout: () => void | Promise<void>;
   onNewMeal?: () => void;
+  onCompositionClick?: () => void;
 }
 
-export function AppSideNav({ activeItem, onLogout, onNewMeal }: AppSideNavProps) {
+export function AppSideNav({ activeItem, onLogout, onNewMeal, onCompositionClick }: AppSideNavProps) {
   const navigate = useNavigate();
   const meal = onNewMeal ?? (() => window.alert("Скоро добавим запись приема пищи"));
 
@@ -39,7 +40,13 @@ export function AppSideNav({ activeItem, onLogout, onNewMeal }: AppSideNavProps)
           <CalendarDays className="h-5 w-5 shrink-0" aria-hidden />
           <span>Дневник</span>
         </button>
-        <button type="button" disabled title="Скоро" className={navDisabled}>
+        <button
+          type="button"
+          onClick={onCompositionClick}
+          disabled={!onCompositionClick}
+          title={onCompositionClick ? "Проверить состав по этикетке" : undefined}
+          className={onCompositionClick ? navInactive : navDisabled}
+        >
           <BarChart3 className="h-5 w-5 shrink-0" aria-hidden />
           <span>Состав</span>
         </button>

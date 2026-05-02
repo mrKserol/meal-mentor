@@ -16,6 +16,8 @@ interface AuthContextValue {
   updateProfile: (payload: ProfileUpdatePayload) => Promise<User>;
   logout: () => Promise<void>;
   validateSession: () => Promise<boolean>;
+  /** Current access token from storage, if any (after validateSession). */
+  getAccessToken: () => string | null;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -129,6 +131,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [validateSession],
   );
 
+  const getAccessToken = useCallback((): string | null => localStorage.getItem(ACCESS_TOKEN_KEY), []);
+
   const logoutHandler = useCallback(async () => {
     const { refreshToken } = getTokens();
     if (refreshToken) {
@@ -152,8 +156,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updateProfile: updateProfileHandler,
       logout: logoutHandler,
       validateSession,
+      getAccessToken,
     }),
-    [isLoading, loginHandler, logoutHandler, telegramLoginHandler, updateProfileHandler, user, validateSession],
+    [
+      getAccessToken,
+      isLoading,
+      loginHandler,
+      logoutHandler,
+      telegramLoginHandler,
+      updateProfileHandler,
+      user,
+      validateSession,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

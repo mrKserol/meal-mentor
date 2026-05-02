@@ -1,11 +1,12 @@
 import { Plus } from "lucide-react";
-import type { ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 
 import type { AppNavItem } from "./appNav";
 import { defaultNewMealHandler } from "./appNav";
 import { AppMobileBottomNav } from "./AppMobileBottomNav";
 import { AppSideNav } from "./AppSideNav";
 import { AppTopBar } from "./AppTopBar";
+import { CompositionLabelModal } from "./CompositionLabelModal";
 
 interface AppShellProps {
   activeNav: AppNavItem;
@@ -26,12 +27,20 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const meal = onNewMeal ?? defaultNewMealHandler;
+  const [compositionOpen, setCompositionOpen] = useState(false);
+  const openComposition = useCallback(() => setCompositionOpen(true), []);
+  const closeComposition = useCallback(() => setCompositionOpen(false), []);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24 text-slate-900 antialiased lg:pb-8">
       <AppTopBar avatarFallback={avatarFallback} />
       <div className="flex min-h-screen">
-        <AppSideNav activeItem={activeNav} onLogout={onLogout} onNewMeal={meal} />
+        <AppSideNav
+          activeItem={activeNav}
+          onLogout={onLogout}
+          onNewMeal={meal}
+          onCompositionClick={openComposition}
+        />
         <div className="flex min-h-screen flex-1 flex-col pt-14 lg:ml-64">
           <main className="flex-1">{children}</main>
         </div>
@@ -48,7 +57,9 @@ export function AppShell({
         </button>
       ) : null}
 
-      <AppMobileBottomNav activeItem={activeNav} />
+      <AppMobileBottomNav activeItem={activeNav} onCompositionClick={openComposition} />
+
+      <CompositionLabelModal open={compositionOpen} onClose={closeComposition} />
     </div>
   );
 }

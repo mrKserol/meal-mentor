@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
@@ -9,11 +9,13 @@ from app.auth.user_me_payload import serialize_user_me
 from app.db.models import Allergen, User
 from app.db.session import get_db
 from app.schemas.auth import (
+    LabelAnalysisResponse,
     MyNutritionTargetResponse,
     NutritionTargetResponse,
     ProfilePatchRequest,
     UserMeResponse,
 )
+from app.services.ingredient_checker import analyze_label_from_image_bytes, format_label_result_for_telegram
 from app.services.nutrition_targets import (
     create_or_update_active_nutrition_target,
     get_active_nutrition_target,
@@ -35,6 +37,32 @@ ALLOWED_ALLERGEN_KEYS = frozenset(
 )
 
 router = APIRouter(prefix="/users", tags=["users-web"])
+
+_MAX_LABEL_IMAGE_BYTES = 15 * 1024 * 1024
+
+
+@router.post("/me/analyze-label", response_model=LabelAnalysisResponse)
+async def analyze_product_label(
+    current_user: User = Depends(get_current_user),
+    file: UploadFile = File(...),
+):
+    """Анализ фото этикетки: тот же пайплайн, что и /check_ingredients в Telegram (promt3.txt + vision)."""
+    _ = current_user
+    content_type = (file.content_type or "").lower()
+    if not content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Нужен файл изображения (JPEG, PNG и т.д.).",
+        )
+    body = await file.read()
+    if not body:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Пустой файл.")
+    if len(body) > _MAX_LABEL_IMAGE_BYTES:
+        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="Файл слишком большой.")
+
+    data = analyze_label_from_image_bytes(body)
+    text = format_label_result_for_telegram(data)
+    return LabelAnalysisResponse(text=text)
 
 
 @router.get("/me", response_model=UserMeResponse)

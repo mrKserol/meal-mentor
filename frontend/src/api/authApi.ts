@@ -74,3 +74,19 @@ export const updateMyProfile = async (accessToken: string, payload: ProfileUpdat
   const me = response.data;
   return { ...me, allergens: me.allergens ?? [] };
 };
+
+export interface LabelAnalysisResult {
+  text: string;
+}
+
+export const analyzeProductLabel = async (
+  accessToken: string,
+  file: File,
+): Promise<LabelAnalysisResult> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await authClient.post<LabelAnalysisResult>("/users/me/analyze-label", formData, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  return response.data;
+};

@@ -110,6 +110,12 @@ class TelegramAuthResponse(AuthTokenPair):
     profile_completed: bool
 
 
+class LabelAnalysisResponse(BaseModel):
+    """Ответ анализа этикетки (текст как в Telegram check_ingredients)."""
+
+    text: str
+
+
 class ProfilePatchRequest(BaseModel):
     email: EmailStr | None = None
     password: str | None = None

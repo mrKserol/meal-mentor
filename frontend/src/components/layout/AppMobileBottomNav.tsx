@@ -5,6 +5,7 @@ import type { AppNavItem } from "./appNav";
 
 interface AppMobileBottomNavProps {
   activeItem: AppNavItem;
+  onCompositionClick?: () => void;
 }
 
 const itemBase = "flex flex-col items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-medium";
@@ -12,7 +13,7 @@ const itemActive = `${itemBase} font-bold text-green-600`;
 const itemIdle = `${itemBase} text-slate-400`;
 const itemDisabled = `${itemBase} cursor-not-allowed text-slate-400 opacity-50`;
 
-export function AppMobileBottomNav({ activeItem }: AppMobileBottomNavProps) {
+export function AppMobileBottomNav({ activeItem, onCompositionClick }: AppMobileBottomNavProps) {
   const navigate = useNavigate();
 
   return (
@@ -29,7 +30,13 @@ export function AppMobileBottomNav({ activeItem }: AppMobileBottomNavProps) {
         <CalendarDays className="h-6 w-6" aria-hidden />
         Дневник
       </button>
-      <button type="button" disabled title="Скоро" className={itemDisabled}>
+      <button
+        type="button"
+        onClick={onCompositionClick}
+        disabled={!onCompositionClick}
+        title={onCompositionClick ? "Проверить состав по этикетке" : undefined}
+        className={onCompositionClick ? itemIdle : itemDisabled}
+      >
         <BarChart3 className="h-6 w-6" aria-hidden />
         Состав
       </button>
