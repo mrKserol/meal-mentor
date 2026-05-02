@@ -2,14 +2,19 @@ import { BookOpen, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import type { NutritionTarget } from "../../types/auth";
+import type { DiaryTodayTotals } from "../../types/diary";
 
 import { CircularMacroProgress } from "./CircularMacroProgress";
 
 interface NutritionDiaryCardProps {
   nutritionTarget: NutritionTarget | null;
+  /** Фактические КБЖУ за сегодня из дневника (`GET /users/me/diary`). */
+  todayTotals: DiaryTodayTotals | null;
 }
 
-export function NutritionDiaryCard({ nutritionTarget }: NutritionDiaryCardProps) {
+const ZERO_TODAY: DiaryTodayTotals = { calories: 0, protein_g: 0, fat_g: 0, carbs_g: 0 };
+
+export function NutritionDiaryCard({ nutritionTarget, todayTotals }: NutritionDiaryCardProps) {
   const navigate = useNavigate();
   const today = new Intl.DateTimeFormat("ru-RU", {
     weekday: "long",
@@ -47,7 +52,7 @@ export function NutritionDiaryCard({ nutritionTarget }: NutritionDiaryCardProps)
   }
 
   const calTarget = nutritionTarget.target_calories;
-  const consumed = 0;
+  const t = todayTotals ?? ZERO_TODAY;
 
   return (
     <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm">
@@ -64,28 +69,28 @@ export function NutritionDiaryCard({ nutritionTarget }: NutritionDiaryCardProps)
       <div className="mb-6 rounded-xl bg-surface-container-low px-5 py-4">
         <p className="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Калории</p>
         <p className="mt-1 font-h3 text-h3 text-on-surface">
-          {consumed} kcal / {calTarget} kcal
+          {t.calories} kcal / {calTarget} kcal
         </p>
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <CircularMacroProgress
           label="Белки"
-          current={consumed}
+          current={t.protein_g}
           target={nutritionTarget.target_protein_g}
           unit="g"
           ringClass="text-primary"
         />
         <CircularMacroProgress
           label="Углеводы"
-          current={consumed}
+          current={t.carbs_g}
           target={nutritionTarget.target_carbs_g}
           unit="g"
           ringClass="text-tertiary"
         />
         <CircularMacroProgress
           label="Жиры"
-          current={consumed}
+          current={t.fat_g}
           target={nutritionTarget.target_fat_g}
           unit="g"
           ringClass="text-secondary"
@@ -95,7 +100,15 @@ export function NutritionDiaryCard({ nutritionTarget }: NutritionDiaryCardProps)
       <div className="flex items-start gap-3 rounded-xl bg-surface-container p-4">
         <Info className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
         <p className="text-body-md text-on-surface-variant">
-          Сегодня данные приёмов не учтены: показано съедено 0. Добавление блюд появится в следующих версиях.
+          Съедено за сегодня по данным из дневника (сохранённые приёмы пищи). Добавить запись можно на странице{" "}
+          <button
+            type="button"
+            onClick={() => navigate("/diary")}
+            className="font-semibold text-primary underline hover:opacity-90"
+          >
+            Дневник
+          </button>
+          .
         </p>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getMe, getMyNutritionTarget } from "../api/authApi";
+import { getMyDiary } from "../api/diaryApi";
 import { HeroBanner } from "../components/dashboard/HeroBanner";
 import { NutritionDiaryCard } from "../components/dashboard/NutritionDiaryCard";
 import { ProfileCard } from "../components/dashboard/ProfileCard";
@@ -10,6 +11,7 @@ import { SubscriptionCard } from "../components/dashboard/SubscriptionCard";
 import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
 import type { NutritionTarget, User } from "../types/auth";
+import type { DiaryTodayTotals } from "../types/diary";
 
 const MEAL_MENTOR_ACCESS_TOKEN_KEY = "meal_mentor_access_token";
 
@@ -20,6 +22,7 @@ export function DashboardPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [profile, setProfile] = useState<User | null>(null);
   const [nutritionTarget, setNutritionTarget] = useState<NutritionTarget | null>(null);
+  const [todayTotals, setTodayTotals] = useState<DiaryTodayTotals | null>(null);
 
   const loadDashboard = useCallback(async () => {
     setPhase("loading");
@@ -35,8 +38,9 @@ export function DashboardPage() {
         navigate("/login", { replace: true });
         return;
       }
-      const me = await getMe(token);
+      const [me, diary] = await Promise.all([getMe(token), getMyDiary(token)]);
       setProfile(me);
+      setTodayTotals(diary.today);
       let nt: NutritionTarget | null = me.nutrition_target ?? null;
       if (nt === null || nt === undefined) {
         const envelope = await getMyNutritionTarget(token);
@@ -111,7 +115,12 @@ export function DashboardPage() {
   }
 
   return (
-    <AppShell activeNav="home" avatarFallback={avatarFallback} onLogout={handleLogout}>
+    <AppShell
+      activeNav="home"
+      avatarFallback={avatarFallback}
+      onLogout={handleLogout}
+      onMealSaved={() => void loadDashboard()}
+    >
       <div className="mx-auto max-w-6xl space-y-8 p-4 lg:p-8">
         <HeroBanner greetingName={greetingName} subtitleLine={heroSubtitle} />
 
@@ -130,7 +139,7 @@ export function DashboardPage() {
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="space-y-8 lg:col-span-2">
-            <NutritionDiaryCard nutritionTarget={nutritionTarget} />
+            <NutritionDiaryCard nutritionTarget={nutritionTarget} todayTotals={todayTotals} />
           </div>
           <div className="flex flex-col gap-8">
             <ProfileCard user={profile} />
