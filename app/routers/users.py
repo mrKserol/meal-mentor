@@ -31,7 +31,6 @@ ALLOWED_ALLERGEN_KEYS = frozenset(
         "tree_nuts",
         "citrus",
         "nightshades",
-        "other",
     }
 )
 

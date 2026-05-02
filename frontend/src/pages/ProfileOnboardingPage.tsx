@@ -2,7 +2,25 @@ import axios from "axios";
 import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, Info, Save, Target, UserRound } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  AlertTriangle,
+  Bean,
+  Cherry,
+  CircleCheck,
+  Citrus,
+  Egg,
+  Fish,
+  Info,
+  Milk,
+  Nut,
+  Save,
+  Shrimp,
+  Target,
+  Trees,
+  UserRound,
+  Wheat,
+} from "lucide-react";
 
 import { AppShell } from "../components/layout/AppShell";
 import { defaultNewMealHandler } from "../components/layout/appNav";
@@ -20,19 +38,20 @@ type ProfileFormState = {
   allergens: string[];
 };
 
-const ALLERGEN_OPTIONS = [
-  { key: "dairy", label: "Молочные продукты" },
-  { key: "eggs", label: "Яйца" },
-  { key: "peanuts", label: "Арахис" },
-  { key: "shellfish", label: "Моллюски" },
-  { key: "gluten", label: "Глютен" },
-  { key: "fish", label: "Рыба" },
-  { key: "soy", label: "Соя" },
-  { key: "tree_nuts", label: "Древесные орехи" },
-  { key: "citrus", label: "Цитрусовые" },
-  { key: "nightshades", label: "Помидоры / пасленовые" },
-  { key: "other", label: "Другое" },
-] as const;
+const ALLERGEN_OPTIONS: { key: string; label: string; Icon: LucideIcon }[] = [
+  { key: "dairy", label: "Молочные продукты", Icon: Milk },
+  { key: "eggs", label: "Яйца", Icon: Egg },
+  { key: "peanuts", label: "Арахис", Icon: Nut },
+  { key: "shellfish", label: "Моллюски", Icon: Shrimp },
+  { key: "gluten", label: "Глютен", Icon: Wheat },
+  { key: "fish", label: "Рыба", Icon: Fish },
+  { key: "soy", label: "Соя", Icon: Bean },
+  { key: "tree_nuts", label: "Древесные орехи", Icon: Trees },
+  { key: "citrus", label: "Цитрусовые", Icon: Citrus },
+  { key: "nightshades", label: "Помидоры / пасленовые", Icon: Cherry },
+];
+
+const KNOWN_ALLERGEN_KEYS = new Set(ALLERGEN_OPTIONS.map((o) => o.key));
 
 const emptyForm: ProfileFormState = {
   sex: "",
@@ -56,7 +75,7 @@ function userToForm(u: User): ProfileFormState {
     goal: u.goal ?? "",
     activity_level: u.activity_level ?? "",
     target_weight_kg: u.target_weight_kg != null ? String(u.target_weight_kg) : "",
-    allergens: u.allergens ? [...u.allergens] : [],
+    allergens: (u.allergens ?? []).filter((key) => KNOWN_ALLERGEN_KEYS.has(key)),
   };
 }
 
@@ -297,30 +316,38 @@ export function ProfileOnboardingPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                {ALLERGEN_OPTIONS.map((option) => {
-                  const selected = form.allergens.includes(option.key);
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                {ALLERGEN_OPTIONS.map(({ key, label, Icon }) => {
+                  const selected = form.allergens.includes(key);
                   return (
-                    <button
-                      key={option.key}
-                      type="button"
-                      onClick={() => toggleAllergen(option.key)}
-                      className={[
-                        "relative min-h-[92px] rounded-xl border p-3 text-center text-sm font-medium transition",
+                    <label
+                      key={key}
+                      htmlFor={`allergen-${key}`}
+                      className={`group relative flex cursor-pointer flex-col items-center overflow-hidden rounded-xl border p-4 transition-colors ${
                         selected
-                          ? "border-green-600 bg-green-50 text-green-800"
-                          : "border-slate-200 bg-slate-50 text-slate-700 hover:border-green-200 hover:bg-green-50/50",
-                      ].join(" ")}
-                      aria-pressed={selected}
+                          ? "border-green-600 bg-green-50/80 shadow-sm"
+                          : "border-slate-200 hover:bg-slate-50"
+                      }`}
                     >
+                      <input
+                        id={`allergen-${key}`}
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => toggleAllergen(key)}
+                        className="sr-only"
+                      />
+                      <div
+                        className={`mb-2 flex h-12 w-12 items-center justify-center rounded-lg ${
+                          selected ? "bg-white shadow-sm" : "bg-slate-50"
+                        }`}
+                      >
+                        <Icon className="h-7 w-7 text-slate-600" aria-hidden />
+                      </div>
+                      <span className="text-center text-sm font-medium text-slate-800">{label}</span>
                       {selected ? (
-                        <CheckCircle2
-                          className="absolute right-2 top-2 h-4 w-4 text-green-600"
-                          aria-hidden
-                        />
+                        <CircleCheck className="absolute right-1 top-1 h-5 w-5 text-green-600" aria-hidden />
                       ) : null}
-                      <span className="flex h-full items-center justify-center px-1">{option.label}</span>
-                    </button>
+                    </label>
                   );
                 })}
               </div>
