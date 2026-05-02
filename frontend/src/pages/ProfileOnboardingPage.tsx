@@ -7,8 +7,6 @@ import type { NutritionTarget, ProfileUpdatePayload } from "../types/auth";
 import { useAuth } from "../hooks/useAuth";
 
 interface FormState {
-  email: string;
-  password: string;
   sex: "male" | "female" | "";
   birth_date: string;
   height_cm: string;
@@ -19,8 +17,6 @@ interface FormState {
 }
 
 const initialState: FormState = {
-  email: "",
-  password: "",
   sex: "",
   birth_date: "",
   height_cm: "",
@@ -44,8 +40,6 @@ export function ProfileOnboardingPage() {
     setIsSubmitting(true);
     try {
       const payload: ProfileUpdatePayload = {};
-      if (form.email) payload.email = form.email;
-      if (form.password) payload.password = form.password;
       if (form.sex) payload.sex = form.sex;
       if (form.birth_date) payload.birth_date = form.birth_date;
       if (form.height_cm) payload.height_cm = Number(form.height_cm);
@@ -119,20 +113,6 @@ export function ProfileOnboardingPage() {
           </div>
         ) : (
           <form onSubmit={onSubmit} className="space-y-3">
-            <input
-              className="w-full border border-outline-variant rounded-lg p-3"
-              placeholder="Email (опционально)"
-              value={form.email}
-              onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-            />
-            <input
-              className="w-full border border-outline-variant rounded-lg p-3"
-              placeholder="Новый пароль (опционально)"
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-            />
-
             <select
               className="w-full border border-outline-variant rounded-lg p-3"
               value={form.sex}

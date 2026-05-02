@@ -1,20 +1,11 @@
-import axios from "axios";
-import { FormEvent, useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Navigate } from "react-router-dom";
 
-import { useAuth } from "../hooks/useAuth";
 import { InstallPwaHint } from "../components/InstallPwaHint";
-
-interface LoginFormState {
-  email: string;
-  password: string;
-}
+import { useAuth } from "../hooks/useAuth";
 
 export function LoginPage() {
-  const { isAuthenticated, login } = useAuth();
-  const navigate = useNavigate();
-  const [form, setForm] = useState<LoginFormState>({ email: "", password: "" });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isAuthenticated } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const telegramClientId = import.meta.env.VITE_TELEGRAM_CLIENT_ID ?? "";
   const telegramRedirectUri = import.meta.env.VITE_TELEGRAM_REDIRECT_URI ?? "";
@@ -22,30 +13,6 @@ export function LoginPage() {
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
-
-  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(null);
-
-    if (!form.email || !form.password) {
-      setError("Введите email и пароль.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await login({ email: form.email, password: form.password });
-      navigate("/dashboard", { replace: true });
-    } catch (requestError) {
-      if (axios.isAxiosError(requestError)) {
-        setError(requestError.response?.data?.detail ?? "Не удалось войти.");
-      } else {
-        setError("Произошла неизвестная ошибка.");
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const base64Url = (data: ArrayBuffer) =>
     btoa(String.fromCharCode(...new Uint8Array(data)))
@@ -116,86 +83,22 @@ export function LoginPage() {
           </div>
           <h1 className="font-h1 text-h1 text-on-surface mb-xs">Вход в Meal Mentor</h1>
           <p className="font-body-md text-on-surface-variant text-center px-lg">
-            Ваш персональный ИИ-диетолог для здорового образа жизни
+            Войдите через Telegram — ваш персональный ИИ-диетолог
           </p>
         </div>
 
         <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/50 p-lg shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
-          <form className="space-y-lg" onSubmit={onSubmit}>
-            <div className="space-y-sm">
-              <label className="block font-label-sm text-label-sm text-on-surface-variant" htmlFor="email">
-                Электронная почта
-              </label>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">
-                  mail
-                </span>
-                <input
-                  id="email"
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-                  placeholder="example@mail.com"
-                  className="w-full bg-surface py-3 pl-11 pr-4 rounded-lg border border-outline-variant focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-all font-body-md text-on-surface placeholder:text-outline/60"
-                />
-              </div>
-            </div>
+          {error ? <p className="mb-4 text-label-sm text-error">{error}</p> : null}
 
-            <div className="space-y-sm">
-              <div className="flex justify-between items-center">
-                <label className="block font-label-sm text-label-sm text-on-surface-variant" htmlFor="password">
-                  Пароль
-                </label>
-                <a className="font-label-sm text-label-sm text-primary hover:underline transition-all" href="#">
-                  Забыли пароль?
-                </a>
-              </div>
-              <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">
-                  lock
-                </span>
-                <input
-                  id="password"
-                  type="password"
-                  value={form.password}
-                  onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-                  placeholder="••••••••"
-                  className="w-full bg-surface py-3 pl-11 pr-4 rounded-lg border border-outline-variant focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-all font-body-md text-on-surface placeholder:text-outline/60"
-                />
-              </div>
-            </div>
+          <button
+            type="button"
+            onClick={() => void onTelegramOAuth()}
+            className="w-full bg-[#229ED9] hover:opacity-90 text-white py-4 rounded-lg font-h3 text-h3 font-semibold transition shadow-[0_4px_14px_rgba(34,158,217,0.25)]"
+          >
+            Войти через Telegram
+          </button>
 
-            {error ? <p className="text-label-sm text-error">{error}</p> : null}
-
-            <button
-              className="w-full bg-primary-container text-on-primary py-4 rounded-lg font-h3 text-h3 hover:opacity-90 active:scale-[0.98] transition-all shadow-[0_4px_14px_rgba(46,204,113,0.3)] disabled:opacity-60"
-              type="submit"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Вход..." : "Войти"}
-            </button>
-          </form>
-
-          <div className="relative my-xl">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-outline-variant/30" />
-            </div>
-            <div className="relative flex justify-center text-label-sm">
-              <span className="bg-surface-container-lowest px-4 text-on-surface-variant font-label-sm">или через</span>
-            </div>
-          </div>
-
-          <div className="mb-md">
-            <button
-              type="button"
-              onClick={() => void onTelegramOAuth()}
-              className="w-full bg-[#229ED9] hover:opacity-90 text-white py-3 rounded-lg font-semibold transition"
-            >
-              Login with Telegram
-            </button>
-          </div>
-
-          <div className="relative bg-secondary-container/30 p-md rounded-xl border border-secondary-container/50 flex gap-md items-start mb-md">
+          <div className="relative bg-secondary-container/30 p-md rounded-xl border border-secondary-container/50 flex gap-md items-start mt-lg">
             <div className="shrink-0 text-primary-container">
               <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
                 smart_toy
@@ -205,15 +108,6 @@ export function LoginPage() {
               «Привет! Давай продолжим путь к твоему идеальному рациону сегодня.»
             </p>
           </div>
-        </div>
-
-        <div className="mt-lg text-center">
-          <p className="font-body-md text-on-surface-variant">
-            Нет аккаунта?{" "}
-            <Link className="text-primary font-semibold hover:underline ml-xs transition-all" to="/register">
-              Зарегистрироваться
-            </Link>
-          </p>
         </div>
       </main>
 
