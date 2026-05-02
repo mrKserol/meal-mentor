@@ -1,20 +1,17 @@
 import axios from "axios";
-import { Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getMe, getMyNutritionTarget } from "../api/authApi";
 import { HeroBanner } from "../components/dashboard/HeroBanner";
-import { MobileBottomNav } from "../components/dashboard/MobileBottomNav";
 import { NutritionDiaryCard } from "../components/dashboard/NutritionDiaryCard";
 import { ProfileCard } from "../components/dashboard/ProfileCard";
-import { SideNav } from "../components/dashboard/SideNav";
 import { SubscriptionCard } from "../components/dashboard/SubscriptionCard";
-import { TopAppBar } from "../components/dashboard/TopAppBar";
+import { AppShell } from "../components/layout/AppShell";
+import { defaultNewMealHandler } from "../components/layout/appNav";
 import { useAuth } from "../hooks/useAuth";
 import type { NutritionTarget, User } from "../types/auth";
 
-/** Must match ACCESS_TOKEN_KEY in AuthContext.tsx */
 const MEAL_MENTOR_ACCESS_TOKEN_KEY = "meal_mentor_access_token";
 
 export function DashboardPage() {
@@ -74,8 +71,7 @@ export function DashboardPage() {
   }, [logout, navigate]);
 
   const greetingName = useMemo(() => {
-    const v = profile?.first_name?.trim() || profile?.username?.trim() || "друг";
-    return v;
+    return profile?.first_name?.trim() || profile?.username?.trim() || "друг";
   }, [profile]);
 
   const heroSubtitle = useMemo(() => {
@@ -85,28 +81,29 @@ export function DashboardPage() {
     return `Сегодня держим ориентир: ${nutritionTarget.target_calories} ккал.`;
   }, [nutritionTarget]);
 
-  const avatarFallback = profile?.first_name?.trim()?.[0]
-    ?? profile?.username?.trim()?.[0]
-    ?? profile?.email?.trim()?.[0]
-    ?? "U";
+  const avatarFallback =
+    profile?.first_name?.trim()?.[0] ??
+    profile?.username?.trim()?.[0] ??
+    profile?.email?.trim()?.[0] ??
+    "U";
 
   if (phase === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-6">
-        <p className="text-body-md text-on-surface-variant">Загружаем dashboard...</p>
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6">
+        <p className="text-base text-slate-500">Загружаем dashboard...</p>
       </div>
     );
   }
 
   if (phase === "error") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-6 text-center">
-        <p className="font-h3 text-h3 text-on-surface">Не удалось загрузить данные</p>
-        <p className="max-w-md text-body-md text-on-surface-variant">{errorMsg}</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 px-6 text-center">
+        <p className="text-xl font-semibold text-slate-900">Не удалось загрузить данные</p>
+        <p className="max-w-md text-base text-slate-600">{errorMsg}</p>
         <button
           type="button"
           onClick={() => void loadDashboard()}
-          className="rounded-lg bg-primary px-6 py-3 font-semibold text-on-primary"
+          className="rounded-lg bg-green-600 px-6 py-3 font-semibold text-white hover:bg-green-700"
         >
           Попробовать снова
         </button>
@@ -115,55 +112,43 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24 text-on-surface antialiased lg:pb-8">
-      <TopAppBar avatarFallback={avatarFallback} />
-      <SideNav onLogout={handleLogout} />
+    <AppShell
+      activeNav="home"
+      avatarFallback={avatarFallback}
+      onLogout={handleLogout}
+      onNewMeal={defaultNewMealHandler}
+    >
+      <div className="mx-auto max-w-6xl space-y-8 p-4 lg:p-8">
+        <HeroBanner greetingName={greetingName} subtitleLine={heroSubtitle} />
 
-      <main className="pt-14 lg:ml-64">
-        <div className="mx-auto max-w-6xl space-y-8 p-4 lg:p-8">
-          <HeroBanner greetingName={greetingName} subtitleLine={heroSubtitle} />
+        {!profile?.profile_completed ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-base text-amber-950">
+            <p>Профиль питания не заполнен полностью.</p>
+            <button
+              type="button"
+              onClick={() => navigate("/onboarding/profile")}
+              className="mt-2 font-semibold text-green-700 underline hover:text-green-800"
+            >
+              Заполнить профиль
+            </button>
+          </div>
+        ) : null}
 
-          {!profile?.profile_completed ? (
-            <div className="rounded-xl border border-tertiary-container/60 bg-secondary-container/40 px-5 py-4 text-body-md text-on-secondary-container">
-              <p>Профиль питания не заполнен полностью.</p>
-              <button
-                type="button"
-                onClick={() => navigate("/onboarding/profile")}
-                className="mt-2 font-semibold text-primary underline"
-              >
-                Заполнить профиль
-              </button>
-            </div>
-          ) : null}
-
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            <div className="space-y-8 lg:col-span-2">
-              <NutritionDiaryCard nutritionTarget={nutritionTarget} />
-            </div>
-            <div className="flex flex-col gap-8">
-              <ProfileCard user={profile} />
-              <SubscriptionCard
-                subscriptionStatus={profile?.subscription_status}
-                onUpgradeClick={() => {
-                  /* платёжный поток будет подключён отдельно */
-                }}
-              />
-            </div>
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="space-y-8 lg:col-span-2">
+            <NutritionDiaryCard nutritionTarget={nutritionTarget} />
+          </div>
+          <div className="flex flex-col gap-8">
+            <ProfileCard user={profile} />
+            <SubscriptionCard
+              subscriptionStatus={profile?.subscription_status}
+              onUpgradeClick={() => {
+                /* платёжный поток будет подключён отдельно */
+              }}
+            />
           </div>
         </div>
-      </main>
-
-      <button
-        type="button"
-        disabled
-        title="Скоро"
-        className="fixed bottom-24 right-4 z-[45] flex h-14 w-14 cursor-not-allowed items-center justify-center rounded-full bg-primary-container text-on-primary opacity-85 shadow-lg transition-transform lg:hidden"
-        aria-label="Записать приём пищи"
-      >
-        <Plus className="h-7 w-7" aria-hidden strokeWidth={2.5} />
-      </button>
-
-      <MobileBottomNav />
-    </div>
+      </div>
+    </AppShell>
   );
 }
