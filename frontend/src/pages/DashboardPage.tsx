@@ -8,7 +8,6 @@ import { NutritionDiaryCard } from "../components/dashboard/NutritionDiaryCard";
 import { ProfileCard } from "../components/dashboard/ProfileCard";
 import { SubscriptionCard } from "../components/dashboard/SubscriptionCard";
 import { AppShell } from "../components/layout/AppShell";
-import { defaultNewMealHandler } from "../components/layout/appNav";
 import { useAuth } from "../hooks/useAuth";
 import type { NutritionTarget, User } from "../types/auth";
 
@@ -112,12 +111,7 @@ export function DashboardPage() {
   }
 
   return (
-    <AppShell
-      activeNav="home"
-      avatarFallback={avatarFallback}
-      onLogout={handleLogout}
-      onNewMeal={defaultNewMealHandler}
-    >
+    <AppShell activeNav="home" avatarFallback={avatarFallback} onLogout={handleLogout}>
       <div className="mx-auto max-w-6xl space-y-8 p-4 lg:p-8">
         <HeroBanner greetingName={greetingName} subtitleLine={heroSubtitle} />
 

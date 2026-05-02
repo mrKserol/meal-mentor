@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 
 import { AppShell } from "../components/layout/AppShell";
-import { defaultNewMealHandler } from "../components/layout/appNav";
 import { useAuth } from "../hooks/useAuth";
 import type { ProfileUpdatePayload, User } from "../types/auth";
 
@@ -169,12 +168,7 @@ export function ProfileOnboardingPage() {
     "w-full h-12 rounded-lg border border-slate-200 bg-slate-50 px-4 outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100";
 
   return (
-    <AppShell
-      activeNav="profile"
-      avatarFallback={avatarFallback}
-      onLogout={handleLogout}
-      onNewMeal={defaultNewMealHandler}
-    >
+    <AppShell activeNav="profile" avatarFallback={avatarFallback} onLogout={handleLogout}>
       <div className="mx-auto max-w-7xl p-4 pb-8 lg:p-8">
         <header className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Профиль пользователя</h1>

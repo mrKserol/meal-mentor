@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 import { AppShell } from "../components/layout/AppShell";
-import { defaultNewMealHandler } from "../components/layout/appNav";
+import { useOpenAddMeal } from "../context/AddMealContext";
 import { useAuth } from "../hooks/useAuth";
 
 type WeekStat = {
@@ -202,6 +202,7 @@ function DailyGoalProgress({ item }: { item: DailyGoalItem }) {
 export function DiaryPage() {
   const navigate = useNavigate();
   const { user, validateSession, logout } = useAuth();
+  const openAddMeal = useOpenAddMeal();
 
   useEffect(() => {
     void validateSession();
@@ -224,12 +225,7 @@ export function DiaryPage() {
   }
 
   return (
-    <AppShell
-      activeNav="diary"
-      avatarFallback={avatarFallback}
-      onLogout={handleLogout}
-      onNewMeal={defaultNewMealHandler}
-    >
+    <AppShell activeNav="diary" avatarFallback={avatarFallback} onLogout={handleLogout}>
       <div className="mx-auto max-w-7xl space-y-6 p-4 pb-8 lg:p-8">
         <section className="flex flex-col justify-between gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center">
           <div>
@@ -240,11 +236,11 @@ export function DiaryPage() {
           </div>
           <button
             type="button"
-            onClick={defaultNewMealHandler}
+            onClick={() => openAddMeal?.()}
             className="flex items-center justify-center gap-2 rounded-lg bg-green-500 px-6 py-3 font-semibold text-green-950 shadow-sm transition hover:bg-green-400 active:scale-[0.98]"
           >
             <CirclePlus className="h-5 w-5" aria-hidden />
-            Добавить приём пищи
+            Добавить прием пищи
           </button>
         </section>
 

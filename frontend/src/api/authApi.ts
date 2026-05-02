@@ -17,7 +17,8 @@ if (!API_URL) {
   throw new Error("VITE_API_URL is not defined");
 }
 
-const authClient = axios.create({
+/** Axios с baseURL и JSON по умолчанию (не для multipart). */
+export const authClient = axios.create({
   baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",

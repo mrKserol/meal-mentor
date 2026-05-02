@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -114,6 +115,18 @@ class LabelAnalysisResponse(BaseModel):
     """Ответ анализа этикетки (текст как в Telegram check_ingredients)."""
 
     text: str
+
+
+class WebMealSaveRequest(BaseModel):
+    """Сохранение приёма пищи для текущего веб-пользователя (JWT), без telegram_id."""
+
+    ingredients: dict[str, Any]
+    source_type: str = "photo"
+    telegram_file_id: str | None = None
+
+
+class WebMealSaveResponse(BaseModel):
+    status: str
 
 
 class ProfilePatchRequest(BaseModel):

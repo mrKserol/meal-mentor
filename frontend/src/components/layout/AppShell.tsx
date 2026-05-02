@@ -1,8 +1,9 @@
 import { Plus } from "lucide-react";
 import { useCallback, useState, type ReactNode } from "react";
 
+import { AddMealOpenProvider } from "../../context/AddMealContext";
 import type { AppNavItem } from "./appNav";
-import { defaultNewMealHandler } from "./appNav";
+import { AddMealModal } from "./AddMealModal";
 import { AppMobileBottomNav } from "./AppMobileBottomNav";
 import { AppSideNav } from "./AppSideNav";
 import { AppTopBar } from "./AppTopBar";
@@ -26,7 +27,11 @@ export function AppShell({
   showMobileFab = true,
   children,
 }: AppShellProps) {
-  const meal = onNewMeal ?? defaultNewMealHandler;
+  const [addMealOpen, setAddMealOpen] = useState(false);
+  const openAddMeal = useCallback(() => setAddMealOpen(true), []);
+  const closeAddMeal = useCallback(() => setAddMealOpen(false), []);
+  const meal = onNewMeal ?? openAddMeal;
+
   const [compositionOpen, setCompositionOpen] = useState(false);
   const openComposition = useCallback(() => setCompositionOpen(true), []);
   const closeComposition = useCallback(() => setCompositionOpen(false), []);
@@ -42,7 +47,9 @@ export function AppShell({
           onCompositionClick={openComposition}
         />
         <div className="flex min-h-screen flex-1 flex-col pt-14 lg:ml-64">
-          <main className="flex-1">{children}</main>
+          <main className="flex-1">
+            <AddMealOpenProvider onOpen={openAddMeal}>{children}</AddMealOpenProvider>
+          </main>
         </div>
       </div>
 
@@ -51,7 +58,7 @@ export function AppShell({
           type="button"
           onClick={meal}
           className="fixed bottom-24 right-4 z-[45] flex h-14 w-14 items-center justify-center rounded-full bg-green-600 text-white shadow-lg transition hover:bg-green-700 active:scale-95 lg:hidden"
-          aria-label="Записать прием пищи"
+          aria-label="Добавить прием пищи"
         >
           <Plus className="h-7 w-7" aria-hidden strokeWidth={2.5} />
         </button>
@@ -60,6 +67,8 @@ export function AppShell({
       <AppMobileBottomNav activeItem={activeNav} onCompositionClick={openComposition} />
 
       <CompositionLabelModal open={compositionOpen} onClose={closeComposition} />
+
+      <AddMealModal open={addMealOpen} onClose={closeAddMeal} />
     </div>
   );
 }

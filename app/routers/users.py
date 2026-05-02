@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
@@ -7,6 +8,7 @@ from app.auth.dependencies import get_current_user
 from app.auth.security import hash_password
 from app.auth.user_me_payload import serialize_user_me
 from app.db.models import Allergen, User
+from app.db.repository import create_meal
 from app.db.session import get_db
 from app.schemas.auth import (
     LabelAnalysisResponse,
@@ -14,7 +16,10 @@ from app.schemas.auth import (
     NutritionTargetResponse,
     ProfilePatchRequest,
     UserMeResponse,
+    WebMealSaveRequest,
+    WebMealSaveResponse,
 )
+from app.core.use_cases.meal_analysis import build_meal_item_specs_from_ingredients
 from app.services.ingredient_checker import analyze_label_from_image_bytes, format_label_result_for_telegram
 from app.services.nutrition_targets import (
     create_or_update_active_nutrition_target,
@@ -63,6 +68,27 @@ async def analyze_product_label(
     data = analyze_label_from_image_bytes(body)
     text = format_label_result_for_telegram(data)
     return LabelAnalysisResponse(text=text)
+
+
+@router.post("/me/meals/save", response_model=WebMealSaveResponse)
+def save_my_meal(
+    body: WebMealSaveRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Запись приёма в дневник для пользователя из JWT (как /meals/save по telegram_id)."""
+    ingredients: dict[str, Any] = body.ingredients or {}
+    if not ingredients:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="ingredients required")
+    items = build_meal_item_specs_from_ingredients(ingredients)
+    create_meal(
+        db,
+        current_user.id,
+        source_type=body.source_type or "photo",
+        telegram_file_id=body.telegram_file_id,
+        items=items,
+    )
+    return WebMealSaveResponse(status="success")
 
 
 @router.get("/me", response_model=UserMeResponse)
