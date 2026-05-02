@@ -19,7 +19,7 @@ import {
   needsUserDescription,
   parseAnalyzeResponse,
   type MealNutrition,
-} from "../../lib/mealFlow";
+} from "../../utils/mealFlow";
 
 type MealData = {
   ingredients: Record<string, string | number>;
