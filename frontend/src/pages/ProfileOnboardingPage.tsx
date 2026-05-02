@@ -30,8 +30,10 @@ const emptyForm: ProfileFormState = {
 };
 
 function userToForm(u: User): ProfileFormState {
+  const sexRaw = u.sex ?? "";
+  const sexNormalized = sexRaw === "male" || sexRaw === "female" ? sexRaw : "";
   return {
-    sex: u.sex ?? "",
+    sex: sexNormalized,
     birth_date: u.birth_date ?? "",
     height_cm: u.height_cm != null ? String(u.height_cm) : "",
     weight_kg: u.weight_kg != null ? String(u.weight_kg) : "",
@@ -165,7 +167,6 @@ export function ProfileOnboardingPage() {
                     <option value="">Не указано</option>
                     <option value="male">Мужской</option>
                     <option value="female">Женский</option>
-                    <option value="other">Другое</option>
                   </select>
                 </label>
 
