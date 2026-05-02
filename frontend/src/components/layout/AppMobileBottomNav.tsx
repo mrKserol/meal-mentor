@@ -26,8 +26,12 @@ export function AppMobileBottomNav({ activeItem, onCompositionClick }: AppMobile
         <LayoutDashboard className="h-6 w-6" aria-hidden strokeWidth={activeItem === "home" ? 2.5 : 2} />
         Главная
       </button>
-      <button type="button" disabled title="Скоро" className={itemDisabled}>
-        <CalendarDays className="h-6 w-6" aria-hidden />
+      <button
+        type="button"
+        onClick={() => navigate("/diary")}
+        className={activeItem === "diary" ? itemActive : itemIdle}
+      >
+        <CalendarDays className="h-6 w-6" aria-hidden strokeWidth={activeItem === "diary" ? 2.5 : 2} />
         Дневник
       </button>
       <button

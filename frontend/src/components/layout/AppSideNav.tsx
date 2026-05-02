@@ -36,7 +36,11 @@ export function AppSideNav({ activeItem, onLogout, onNewMeal, onCompositionClick
           <LayoutDashboard className="h-5 w-5 shrink-0" aria-hidden />
           <span>Главная</span>
         </button>
-        <button type="button" disabled title="Скоро" className={navDisabled}>
+        <button
+          type="button"
+          onClick={() => navigate("/diary")}
+          className={activeItem === "diary" ? navActive : navInactive}
+        >
           <CalendarDays className="h-5 w-5 shrink-0" aria-hidden />
           <span>Дневник</span>
         </button>
