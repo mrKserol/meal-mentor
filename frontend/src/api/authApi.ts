@@ -54,7 +54,8 @@ export const getMe = async (accessToken: string): Promise<User> => {
   const response = await authClient.get<User>("/users/me", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  return response.data;
+  const me = response.data;
+  return { ...me, allergens: me.allergens ?? [] };
 };
 
 export const getMyNutritionTarget = async (
@@ -70,5 +71,6 @@ export const updateMyProfile = async (accessToken: string, payload: ProfileUpdat
   const response = await authClient.patch<User>("/users/me/profile", payload, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  return response.data;
+  const me = response.data;
+  return { ...me, allergens: me.allergens ?? [] };
 };

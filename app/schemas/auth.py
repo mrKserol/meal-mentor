@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class AuthRegisterRequest(BaseModel):
@@ -97,6 +97,7 @@ class UserMeResponse(BaseModel):
     updated_at: datetime | None
     profile_completed: bool
     nutrition_target: NutritionTargetResponse | None = None
+    allergens: list[str] = Field(default_factory=list)
 
 
 class MyNutritionTargetResponse(BaseModel):
@@ -119,3 +120,4 @@ class ProfilePatchRequest(BaseModel):
     goal: str | None = None
     activity_level: str | None = None
     target_weight_kg: float | None = None
+    allergens: list[str] | None = None

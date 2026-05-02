@@ -106,7 +106,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const telegramLoginHandler = useCallback(async (payload: TelegramCallbackPayload) => {
     const tokens = await loginWithTelegram(payload);
     saveTokens(tokens);
-    const me = tokens.user ?? (await getMe(tokens.access_token));
+    const raw = tokens.user ?? (await getMe(tokens.access_token));
+    const me: User = { ...raw, allergens: raw.allergens ?? [] };
     setUser(me);
     return {
       isNewUser: Boolean(tokens.is_new_user),

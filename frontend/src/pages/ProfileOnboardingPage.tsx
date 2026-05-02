@@ -2,26 +2,7 @@ import axios from "axios";
 import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { LucideIcon } from "lucide-react";
-import {
-  Bean,
-  Cherry,
-  CircleCheck,
-  Citrus,
-  Egg,
-  Fish,
-  Info,
-  Milk,
-  Nut,
-  Plus,
-  Save,
-  Shrimp,
-  Target,
-  Trees,
-  TriangleAlert,
-  UserRound,
-  Wheat,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, Info, Save, Target, UserRound } from "lucide-react";
 
 import { AppShell } from "../components/layout/AppShell";
 import { defaultNewMealHandler } from "../components/layout/appNav";
@@ -36,7 +17,22 @@ type ProfileFormState = {
   goal: string;
   activity_level: string;
   target_weight_kg: string;
+  allergens: string[];
 };
+
+const ALLERGEN_OPTIONS = [
+  { key: "dairy", label: "Молочные продукты" },
+  { key: "eggs", label: "Яйца" },
+  { key: "peanuts", label: "Арахис" },
+  { key: "shellfish", label: "Моллюски" },
+  { key: "gluten", label: "Глютен" },
+  { key: "fish", label: "Рыба" },
+  { key: "soy", label: "Соя" },
+  { key: "tree_nuts", label: "Древесные орехи" },
+  { key: "citrus", label: "Цитрусовые" },
+  { key: "nightshades", label: "Помидоры / пасленовые" },
+  { key: "other", label: "Другое" },
+] as const;
 
 const emptyForm: ProfileFormState = {
   sex: "",
@@ -46,6 +42,7 @@ const emptyForm: ProfileFormState = {
   goal: "",
   activity_level: "",
   target_weight_kg: "",
+  allergens: [],
 };
 
 function userToForm(u: User): ProfileFormState {
@@ -59,22 +56,9 @@ function userToForm(u: User): ProfileFormState {
     goal: u.goal ?? "",
     activity_level: u.activity_level ?? "",
     target_weight_kg: u.target_weight_kg != null ? String(u.target_weight_kg) : "",
+    allergens: u.allergens ? [...u.allergens] : [],
   };
 }
-
-const ALLERGEN_OPTIONS: { id: string; label: string; Icon: LucideIcon }[] = [
-  { id: "dairy", label: "Молочные продукты", Icon: Milk },
-  { id: "eggs", label: "Яйца", Icon: Egg },
-  { id: "peanuts", label: "Арахис", Icon: Nut },
-  { id: "shellfish", label: "Моллюски", Icon: Shrimp },
-  { id: "gluten", label: "Глютен", Icon: Wheat },
-  { id: "fish", label: "Рыба", Icon: Fish },
-  { id: "soy", label: "Соя", Icon: Bean },
-  { id: "tree_nuts", label: "Древесные орехи", Icon: Trees },
-  { id: "citrus", label: "Цитрусовые", Icon: Citrus },
-  { id: "nightshades", label: "Помидоры / пасленовые", Icon: Cherry },
-  { id: "other", label: "Другое", Icon: Plus },
-];
 
 function buildPayload(form: ProfileFormState): ProfileUpdatePayload {
   const payload: ProfileUpdatePayload = {};
@@ -87,6 +71,7 @@ function buildPayload(form: ProfileFormState): ProfileUpdatePayload {
     payload.activity_level = form.activity_level as ProfileUpdatePayload["activity_level"];
   }
   if (form.target_weight_kg) payload.target_weight_kg = Number(form.target_weight_kg);
+  payload.allergens = [...form.allergens];
   return payload;
 }
 
@@ -94,8 +79,6 @@ export function ProfileOnboardingPage() {
   const navigate = useNavigate();
   const { user, updateProfile, validateSession, logout } = useAuth();
   const [form, setForm] = useState<ProfileFormState>(emptyForm);
-  /** Local only until PATCH /users/me/profile supports allergens. */
-  const [selectedAllergens, setSelectedAllergens] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -114,10 +97,14 @@ export function ProfileOnboardingPage() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const toggleAllergen = (id: string) => {
-    setSelectedAllergens((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
+  const toggleAllergen = (key: string) => {
+    setForm((prev) => {
+      const exists = prev.allergens.includes(key);
+      return {
+        ...prev,
+        allergens: exists ? prev.allergens.filter((item) => item !== key) : [...prev.allergens, key],
+      };
+    });
   };
 
   const handleSave = async () => {
@@ -125,7 +112,6 @@ export function ProfileOnboardingPage() {
     setSuccess(null);
     setIsSaving(true);
     try {
-      // TODO: send allergens to profile save API when backend is ready (e.g. allergens: string[])
       await updateProfile(buildPayload(form));
       setSuccess("Профиль обновлен");
       window.setTimeout(() => setSuccess(null), 5000);
@@ -300,8 +286,8 @@ export function ProfileOnboardingPage() {
 
             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100">
-                  <TriangleAlert className="h-6 w-6 text-amber-700" aria-hidden />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-orange-50">
+                  <AlertTriangle className="h-6 w-6 text-orange-600" aria-hidden />
                 </div>
                 <div>
                   <h2 className="text-2xl font-semibold text-slate-900">Аллергены</h2>
@@ -311,41 +297,30 @@ export function ProfileOnboardingPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                {ALLERGEN_OPTIONS.map(({ id, label, Icon }) => {
-                  const selected = selectedAllergens.includes(id);
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                {ALLERGEN_OPTIONS.map((option) => {
+                  const selected = form.allergens.includes(option.key);
                   return (
-                    <label
-                      key={id}
-                      htmlFor={`allergen-${id}`}
-                      className={`group relative flex cursor-pointer flex-col items-center overflow-hidden rounded-xl border p-4 transition-colors ${
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => toggleAllergen(option.key)}
+                      className={[
+                        "relative min-h-[92px] rounded-xl border p-3 text-center text-sm font-medium transition",
                         selected
-                          ? "border-green-600 bg-green-50/80 shadow-sm"
-                          : "border-slate-200 hover:bg-slate-50"
-                      }`}
+                          ? "border-green-600 bg-green-50 text-green-800"
+                          : "border-slate-200 bg-slate-50 text-slate-700 hover:border-green-200 hover:bg-green-50/50",
+                      ].join(" ")}
+                      aria-pressed={selected}
                     >
-                      <input
-                        id={`allergen-${id}`}
-                        type="checkbox"
-                        checked={selected}
-                        onChange={() => toggleAllergen(id)}
-                        className="sr-only"
-                      />
-                      <div
-                        className={`mb-2 flex h-12 w-12 items-center justify-center rounded-lg ${
-                          selected ? "bg-white shadow-sm" : "bg-slate-50"
-                        }`}
-                      >
-                        <Icon className="h-7 w-7 text-slate-600" aria-hidden />
-                      </div>
-                      <span className="text-center text-sm font-medium text-slate-800">{label}</span>
                       {selected ? (
-                        <CircleCheck
-                          className="absolute right-1 top-1 h-5 w-5 text-green-600"
+                        <CheckCircle2
+                          className="absolute right-2 top-2 h-4 w-4 text-green-600"
                           aria-hidden
                         />
                       ) : null}
-                    </label>
+                      <span className="flex h-full items-center justify-center px-1">{option.label}</span>
+                    </button>
                   );
                 })}
               </div>

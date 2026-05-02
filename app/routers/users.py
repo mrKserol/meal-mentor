@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import get_current_user
 from app.auth.security import hash_password
 from app.auth.user_me_payload import serialize_user_me
-from app.db.models import User
+from app.db.models import Allergen, User
 from app.db.session import get_db
 from app.schemas.auth import (
     MyNutritionTargetResponse,
@@ -17,6 +17,22 @@ from app.schemas.auth import (
 from app.services.nutrition_targets import (
     create_or_update_active_nutrition_target,
     get_active_nutrition_target,
+)
+
+ALLOWED_ALLERGEN_KEYS = frozenset(
+    {
+        "dairy",
+        "eggs",
+        "peanuts",
+        "shellfish",
+        "gluten",
+        "fish",
+        "soy",
+        "tree_nuts",
+        "citrus",
+        "nightshades",
+        "other",
+    }
 )
 
 router = APIRouter(prefix="/users", tags=["users-web"])
@@ -57,6 +73,23 @@ def patch_my_profile(
         if field in data:
             setattr(current_user, field, data[field])
 
+    if "allergens" in data:
+        incoming_allergens = data["allergens"] or []
+        normalized_allergens: list[str] = []
+        for key in incoming_allergens:
+            if key not in ALLOWED_ALLERGEN_KEYS:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Unknown allergen: {key}",
+                )
+            if key not in normalized_allergens:
+                normalized_allergens.append(key)
+
+        db.query(Allergen).filter(Allergen.user_id == current_user.id).delete(synchronize_session=False)
+
+        for key in normalized_allergens:
+            db.add(Allergen(user_id=current_user.id, allergen_key=key))
+
     current_user.updated_at = datetime.utcnow()
     db.add(current_user)
 
@@ -64,5 +97,6 @@ def patch_my_profile(
 
     db.commit()
     db.refresh(current_user)
+    db.expire(current_user, ["allergens"])
 
     return serialize_user_me(db, current_user)
