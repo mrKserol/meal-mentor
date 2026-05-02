@@ -1,31 +1,31 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
   Apple,
   BarChart3,
+  Beef,
   Camera,
   ChevronRight,
   CirclePlus,
   Coffee,
-  Droplets,
+  EggFried,
   Flame,
   Info,
   Salad,
   Scale,
   Sparkles,
   Target,
-  Utensils,
+  Wheat,
 } from "lucide-react";
 
+import { getMyNutritionTarget } from "../api/authApi";
+import { getMyDiary } from "../api/diaryApi";
 import { AppShell } from "../components/layout/AppShell";
 import { useOpenAddMeal } from "../context/AddMealContext";
 import { useAuth } from "../hooks/useAuth";
-
-type WeekStat = {
-  day: string;
-  containerHeight: number;
-  valueHeight: number;
-};
+import type { DiarySnapshot } from "../types/diary";
+import type { NutritionTarget } from "../types/auth";
 
 type MealHistoryItem = {
   id: string;
@@ -38,6 +38,8 @@ type MealHistoryItem = {
   tagTone: "green" | "slate";
 };
 
+type GoalIconKind = "calories" | "protein" | "fat" | "carbs";
+
 type DailyGoalItem = {
   id: string;
   label: string;
@@ -45,82 +47,18 @@ type DailyGoalItem = {
   target: string;
   percent: number;
   tone: "green" | "orange" | "slate";
-  icon: "calories" | "protein" | "water";
+  icon: GoalIconKind;
 };
 
-/** Mock: позже заменить данными с API */
-const weekStats: WeekStat[] = [
-  { day: "Пн", containerHeight: 60, valueHeight: 80 },
-  { day: "Вт", containerHeight: 75, valueHeight: 90 },
-  { day: "Ср", containerHeight: 50, valueHeight: 40 },
-  { day: "Чт", containerHeight: 90, valueHeight: 95 },
-  { day: "Пт", containerHeight: 65, valueHeight: 70 },
-  { day: "Сб", containerHeight: 40, valueHeight: 30 },
-  { day: "Вс", containerHeight: 55, valueHeight: 50 },
-];
+const MEAL_MENTOR_ACCESS_TOKEN_KEY = "meal_mentor_access_token";
 
-const mealHistory: MealHistoryItem[] = [
-  {
-    id: "breakfast",
-    title: "Овсянка с ягодами",
-    mealType: "Завтрак",
-    time: "08:30",
-    calories: 420,
-    tag: "Много белка",
-    icon: "breakfast",
-    tagTone: "green",
-  },
-  {
-    id: "lunch",
-    title: "Куриный салат",
-    mealType: "Обед",
-    time: "12:45",
-    calories: 580,
-    tag: "Мало углеводов",
-    icon: "lunch",
-    tagTone: "green",
-  },
-  {
-    id: "snack",
-    title: "Зелёное яблоко",
-    mealType: "Перекус",
-    time: "16:15",
-    calories: 95,
-    tag: "Перекус",
-    icon: "snack",
-    tagTone: "slate",
-  },
-];
+function formatIntRu(n: number): string {
+  return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(n);
+}
 
-const dailyGoals: DailyGoalItem[] = [
-  {
-    id: "calories",
-    label: "Калории",
-    current: "1 580",
-    target: "2 100 kcal",
-    percent: 75,
-    tone: "green",
-    icon: "calories",
-  },
-  {
-    id: "protein",
-    label: "Белки",
-    current: "68",
-    target: "150 г",
-    percent: 45,
-    tone: "orange",
-    icon: "protein",
-  },
-  {
-    id: "water",
-    label: "Вода",
-    current: "2.2",
-    target: "2.5 л",
-    percent: 90,
-    tone: "slate",
-    icon: "water",
-  },
-];
+function formatFixedRu(n: number, frac = 1): string {
+  return new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 0, maximumFractionDigits: frac }).format(n);
+}
 
 function getTodayRu(): string {
   return new Intl.DateTimeFormat("ru-RU", {
@@ -129,16 +67,95 @@ function getTodayRu(): string {
   }).format(new Date());
 }
 
+function iconFromMealType(mt: string | null): MealHistoryItem["icon"] {
+  const m = (mt || "").toLowerCase();
+  if (m === "breakfast") return "breakfast";
+  if (m === "lunch" || m === "dinner") return "lunch";
+  return "snack";
+}
+
+function pctCurrentTarget(current: number, target: number): number {
+  if (target <= 0) return 0;
+  return Math.min(100, Math.round((100 * current) / target));
+}
+
+function goalToneFromPercent(percent: number): DailyGoalItem["tone"] {
+  if (percent >= 100) return "orange";
+  if (percent >= 60) return "green";
+  return "slate";
+}
+
+function buildDailyGoals(nt: NutritionTarget | null, today: DiarySnapshot["today"]): DailyGoalItem[] {
+  if (!nt) return [];
+  const c = pctCurrentTarget(today.calories, nt.target_calories);
+  const p = pctCurrentTarget(today.protein_g, nt.target_protein_g);
+  const f = pctCurrentTarget(today.fat_g, nt.target_fat_g);
+  const cb = pctCurrentTarget(today.carbs_g, nt.target_carbs_g);
+  return [
+    {
+      id: "calories",
+      label: "Калории",
+      current: formatIntRu(today.calories),
+      target: `${formatIntRu(nt.target_calories)} kcal`,
+      percent: c,
+      tone: goalToneFromPercent(c),
+      icon: "calories",
+    },
+    {
+      id: "protein",
+      label: "Белки",
+      current: formatIntRu(today.protein_g),
+      target: `${formatIntRu(nt.target_protein_g)} г`,
+      percent: p,
+      tone: goalToneFromPercent(p),
+      icon: "protein",
+    },
+    {
+      id: "fat",
+      label: "Жиры",
+      current: formatIntRu(today.fat_g),
+      target: `${formatIntRu(nt.target_fat_g)} г`,
+      percent: f,
+      tone: goalToneFromPercent(f),
+      icon: "fat",
+    },
+    {
+      id: "carbs",
+      label: "Углеводы",
+      current: formatIntRu(today.carbs_g),
+      target: `${formatIntRu(nt.target_carbs_g)} г`,
+      percent: cb,
+      tone: goalToneFromPercent(cb),
+      icon: "carbs",
+    },
+  ];
+}
+
+function mapRecentToHistory(snapshot: DiarySnapshot | null): MealHistoryItem[] {
+  if (!snapshot?.recent_meals?.length) return [];
+  return snapshot.recent_meals.map((m) => ({
+    id: String(m.id),
+    title: m.title,
+    mealType: m.meal_type_label,
+    time: m.time_local,
+    calories: m.calories,
+    tag: m.meal_type_label,
+    icon: iconFromMealType(m.meal_type),
+    tagTone: "slate" as const,
+  }));
+}
+
 function getMealIcon(icon: MealHistoryItem["icon"]) {
   if (icon === "breakfast") return Coffee;
   if (icon === "lunch") return Salad;
   return Apple;
 }
 
-function getGoalIcon(icon: DailyGoalItem["icon"]) {
+function getGoalIcon(icon: GoalIconKind) {
   if (icon === "calories") return Flame;
-  if (icon === "protein") return Utensils;
-  return Droplets;
+  if (icon === "protein") return Beef;
+  if (icon === "fat") return EggFried;
+  return Wheat;
 }
 
 function goalStrokeClass(tone: DailyGoalItem["tone"]): string {
@@ -188,33 +205,88 @@ function DailyGoalProgress({ item }: { item: DailyGoalItem }) {
           <Icon className={`h-5 w-5 ${iconClass}`} aria-hidden />
         </div>
       </div>
-      <div>
+      <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-slate-900">{item.label}</p>
         <p className="text-xs text-slate-500">
           {item.current} / {item.target}
         </p>
       </div>
-      <span className="ml-auto text-sm font-bold text-slate-700">{item.percent}%</span>
+      <span className="shrink-0 text-sm font-bold text-slate-700">{item.percent}%</span>
     </div>
   );
 }
 
 export function DiaryPage() {
   const navigate = useNavigate();
-  const { user, validateSession, logout } = useAuth();
+  const { user, validateSession, logout, getAccessToken } = useAuth();
   const openAddMeal = useOpenAddMeal();
+  const [snapshot, setSnapshot] = useState<DiarySnapshot | null>(null);
+  const [nutritionTarget, setNutritionTarget] = useState<NutritionTarget | null>(null);
+  const [diaryPhase, setDiaryPhase] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [diaryError, setDiaryError] = useState<string | null>(null);
+
+  const loadDiary = useCallback(async () => {
+    setDiaryPhase("loading");
+    setDiaryError(null);
+    try {
+      const ok = await validateSession();
+      if (!ok) {
+        navigate("/login", { replace: true });
+        return;
+      }
+      const token = getAccessToken() ?? localStorage.getItem(MEAL_MENTOR_ACCESS_TOKEN_KEY);
+      if (!token) {
+        navigate("/login", { replace: true });
+        return;
+      }
+      const [snap, ntEnv] = await Promise.all([getMyDiary(token), getMyNutritionTarget(token)]);
+      setSnapshot(snap);
+      setNutritionTarget(ntEnv.nutrition_target);
+      setDiaryPhase("ready");
+    } catch (e) {
+      if (axios.isAxiosError(e) && e.response?.status === 401) {
+        navigate("/login", { replace: true });
+        return;
+      }
+      const message =
+        axios.isAxiosError(e) && e.response?.data?.detail != null
+          ? String(e.response.data.detail)
+          : e instanceof Error
+            ? e.message
+            : "Не удалось загрузить дневник";
+      setDiaryError(message);
+      setDiaryPhase("error");
+    }
+  }, [getAccessToken, navigate, validateSession]);
 
   useEffect(() => {
     void validateSession();
   }, [validateSession]);
+
+  useEffect(() => {
+    if (!user) return;
+    void loadDiary();
+  }, [user?.id, loadDiary]);
 
   const handleLogout = useCallback(async () => {
     await logout();
     navigate("/login", { replace: true });
   }, [logout, navigate]);
 
+  const handleAddMealClick = useCallback(() => {
+    const fn = openAddMeal;
+    if (typeof fn === "function") fn();
+  }, [openAddMeal]);
+
   const avatarFallback =
     user?.first_name?.trim()?.[0] ?? user?.username?.trim()?.[0] ?? user?.email?.trim()?.[0] ?? "U";
+
+  const mealHistory = useMemo(() => mapRecentToHistory(snapshot), [snapshot]);
+
+  const dailyGoals = useMemo(() => {
+    if (!snapshot || !nutritionTarget) return [];
+    return buildDailyGoals(nutritionTarget, snapshot.today);
+  }, [snapshot, nutritionTarget]);
 
   if (!user) {
     return (
@@ -224,8 +296,36 @@ export function DiaryPage() {
     );
   }
 
+  if (diaryPhase === "error" && diaryError) {
+    return (
+      <AppShell activeNav="diary" avatarFallback={avatarFallback} onLogout={handleLogout} onMealSaved={loadDiary}>
+        <div className="mx-auto flex max-w-lg flex-col items-center gap-4 p-8 text-center">
+          <p className="text-lg font-semibold text-slate-900">Не удалось загрузить данные</p>
+          <p className="text-slate-600">{diaryError}</p>
+          <button
+            type="button"
+            onClick={() => void loadDiary()}
+            className="rounded-lg bg-green-600 px-6 py-3 font-semibold text-white hover:bg-green-700"
+          >
+            Попробовать снова
+          </button>
+        </div>
+      </AppShell>
+    );
+  }
+
+  const weekDays = snapshot?.week.days ?? [];
+  const week = snapshot?.week;
+  const weightKg = snapshot?.weight.weight_kg ?? user.weight_kg ?? null;
+  const deltaWeek = snapshot?.weight.delta_week_kg ?? null;
+
   return (
-    <AppShell activeNav="diary" avatarFallback={avatarFallback} onLogout={handleLogout}>
+    <AppShell
+      activeNav="diary"
+      avatarFallback={avatarFallback}
+      onLogout={handleLogout}
+      onMealSaved={() => void loadDiary()}
+    >
       <div className="mx-auto max-w-7xl space-y-6 p-4 pb-8 lg:p-8">
         <section className="flex flex-col justify-between gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center">
           <div>
@@ -236,13 +336,17 @@ export function DiaryPage() {
           </div>
           <button
             type="button"
-            onClick={() => openAddMeal?.()}
+            onClick={handleAddMealClick}
             className="flex items-center justify-center gap-2 rounded-lg bg-green-500 px-6 py-3 font-semibold text-green-950 shadow-sm transition hover:bg-green-400 active:scale-[0.98]"
           >
             <CirclePlus className="h-5 w-5" aria-hidden />
             Добавить прием пищи
           </button>
         </section>
+
+        {diaryPhase === "loading" && !snapshot ? (
+          <p className="text-center text-slate-500">Загружаем данные дневника…</p>
+        ) : null}
 
         <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:col-span-2">
@@ -259,39 +363,47 @@ export function DiaryPage() {
               </div>
             </div>
 
-            <div className="flex h-48 w-full items-end justify-between gap-2 px-2 pb-7">
-              {weekStats.map((item) => (
-                <div
-                  key={item.day}
-                  className="relative flex w-full items-end rounded-t-lg bg-slate-100"
-                  style={{ height: `${item.containerHeight}%` }}
-                >
-                  <div
-                    className="w-full rounded-t-lg bg-green-400"
-                    style={{ height: `${item.valueHeight}%` }}
-                  />
-                  <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs text-slate-400">
-                    {item.day}
-                  </span>
+            <div className="flex h-48 w-full items-end justify-between gap-2 px-2">
+              {weekDays.map((item) => (
+                <div key={item.date} className="flex h-full min-h-0 flex-1 flex-col items-stretch justify-end px-0.5">
+                  <div className="relative flex min-h-[120px] w-full flex-1 items-end rounded-t-lg bg-slate-100">
+                    <div
+                      className="w-full min-h-[2px] rounded-t-lg bg-green-400 transition-all"
+                      style={{ height: item.bar_percent > 0 ? `${item.bar_percent}%` : "2px" }}
+                    />
+                  </div>
+                  <span className="mt-2 block text-center text-xs text-slate-400">{item.weekday_short}</span>
                 </div>
               ))}
             </div>
 
+            {week && week.days_with_data > 0 && week.days_with_data < 7 ? (
+              <p className="mt-2 text-center text-xs text-slate-400">
+                Средние посчитаны за {week.days_with_data}{" "}
+                {week.days_with_data === 1
+                  ? "день"
+                  : week.days_with_data >= 2 && week.days_with_data <= 4
+                    ? "дня"
+                    : "дней"}{" "}
+                с записями, а не за 7 дней
+              </p>
+            ) : null}
+
             <div className="mt-6 grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 text-center md:grid-cols-4">
               <div>
-                <p className="text-xl font-bold text-green-700">2 150</p>
+                <p className="text-xl font-bold text-green-700">{formatFixedRu(week?.avg_calories ?? 0, 0)}</p>
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Средние ккал</p>
               </div>
               <div>
-                <p className="text-xl font-bold text-orange-600">145 г</p>
+                <p className="text-xl font-bold text-orange-600">{formatFixedRu(week?.avg_protein_g ?? 0, 0)} г</p>
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Белки</p>
               </div>
               <div>
-                <p className="text-xl font-bold text-slate-900">65 г</p>
+                <p className="text-xl font-bold text-slate-900">{formatFixedRu(week?.avg_fat_g ?? 0, 0)} г</p>
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Жиры</p>
               </div>
               <div>
-                <p className="text-xl font-bold text-slate-900">220 г</p>
+                <p className="text-xl font-bold text-slate-900">{formatFixedRu(week?.avg_carbs_g ?? 0, 0)} г</p>
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Углеводы</p>
               </div>
             </div>
@@ -302,7 +414,13 @@ export function DiaryPage() {
               <div>
                 <h2 className="text-xl font-semibold text-slate-900">Текущий вес</h2>
                 <p className="mt-1 text-3xl font-bold text-green-700">
-                  74.2 <span className="text-sm font-semibold text-slate-400">кг</span>
+                  {weightKg != null ? (
+                    <>
+                      {formatFixedRu(weightKg, 1)} <span className="text-sm font-semibold text-slate-400">кг</span>
+                    </>
+                  ) : (
+                    <span className="text-lg font-semibold text-slate-400">Не указан</span>
+                  )}
                 </p>
               </div>
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-green-50">
@@ -326,10 +444,30 @@ export function DiaryPage() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500">Прогресс за неделю</span>
-                <span className="font-bold text-green-700">-0.8 кг</span>
+                {deltaWeek != null ? (
+                  <span
+                    className={[
+                      "font-bold",
+                      deltaWeek <= 0 ? "text-green-700" : "text-amber-700",
+                    ].join(" ")}
+                  >
+                    {deltaWeek > 0 ? "+" : ""}
+                    {formatFixedRu(deltaWeek, 2)} кг
+                  </span>
+                ) : (
+                  <span className="font-medium text-slate-400">Нет взвешиваний</span>
+                )}
               </div>
               <div className="h-2 w-full rounded-full bg-slate-100">
-                <div className="h-full w-[65%] rounded-full bg-green-400" />
+                <div
+                  className="h-full rounded-full bg-green-400"
+                  style={{
+                    width:
+                      deltaWeek == null
+                        ? "0%"
+                        : `${Math.min(100, Math.round((Math.abs(deltaWeek) / 2) * 100) || 35)}%`,
+                  }}
+                />
               </div>
             </div>
           </div>
@@ -340,42 +478,49 @@ export function DiaryPage() {
             <div className="flex items-center justify-between border-b border-slate-100 p-6">
               <div>
                 <h2 className="text-xl font-semibold text-slate-900">История приёмов пищи</h2>
-                <p className="mt-1 text-sm text-slate-500">Последние записи за сегодня</p>
+                <p className="mt-1 text-sm text-slate-500">Последние 3 приёма пищи</p>
               </div>
               <button
                 type="button"
+                onClick={handleAddMealClick}
                 className="flex items-center gap-1 text-sm font-bold text-green-700 transition hover:text-green-800"
               >
-                Все
+                Добавить
                 <ChevronRight className="h-4 w-4" aria-hidden />
               </button>
             </div>
 
             <div className="divide-y divide-slate-100">
-              {mealHistory.map((meal) => (
-                <div key={meal.id} className="flex items-center gap-4 p-4 transition hover:bg-slate-50 md:p-5">
-                  <MealIconCard icon={meal.icon} />
-                  <div className="min-w-0 flex-1">
-                    <h3 className="truncate text-base font-semibold text-slate-900">{meal.title}</h3>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {meal.mealType} • {meal.time}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-slate-900">{meal.calories} kcal</p>
-                    <span
-                      className={[
-                        "mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
-                        meal.tagTone === "green"
-                          ? "bg-green-50 text-green-700"
-                          : "bg-slate-100 text-slate-500",
-                      ].join(" ")}
-                    >
-                      {meal.tag}
-                    </span>
-                  </div>
+              {mealHistory.length === 0 ? (
+                <div className="p-8 text-center text-slate-500">
+                  <p>Пока нет записей.</p>
+                  <button
+                    type="button"
+                    onClick={handleAddMealClick}
+                    className="mt-3 font-semibold text-green-700 underline hover:text-green-800"
+                  >
+                    Добавить приём пищи
+                  </button>
                 </div>
-              ))}
+              ) : (
+                mealHistory.map((meal) => (
+                  <div key={meal.id} className="flex items-center gap-4 p-4 transition hover:bg-slate-50 md:p-5">
+                    <MealIconCard icon={meal.icon} />
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-base font-semibold text-slate-900">{meal.title}</h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {meal.mealType} • {meal.time}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-slate-900">{formatIntRu(meal.calories)} kcal</p>
+                      <span className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                        {meal.tag}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -388,11 +533,17 @@ export function DiaryPage() {
                 <h2 className="text-xl font-semibold text-slate-900">Дневные цели</h2>
               </div>
 
-              <div className="space-y-5">
-                {dailyGoals.map((item) => (
-                  <DailyGoalProgress key={item.id} item={item} />
-                ))}
-              </div>
+              {dailyGoals.length === 0 ? (
+                <p className="text-sm text-slate-500">
+                  Цели не рассчитаны. Заполните профиль (вес, цель, активность), чтобы появились нормы КБЖУ.
+                </p>
+              ) : (
+                <div className="space-y-5">
+                  {dailyGoals.map((item) => (
+                    <DailyGoalProgress key={item.id} item={item} />
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="overflow-hidden rounded-xl bg-gradient-to-br from-green-600 to-green-800 p-6 text-white shadow-lg shadow-green-900/20">

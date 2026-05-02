@@ -19,6 +19,8 @@ from app.schemas.auth import (
     WebMealSaveRequest,
     WebMealSaveResponse,
 )
+from app.schemas.diary import DiarySnapshotResponse
+from app.services.diary_snapshot import build_diary_snapshot
 from app.core.use_cases.meal_analysis import build_meal_item_specs_from_ingredients
 from app.services.ingredient_checker import analyze_label_from_image_bytes, format_label_result_for_telegram
 from app.services.nutrition_targets import (
@@ -94,6 +96,12 @@ def save_my_meal(
 @router.get("/me", response_model=UserMeResponse)
 def get_me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return serialize_user_me(db, current_user)
+
+
+@router.get("/me/diary", response_model=DiarySnapshotResponse)
+def get_my_diary(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Сводка для страницы «Дневник»: последние приёмы, неделя, сегодня, вес."""
+    return build_diary_snapshot(db, current_user)
 
 
 @router.get("/me/nutrition-target", response_model=MyNutritionTargetResponse)

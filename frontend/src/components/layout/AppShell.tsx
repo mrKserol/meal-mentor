@@ -14,6 +14,8 @@ interface AppShellProps {
   avatarFallback: string;
   onLogout: () => void | Promise<void>;
   onNewMeal?: () => void;
+  /** Вызывается после успешного сохранения приёма пищи (обновление дневника и т.п.). */
+  onMealSaved?: () => void;
   /** Show floating + on small screens (above bottom nav) */
   showMobileFab?: boolean;
   children: ReactNode;
@@ -24,6 +26,7 @@ export function AppShell({
   avatarFallback,
   onLogout,
   onNewMeal,
+  onMealSaved,
   showMobileFab = true,
   children,
 }: AppShellProps) {
@@ -68,7 +71,7 @@ export function AppShell({
 
       <CompositionLabelModal open={compositionOpen} onClose={closeComposition} />
 
-      <AddMealModal open={addMealOpen} onClose={closeAddMeal} />
+      <AddMealModal open={addMealOpen} onClose={closeAddMeal} onMealSaved={onMealSaved} />
     </div>
   );
 }

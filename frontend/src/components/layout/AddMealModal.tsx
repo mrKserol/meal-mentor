@@ -43,9 +43,10 @@ type UiState =
 interface AddMealModalProps {
   open: boolean;
   onClose: () => void;
+  onMealSaved?: () => void;
 }
 
-export function AddMealModal({ open, onClose }: AddMealModalProps) {
+export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) {
   const { validateSession, getAccessToken } = useAuth();
   const [ui, setUi] = useState<UiState>({ kind: "menu" });
   const [textDraft, setTextDraft] = useState("");
@@ -173,6 +174,7 @@ export function AddMealModal({ open, onClose }: AddMealModalProps) {
         source_type: ui.mealData.source_type,
         telegram_file_id: ui.mealData.telegram_file_id,
       });
+      onMealSaved?.();
       setUi({ kind: "menu" });
       onClose();
     } catch (err) {
