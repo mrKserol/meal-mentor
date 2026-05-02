@@ -85,7 +85,9 @@ export const analyzeProductLabel = async (
 ): Promise<LabelAnalysisResult> => {
   const formData = new FormData();
   formData.append("file", file);
-  const response = await authClient.post<LabelAnalysisResult>("/users/me/analyze-label", formData, {
+  // Не используем authClient: у него default Content-Type: application/json,
+  // из‑за этого multipart ломается и FastAPI отвечает "Field required" для file.
+  const response = await axios.post<LabelAnalysisResult>(`${API_URL}/users/me/analyze-label`, formData, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   return response.data;
