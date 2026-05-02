@@ -1,24 +1,25 @@
 import axios from "axios";
-import { FormEvent, useState } from "react";
+import type { ChangeEvent } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Info, Save, Target, UserRound } from "lucide-react";
 
+import { AppShell } from "../components/layout/AppShell";
+import { defaultNewMealHandler } from "../components/layout/appNav";
 import { useAuth } from "../hooks/useAuth";
+import type { ProfileUpdatePayload, User } from "../types/auth";
 
-interface FormState {
-  email: string;
-  password: string;
-  sex: "male" | "female" | "other" | "";
+type ProfileFormState = {
+  sex: string;
   birth_date: string;
   height_cm: string;
   weight_kg: string;
-  goal: "lose_weight" | "maintain_weight" | "gain_weight" | "";
-  activity_level: "low" | "moderate" | "high" | "";
+  goal: string;
+  activity_level: string;
   target_weight_kg: string;
-}
+};
 
-const initialState: FormState = {
-  email: "",
-  password: "",
+const emptyForm: ProfileFormState = {
   sex: "",
   birth_date: "",
   height_cm: "",
@@ -28,107 +29,306 @@ const initialState: FormState = {
   target_weight_kg: "",
 };
 
+function userToForm(u: User): ProfileFormState {
+  const sexRaw = u.sex ?? "";
+  const sexNormalized = sexRaw === "male" || sexRaw === "female" ? sexRaw : "";
+  return {
+    sex: sexNormalized,
+    birth_date: u.birth_date ?? "",
+    height_cm: u.height_cm != null ? String(u.height_cm) : "",
+    weight_kg: u.weight_kg != null ? String(u.weight_kg) : "",
+    goal: u.goal ?? "",
+    activity_level: u.activity_level ?? "",
+    target_weight_kg: u.target_weight_kg != null ? String(u.target_weight_kg) : "",
+  };
+}
+
+function buildPayload(form: ProfileFormState): ProfileUpdatePayload {
+  const payload: ProfileUpdatePayload = {};
+  if (form.sex) payload.sex = form.sex as ProfileUpdatePayload["sex"];
+  if (form.birth_date) payload.birth_date = form.birth_date;
+  if (form.height_cm) payload.height_cm = Number(form.height_cm);
+  if (form.weight_kg) payload.weight_kg = Number(form.weight_kg);
+  if (form.goal) payload.goal = form.goal as ProfileUpdatePayload["goal"];
+  if (form.activity_level) {
+    payload.activity_level = form.activity_level as ProfileUpdatePayload["activity_level"];
+  }
+  if (form.target_weight_kg) payload.target_weight_kg = Number(form.target_weight_kg);
+  return payload;
+}
+
 export function ProfileOnboardingPage() {
   const navigate = useNavigate();
-  const { updateProfile } = useAuth();
-  const [form, setForm] = useState<FormState>(initialState);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user, updateProfile, validateSession, logout } = useAuth();
+  const [form, setForm] = useState<ProfileFormState>(emptyForm);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const onSubmit = async (event: FormEvent) => {
-    event.preventDefault();
+  useEffect(() => {
+    void validateSession();
+  }, [validateSession]);
+
+  useEffect(() => {
+    if (!user) return;
+    setForm(userToForm(user));
+  }, [user]);
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = event.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = async () => {
     setError(null);
-    setIsSubmitting(true);
+    setSuccess(null);
+    setIsSaving(true);
     try {
-      const payload: Record<string, string | number> = {};
-      if (form.email) payload.email = form.email;
-      if (form.password) payload.password = form.password;
-      if (form.sex) payload.sex = form.sex;
-      if (form.birth_date) payload.birth_date = form.birth_date;
-      if (form.height_cm) payload.height_cm = Number(form.height_cm);
-      if (form.weight_kg) payload.weight_kg = Number(form.weight_kg);
-      if (form.goal) payload.goal = form.goal;
-      if (form.activity_level) payload.activity_level = form.activity_level;
-      if (form.target_weight_kg) payload.target_weight_kg = Number(form.target_weight_kg);
-
-      await updateProfile(payload);
-      navigate("/dashboard", { replace: true });
-    } catch (requestError) {
-      if (axios.isAxiosError(requestError)) {
-        setError(requestError.response?.data?.detail ?? "Не удалось сохранить профиль.");
-      } else if (requestError instanceof Error) {
-        setError(requestError.message);
+      await updateProfile(buildPayload(form));
+      setSuccess("Профиль обновлен");
+      window.setTimeout(() => setSuccess(null), 5000);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setError(String(err.response?.data?.detail ?? "Не удалось сохранить профиль."));
+      } else if (err instanceof Error) {
+        setError(err.message);
       } else {
         setError("Не удалось сохранить профиль.");
       }
     } finally {
-      setIsSubmitting(false);
+      setIsSaving(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-surface flex items-center justify-center p-6">
-      <div className="w-full max-w-xl bg-white rounded-xl border border-outline-variant/40 shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-8">
-        <h1 className="text-h2 font-h2 text-on-surface mb-2">Заполните профиль питания</h1>
-        <p className="text-body-md text-on-surface-variant mb-6">
-          Это поможет вести дневник питания точнее. Можно пропустить и пользоваться тарифом Free.
-        </p>
+  const handleLogout = useCallback(async () => {
+    await logout();
+    navigate("/login", { replace: true });
+  }, [logout, navigate]);
 
-        <form onSubmit={onSubmit} className="space-y-3">
-          <input className="w-full border border-outline-variant rounded-lg p-3" placeholder="Email (опционально)" value={form.email} onChange={(e)=>setForm((p)=>({...p,email:e.target.value}))}/>
-          <input className="w-full border border-outline-variant rounded-lg p-3" placeholder="Новый пароль (опционально)" type="password" value={form.password} onChange={(e)=>setForm((p)=>({...p,password:e.target.value}))}/>
+  const avatarFallback =
+    user?.first_name?.trim()?.[0] ?? user?.username?.trim()?.[0] ?? user?.email?.trim()?.[0] ?? "U";
 
-          <select className="w-full border border-outline-variant rounded-lg p-3" value={form.sex} onChange={(e)=>setForm((p)=>({...p,sex:e.target.value as FormState["sex"]}))}>
-            <option value="">sex (опционально)</option>
-            <option value="male">male</option>
-            <option value="female">female</option>
-            <option value="other">other</option>
-          </select>
+  const nutritionTarget = user?.nutrition_target ?? null;
 
-          <div className="space-y-1">
-            <label htmlFor="birth_date" className="block text-sm text-on-surface-variant">
-              Дата рождения
-            </label>
-            <input
-              id="birth_date"
-              className="w-full border border-outline-variant rounded-lg p-3"
-              type="date"
-              value={form.birth_date}
-              onChange={(e)=>setForm((p)=>({...p,birth_date:e.target.value}))}
-            />
-          </div>
-          <input className="w-full border border-outline-variant rounded-lg p-3" type="number" placeholder="height_cm" value={form.height_cm} onChange={(e)=>setForm((p)=>({...p,height_cm:e.target.value}))}/>
-          <input className="w-full border border-outline-variant rounded-lg p-3" type="number" step="0.1" placeholder="weight_kg" value={form.weight_kg} onChange={(e)=>setForm((p)=>({...p,weight_kg:e.target.value}))}/>
-
-          <select className="w-full border border-outline-variant rounded-lg p-3" value={form.goal} onChange={(e)=>setForm((p)=>({...p,goal:e.target.value as FormState["goal"]}))}>
-            <option value="">goal (опционально)</option>
-            <option value="lose_weight">lose_weight</option>
-            <option value="maintain_weight">maintain_weight</option>
-            <option value="gain_weight">gain_weight</option>
-          </select>
-
-          <select className="w-full border border-outline-variant rounded-lg p-3" value={form.activity_level} onChange={(e)=>setForm((p)=>({...p,activity_level:e.target.value as FormState["activity_level"]}))}>
-            <option value="">activity_level (опционально)</option>
-            <option value="low">low</option>
-            <option value="moderate">moderate</option>
-            <option value="high">high</option>
-          </select>
-
-          <input className="w-full border border-outline-variant rounded-lg p-3" type="number" step="0.1" placeholder="target_weight_kg" value={form.target_weight_kg} onChange={(e)=>setForm((p)=>({...p,target_weight_kg:e.target.value}))}/>
-
-          {error ? <p className="text-label-sm text-error">{error}</p> : null}
-
-          <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={isSubmitting} className="flex-1 bg-primary-container text-on-primary rounded-lg py-3 font-semibold disabled:opacity-60">
-              {isSubmitting ? "Сохранение..." : "Сохранить профиль"}
-            </button>
-            <button type="button" onClick={() => navigate("/dashboard", { replace: true })} className="flex-1 bg-surface-container border border-outline-variant rounded-lg py-3 font-semibold text-on-surface">
-              Пропустить
-            </button>
-          </div>
-        </form>
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6">
+        <p className="text-base text-slate-500">Загрузка профиля...</p>
       </div>
-    </div>
+    );
+  }
+
+  const inputClass =
+    "w-full h-12 rounded-lg border border-slate-200 bg-slate-50 px-4 outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100";
+
+  return (
+    <AppShell
+      activeNav="profile"
+      avatarFallback={avatarFallback}
+      onLogout={handleLogout}
+      onNewMeal={defaultNewMealHandler}
+    >
+      <div className="mx-auto max-w-7xl p-4 pb-8 lg:p-8">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Профиль пользователя</h1>
+          <p className="mt-2 text-slate-500">
+            Управляйте данными о здоровье и диетическими предпочтениями.
+          </p>
+        </header>
+
+        {error ? (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        ) : null}
+        {success ? (
+          <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+            {success}
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          <section className="space-y-6 lg:col-span-8">
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-6 flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-green-50">
+                  <UserRound className="h-6 w-6 text-green-600" aria-hidden />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-semibold text-slate-900">Личная информация</h2>
+                  <p className="text-sm text-slate-500">Эти данные нужны для расчёта калорий и БЖУ.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm font-medium text-slate-600">Пол</span>
+                  <select name="sex" value={form.sex} onChange={handleChange} className={inputClass}>
+                    <option value="">Не указано</option>
+                    <option value="male">Мужской</option>
+                    <option value="female">Женский</option>
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm font-medium text-slate-600">Дата рождения</span>
+                  <input
+                    name="birth_date"
+                    type="date"
+                    value={form.birth_date}
+                    onChange={handleChange}
+                    className={inputClass}
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm font-medium text-slate-600">Рост, см</span>
+                  <input
+                    name="height_cm"
+                    type="number"
+                    min={1}
+                    inputMode="numeric"
+                    placeholder="180"
+                    value={form.height_cm}
+                    onChange={handleChange}
+                    className={inputClass}
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm font-medium text-slate-600">Актуальный вес, кг</span>
+                  <input
+                    name="weight_kg"
+                    type="number"
+                    min={1}
+                    step="0.1"
+                    inputMode="decimal"
+                    placeholder="75"
+                    value={form.weight_kg}
+                    onChange={handleChange}
+                    className={inputClass}
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm font-medium text-slate-600">Цель</span>
+                  <select name="goal" value={form.goal} onChange={handleChange} className={inputClass}>
+                    <option value="">Не указано</option>
+                    <option value="lose_weight">Снижение веса</option>
+                    <option value="maintain_weight">Поддержание веса</option>
+                    <option value="gain_weight">Набор массы</option>
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-sm font-medium text-slate-600">Желаемый вес, кг</span>
+                  <input
+                    name="target_weight_kg"
+                    type="number"
+                    min={1}
+                    step="0.1"
+                    inputMode="decimal"
+                    placeholder="70"
+                    value={form.target_weight_kg}
+                    onChange={handleChange}
+                    className={inputClass}
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1 md:col-span-2">
+                  <span className="text-sm font-medium text-slate-600">Уровень активности</span>
+                  <select
+                    name="activity_level"
+                    value={form.activity_level}
+                    onChange={handleChange}
+                    className={inputClass}
+                  >
+                    <option value="">Не указано</option>
+                    <option value="1.2">Сидячий образ жизни, отсутствие спорта</option>
+                    <option value="1.375">Легкая активность — тренировки 1–3 раза в неделю</option>
+                    <option value="1.55">Средняя активность — интенсивные тренировки 3–5 раз в неделю</option>
+                    <option value="1.725">Высокая активность — ежедневные нагрузки</option>
+                    <option value="1.9">
+                      Экстремальная активность — физический труд / профессиональный спорт
+                    </option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <aside className="space-y-6 lg:col-span-4">
+            <div className="rounded-xl bg-green-700 p-6 text-white shadow-lg shadow-green-900/20">
+              <div className="mb-4 flex items-center gap-3">
+                <Target className="h-6 w-6 shrink-0" aria-hidden />
+                <h3 className="text-xl font-semibold">Дневная цель (КБЖУ)</h3>
+              </div>
+
+              {nutritionTarget ? (
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between border-b border-white/15 py-2">
+                    <span className="text-white/90">Калории</span>
+                    <span className="font-bold">{nutritionTarget.target_calories} kcal</span>
+                  </div>
+                  <div className="flex justify-between border-b border-white/15 py-2">
+                    <span className="text-white/90">Белки</span>
+                    <span className="font-bold">{nutritionTarget.target_protein_g} g</span>
+                  </div>
+                  <div className="flex justify-between border-b border-white/15 py-2">
+                    <span className="text-white/90">Жиры</span>
+                    <span className="font-bold">{nutritionTarget.target_fat_g} g</span>
+                  </div>
+                  <div className="flex justify-between border-b border-white/15 py-2">
+                    <span className="text-white/90">Углеводы</span>
+                    <span className="font-bold">{nutritionTarget.target_carbs_g} g</span>
+                  </div>
+                  <div className="flex justify-between border-b border-white/15 py-2">
+                    <span className="text-white/90">BMR</span>
+                    <span className="font-bold">{nutritionTarget.bmr_kcal} kcal</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-white/90">TDEE</span>
+                    <span className="font-bold">{nutritionTarget.tdee_kcal} kcal</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2 text-sm text-white/95">
+                  <p className="font-semibold">Дневная цель пока не рассчитана</p>
+                  <p>
+                    Заполните пол, дату рождения, рост, вес, цель, желаемый вес и уровень активности.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-50">
+                  <Info className="h-5 w-5 text-green-600" aria-hidden />
+                </div>
+                <div>
+                  <h4 className="mb-1 text-lg font-semibold text-slate-900">Совет ментора</h4>
+                  <p className="text-sm leading-relaxed text-slate-600">
+                    {nutritionTarget
+                      ? "На основе ваших данных рассчитана дневная цель по формуле Миффлина-Сан Жеора."
+                      : "Заполните профиль, чтобы рассчитать дневную норму калорий и БЖУ."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={isSaving}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 py-3 font-semibold text-white shadow-sm transition hover:bg-green-700 disabled:opacity-60"
+            >
+              <Save className="h-5 w-5 shrink-0" aria-hidden />
+              {isSaving ? "Сохраняем..." : "Сохранить изменения профиля"}
+            </button>
+          </aside>
+        </div>
+      </div>
+    </AppShell>
   );
 }
-

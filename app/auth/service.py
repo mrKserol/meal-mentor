@@ -1,10 +1,11 @@
 from datetime import date, datetime
+import base64
 import logging
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 import requests
-from jose import jwt
+from jose import jwt, JWTError
 
 from app.auth.security import (
     create_access_token,
@@ -22,34 +23,73 @@ from app.schemas.auth import AuthTelegramCallbackRequest, AuthTelegramRequest, A
 from app.core.config import TELEGRAM_CLIENT_ID, TELEGRAM_CLIENT_SECRET, TELEGRAM_REDIRECT_URI
 
 logger = logging.getLogger(__name__)
-
-
-def _parse_telegram_id(raw_value) -> int | None:
-    if raw_value is None:
-        return None
-    if isinstance(raw_value, int):
-        return raw_value
-    text = str(raw_value).strip()
-    if text.isdigit():
-        return int(text)
-    digits = "".join(ch for ch in text if ch.isdigit())
-    if digits:
-        return int(digits)
-    return None
+TELEGRAM_OIDC_ISSUER = "https://oauth.telegram.org"
+TELEGRAM_OIDC_JWKS_URL = "https://oauth.telegram.org/.well-known/jwks.json"
 
 
 def _extract_telegram_id(claims: dict) -> int | None:
-    for key in ("sub", "id", "user_id"):
-        parsed = _parse_telegram_id(claims.get(key))
-        if parsed is not None:
-            return parsed
+    candidates = [
+        claims.get("id"),
+        claims.get("user_id"),
+        claims.get("telegram_id"),
+    ]
     user_obj = claims.get("user")
     if isinstance(user_obj, dict):
-        for key in ("id", "sub", "user_id"):
-            parsed = _parse_telegram_id(user_obj.get(key))
-            if parsed is not None:
-                return parsed
+        candidates.append(user_obj.get("id"))
+
+    for value in candidates:
+        if value is None:
+            continue
+        try:
+            telegram_id = int(value)
+        except (TypeError, ValueError):
+            continue
+        if telegram_id <= 0:
+            continue
+        return telegram_id
+
     return None
+
+
+def _decode_and_validate_telegram_id_token(id_token: str) -> dict:
+    try:
+        token_header = jwt.get_unverified_header(id_token)
+    except JWTError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Telegram id_token header") from exc
+
+    kid = token_header.get("kid")
+    if not kid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Telegram id_token missing kid")
+
+    try:
+        jwks_response = requests.get(TELEGRAM_OIDC_JWKS_URL, timeout=15)
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Failed to fetch Telegram JWKS") from exc
+
+    if jwks_response.status_code >= 400:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Failed to fetch Telegram JWKS")
+
+    jwks_payload = jwks_response.json()
+    keys = jwks_payload.get("keys") if isinstance(jwks_payload, dict) else None
+    if not isinstance(keys, list):
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Invalid Telegram JWKS payload")
+
+    signing_key = next((k for k in keys if isinstance(k, dict) and k.get("kid") == kid), None)
+    if not signing_key:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No matching Telegram JWKS key")
+
+    try:
+        claims = jwt.decode(
+            id_token,
+            signing_key,
+            algorithms=["RS256"],
+            audience=str(TELEGRAM_CLIENT_ID),
+            issuer=TELEGRAM_OIDC_ISSUER,
+        )
+    except JWTError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Telegram id_token claims") from exc
+
+    return claims
 
 
 def get_or_create_telegram_user(
@@ -156,12 +196,16 @@ def login_with_telegram_oauth(
     if not TELEGRAM_CLIENT_ID or not TELEGRAM_CLIENT_SECRET or not TELEGRAM_REDIRECT_URI:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Telegram OAuth is not configured")
 
+    basic_creds = base64.b64encode(f"{TELEGRAM_CLIENT_ID}:{TELEGRAM_CLIENT_SECRET}".encode("utf-8")).decode("utf-8")
     token_response = requests.post(
         "https://oauth.telegram.org/token",
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Authorization": f"Basic {basic_creds}",
+        },
         data={
             "grant_type": "authorization_code",
             "client_id": TELEGRAM_CLIENT_ID,
-            "client_secret": TELEGRAM_CLIENT_SECRET,
             "code": payload.code,
             "redirect_uri": payload.redirect_uri,
             "code_verifier": payload.code_verifier,
@@ -174,38 +218,25 @@ def login_with_telegram_oauth(
 
     token_data = token_response.json()
     id_token = token_data.get("id_token")
-    userinfo = token_data.get("userinfo")
-    access_token = token_data.get("access_token")
-    claims = {}
-    if isinstance(id_token, str):
-        try:
-            claims = jwt.get_unverified_claims(id_token)
-        except Exception:
-            claims = {}
-    if isinstance(userinfo, dict):
-        claims.update(userinfo)
-
-    if isinstance(access_token, str):
-        try:
-            userinfo_response = requests.get(
-                "https://oauth.telegram.org/userinfo",
-                headers={"Authorization": f"Bearer {access_token}"},
-                timeout=15,
-            )
-            if userinfo_response.status_code < 400:
-                remote_userinfo = userinfo_response.json()
-                if isinstance(remote_userinfo, dict):
-                    claims.update(remote_userinfo)
-        except Exception:
-            pass
+    if not isinstance(id_token, str):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Telegram id_token missing in token response")
+    claims = _decode_and_validate_telegram_id_token(id_token)
 
     logger.info("telegram userinfo keys: %s", sorted(list(claims.keys())))
+    logger.info("sub claim present: %s (ignored for telegram_id)", "sub" in claims)
+    logger.info(
+        "telegram id candidates present: id=%s user_id=%s telegram_id=%s nested_user_id=%s",
+        claims.get("id") is not None,
+        claims.get("user_id") is not None,
+        claims.get("telegram_id") is not None,
+        isinstance(claims.get("user"), dict) and claims.get("user", {}).get("id") is not None,
+    )
     telegram_id = _extract_telegram_id(claims)
     logger.info("telegram_id parsed: %s", telegram_id)
     if telegram_id is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Telegram user id missing")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Telegram user id not found in OAuth claims")
 
-    first_name = claims.get("given_name") or claims.get("first_name")
+    first_name = claims.get("name") or claims.get("given_name") or claims.get("first_name")
     username = claims.get("preferred_username") or claims.get("username")
 
     user, is_new_user = get_or_create_telegram_user(

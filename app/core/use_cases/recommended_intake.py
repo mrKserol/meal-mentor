@@ -8,29 +8,11 @@ from datetime import date
 from typing import Any
 
 from app.db.models import User
+from app.services.nutrition_targets import activity_multiplier_for_level
 
 
 def _activity_multiplier(activity_level: str | None) -> float:
-    if not activity_level:
-        return 1.0
-    s = str(activity_level).strip().lower()
-    if s in ("1", "1.0", "low", "низкая"):
-        return 1.0
-    if s in ("1.3", "medium", "средняя"):
-        return 1.3
-    if s in ("1.5", "high", "высокая"):
-        return 1.5
-    try:
-        v = float(s.replace(",", "."))
-        if abs(v - 1.0) < 0.01:
-            return 1.0
-        if abs(v - 1.3) < 0.01:
-            return 1.3
-        if abs(v - 1.5) < 0.01:
-            return 1.5
-    except ValueError:
-        pass
-    return 1.0
+    return activity_multiplier_for_level(activity_level)
 
 
 def _age_years(birth: date, today: date | None = None) -> int | None:

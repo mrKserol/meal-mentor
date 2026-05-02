@@ -163,9 +163,36 @@ def kb_sex() -> InlineKeyboardMarkup:
 def kb_activity() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
-            [InlineKeyboardButton("1 — низкая", callback_data="m:set:act:1.0")],
-            [InlineKeyboardButton("1.3 — средняя", callback_data="m:set:act:1.3")],
-            [InlineKeyboardButton("1.5 — высокая", callback_data="m:set:act:1.5")],
+            [
+                InlineKeyboardButton(
+                    "Минимум (сидячий) • 1.2",
+                    callback_data="m:set:act:1.2",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    "Лёгкая (1–3 тр/нед) • 1.375",
+                    callback_data="m:set:act:1.375",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    "Средняя (3–5 интенс.) • 1.55",
+                    callback_data="m:set:act:1.55",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    "Высокая (ежедн.) • 1.725",
+                    callback_data="m:set:act:1.725",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    "Экстрем. (труд / спорт) • 1.9",
+                    callback_data="m:set:act:1.9",
+                ),
+            ],
             [InlineKeyboardButton("⬅ Назад", callback_data="m:onb:back")],
         ]
     )

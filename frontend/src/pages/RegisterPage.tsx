@@ -13,7 +13,7 @@ interface RegisterFormState {
   height_cm: string;
   weight_kg: string;
   goal: "lose_weight" | "maintain_weight" | "gain_weight";
-  activity_level: "low" | "moderate" | "high";
+  activity_level: "1.2" | "1.375" | "1.55" | "1.725" | "1.9";
   target_weight_kg: string;
   email: string;
   password: string;
@@ -29,7 +29,7 @@ const initialForm: RegisterFormState = {
   height_cm: "",
   weight_kg: "",
   goal: "maintain_weight",
-  activity_level: "moderate",
+  activity_level: "1.375",
   target_weight_kg: "",
   email: "",
   password: "",
@@ -235,9 +235,13 @@ export function RegisterPage() {
                 }
                 className="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary-container focus:border-primary transition-all outline-none text-on-surface"
               >
-                <option value="low">low</option>
-                <option value="moderate">moderate</option>
-                <option value="high">high</option>
+                <option value="1.2">Сидячий образ жизни, без спорта</option>
+                <option value="1.375">Лёгкая активность (тренировки 1–3 раза в неделю)</option>
+                <option value="1.55">Средняя активность (интенсивные тренировки 3–5 раз в неделю)</option>
+                <option value="1.725">Высокая активность (ежедневные нагрузки)</option>
+                <option value="1.9">
+                  Экстремальная активность (тяжёлый физический труд, профессиональный спорт)
+                </option>
               </select>
             </div>
 

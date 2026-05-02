@@ -57,6 +57,25 @@ class AuthTelegramCallbackRequest(BaseModel):
     timezone: str | None = None
 
 
+class NutritionTargetResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    bmr_kcal: int
+    tdee_kcal: int
+    target_calories: int
+    target_protein_g: int
+    target_fat_g: int
+    target_carbs_g: int
+    formula_name: str
+    goal: str | None = None
+    activity_level: str | None = None
+    weight_kg: float | None = None
+    target_weight_kg: float | None = None
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime | None = None
+
+
 class UserMeResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -77,6 +96,11 @@ class UserMeResponse(BaseModel):
     created_at: datetime
     updated_at: datetime | None
     profile_completed: bool
+    nutrition_target: NutritionTargetResponse | None = None
+
+
+class MyNutritionTargetResponse(BaseModel):
+    nutrition_target: NutritionTargetResponse | None = None
 
 
 class TelegramAuthResponse(AuthTokenPair):

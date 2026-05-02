@@ -3,6 +3,7 @@ import axios from "axios";
 import type {
   AuthResponse,
   LoginPayload,
+  MyNutritionTargetEnvelope,
   ProfileUpdatePayload,
   RegisterPayload,
   TelegramCallbackPayload,
@@ -51,6 +52,15 @@ export const logout = async (refreshToken: string): Promise<void> => {
 
 export const getMe = async (accessToken: string): Promise<User> => {
   const response = await authClient.get<User>("/users/me", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  return response.data;
+};
+
+export const getMyNutritionTarget = async (
+  accessToken: string,
+): Promise<MyNutritionTargetEnvelope> => {
+  const response = await authClient.get<MyNutritionTargetEnvelope>("/users/me/nutrition-target", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   return response.data;
