@@ -28,7 +28,7 @@ export function RecentMealsCard({ items }: RecentMealsCardProps) {
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="flex items-center justify-between border-b border-slate-100 p-6">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">Последние 3 приёма пищи</h2>
+          <h2 className="text-xl font-semibold text-slate-900">Приемы пищи сегодня</h2>
         </div>
         <Link
           to="/diary"
@@ -52,7 +52,11 @@ export function RecentMealsCard({ items }: RecentMealsCardProps) {
           </div>
         ) : (
           items.map((meal) => (
-            <div key={meal.id} className="flex items-start gap-4 p-4 transition hover:bg-slate-50 md:p-5">
+            <div key={meal.id} className="flex items-start gap-3 p-4 transition hover:bg-slate-50 md:p-5">
+              <div className="flex w-14 shrink-0 flex-col items-end pt-0.5">
+                <span className="text-base font-bold leading-none text-slate-900">{formatIntRu(meal.calories)}</span>
+                <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">kcal</span>
+              </div>
               {meal.thumbUrl ? (
                 <img
                   src={meal.thumbUrl}
@@ -65,15 +69,10 @@ export function RecentMealsCard({ items }: RecentMealsCardProps) {
               )}
               <div className="min-w-0 flex-1">
                 <h3 className="text-base font-semibold leading-snug text-slate-900">{meal.predictionLine}</h3>
-                <p className="mt-1 text-sm text-slate-600">
-                  Приём пищи * {meal.time}
-                </p>
+                <p className="mt-1 text-sm text-slate-600">Приём пищи в {meal.time}</p>
                 <p className="mt-2 text-sm leading-relaxed text-slate-700">
                   <span className="font-medium text-slate-800">Состав:</span> {meal.composition}
                 </p>
-              </div>
-              <div className="shrink-0 text-right">
-                <p className="font-bold text-slate-900">{formatIntRu(meal.calories)} kcal</p>
               </div>
             </div>
           ))

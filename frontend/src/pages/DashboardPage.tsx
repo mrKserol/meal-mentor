@@ -13,7 +13,7 @@ import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
 import type { NutritionTarget, User } from "../types/auth";
 import type { DiarySnapshot, DiaryTodayTotals } from "../types/diary";
-import { mapRecentMealsToHistory } from "../utils/recentMeals";
+import { mapTodayMealsToHistory } from "../utils/recentMeals";
 
 const MEAL_MENTOR_ACCESS_TOKEN_KEY = "meal_mentor_access_token";
 
@@ -88,7 +88,7 @@ export function DashboardPage() {
     return `Сегодня держим ориентир: ${nutritionTarget.target_calories} ккал.`;
   }, [nutritionTarget]);
 
-  const recentMeals = useMemo(() => mapRecentMealsToHistory(diarySnapshot), [diarySnapshot]);
+  const todayMealsList = useMemo(() => mapTodayMealsToHistory(diarySnapshot), [diarySnapshot]);
 
   const avatarFallback =
     profile?.first_name?.trim()?.[0] ??
@@ -146,7 +146,7 @@ export function DashboardPage() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="space-y-8 lg:col-span-2">
             <NutritionDiaryCard nutritionTarget={nutritionTarget} todayTotals={todayTotals} />
-            <RecentMealsCard items={recentMeals} />
+            <RecentMealsCard items={todayMealsList} />
           </div>
           <div className="flex flex-col gap-8">
             <ProfileCard user={profile} />

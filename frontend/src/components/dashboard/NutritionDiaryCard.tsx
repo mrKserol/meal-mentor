@@ -1,4 +1,4 @@
-import { BookOpen, Info } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import type { NutritionTarget } from "../../types/auth";
@@ -30,7 +30,7 @@ export function NutritionDiaryCard({ nutritionTarget, todayTotals }: NutritionDi
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-container/25 text-primary">
               <BookOpen className="h-6 w-6" aria-hidden />
             </div>
-            <h3 className="font-h2 text-h2 text-on-surface">Дневник питания</h3>
+            <h3 className="font-h2 text-h2 text-on-surface">КБЖУ за сегодня</h3>
           </div>
           <span className="capitalize font-label-sm text-label-sm text-on-surface-variant">{today}</span>
         </div>
@@ -61,7 +61,7 @@ export function NutritionDiaryCard({ nutritionTarget, todayTotals }: NutritionDi
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-container/25 text-primary">
             <BookOpen className="h-6 w-6" aria-hidden />
           </div>
-          <h3 className="font-h2 text-h2 text-on-surface">Дневник питания</h3>
+          <h3 className="font-h2 text-h2 text-on-surface">КБЖУ за сегодня</h3>
         </div>
         <span className="capitalize font-label-sm text-label-sm text-on-surface-variant">{today}</span>
       </div>
@@ -95,21 +95,6 @@ export function NutritionDiaryCard({ nutritionTarget, todayTotals }: NutritionDi
           unit="g"
           ringClass="text-secondary"
         />
-      </div>
-
-      <div className="flex items-start gap-3 rounded-xl bg-surface-container p-4">
-        <Info className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
-        <p className="text-body-md text-on-surface-variant">
-          Съедено за сегодня по данным из дневника (сохранённые приёмы пищи). Добавить запись можно на странице{" "}
-          <button
-            type="button"
-            onClick={() => navigate("/diary")}
-            className="font-semibold text-primary underline hover:opacity-90"
-          >
-            Дневник
-          </button>
-          .
-        </p>
       </div>
     </div>
   );

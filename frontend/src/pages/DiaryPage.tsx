@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import {
   BarChart3,
   Beef,
-  CirclePlus,
   EggFried,
   Flame,
   Info,
@@ -15,6 +14,7 @@ import {
 
 import { getMyNutritionTarget } from "../api/authApi";
 import { getMyDiary } from "../api/diaryApi";
+import { MealHistoryDaySection } from "../components/diary/MealHistoryDaySection";
 import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
 import type { DiaryPeriodDay, DiarySnapshot, DiaryWeekDay } from "../types/diary";
@@ -49,13 +49,6 @@ function formatIntRu(n: number): string {
 
 function formatFixedRu(n: number, frac = 1): string {
   return new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 0, maximumFractionDigits: frac }).format(n);
-}
-
-function getTodayRu(): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-  }).format(new Date());
 }
 
 function pctCurrentTarget(current: number, target: number): number {
@@ -230,6 +223,8 @@ export function DiaryPage() {
   const avatarFallback =
     user?.first_name?.trim()?.[0] ?? user?.username?.trim()?.[0] ?? user?.email?.trim()?.[0] ?? "U";
 
+  const webDiaryToken = getAccessToken() ?? localStorage.getItem(MEAL_MENTOR_ACCESS_TOKEN_KEY) ?? "";
+
   const dailyGoals = useMemo(() => {
     if (!snapshot || !nutritionTarget) return [];
     return buildDailyGoals(nutritionTarget, snapshot.today);
@@ -281,25 +276,8 @@ export function DiaryPage() {
       onLogout={handleLogout}
       onMealSaved={() => void loadDiary()}
     >
-      {({ openAddMeal }) => (
+      {() => (
         <div className="mx-auto max-w-7xl space-y-6 p-4 pb-8 lg:p-8">
-          <section className="flex flex-col justify-between gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Обзор питания</h1>
-              <p className="mt-2 text-slate-500">
-                Отслеживайте свой прогресс и записывайте приёмы пищи за {getTodayRu()}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => openAddMeal()}
-              className="flex items-center justify-center gap-2 rounded-lg bg-green-500 px-6 py-3 font-semibold text-green-950 shadow-sm transition hover:bg-green-400 active:scale-[0.98]"
-            >
-              <CirclePlus className="h-5 w-5" aria-hidden />
-              Добавить прием пищи
-            </button>
-          </section>
-
           {diaryPhase === "loading" && !snapshot ? (
             <p className="text-center text-slate-500">Загружаем данные дневника…</p>
           ) : null}
@@ -466,6 +444,10 @@ export function DiaryPage() {
               </div>
             </div>
           </section>
+
+          {webDiaryToken ? (
+            <MealHistoryDaySection accessToken={webDiaryToken} onMealsChanged={() => void loadDiary()} />
+          ) : null}
 
           <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
