@@ -18,7 +18,6 @@ from app.core.use_cases.meal_analysis import analyze_meal_from_image_base64
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    MEAL_PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
     init_db()
     yield
     # shutdown if needed
@@ -35,6 +34,8 @@ app.include_router(subscriptions_router)
 app.include_router(auth_router)
 app.include_router(users_web_router)
 
+# StaticFiles checks the path at import/configure time — before lifespan runs.
+MEAL_PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount(
     "/media/meals",
     StaticFiles(directory=str(MEAL_PHOTOS_DIR)),
