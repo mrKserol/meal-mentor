@@ -76,6 +76,7 @@ export interface User {
   updated_at: string | null;
   profile_completed: boolean;
   nutrition_target?: NutritionTarget | null;
+  allergens: string[];
 }
 
 export interface ProfileUpdatePayload {
@@ -99,4 +100,5 @@ export interface ProfileUpdatePayload {
     | "1.3"
     | "1.5";
   target_weight_kg?: number;
+  allergens?: string[];
 }

@@ -17,7 +17,8 @@ if (!API_URL) {
   throw new Error("VITE_API_URL is not defined");
 }
 
-const authClient = axios.create({
+/** Axios с baseURL и JSON по умолчанию (не для multipart). */
+export const authClient = axios.create({
   baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
@@ -54,7 +55,8 @@ export const getMe = async (accessToken: string): Promise<User> => {
   const response = await authClient.get<User>("/users/me", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  return response.data;
+  const me = response.data;
+  return { ...me, allergens: me.allergens ?? [] };
 };
 
 export const getMyNutritionTarget = async (
@@ -68,6 +70,25 @@ export const getMyNutritionTarget = async (
 
 export const updateMyProfile = async (accessToken: string, payload: ProfileUpdatePayload): Promise<User> => {
   const response = await authClient.patch<User>("/users/me/profile", payload, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const me = response.data;
+  return { ...me, allergens: me.allergens ?? [] };
+};
+
+export interface LabelAnalysisResult {
+  text: string;
+}
+
+export const analyzeProductLabel = async (
+  accessToken: string,
+  file: File,
+): Promise<LabelAnalysisResult> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  // Не используем authClient: у него default Content-Type: application/json,
+  // из‑за этого multipart ломается и FastAPI отвечает "Field required" для file.
+  const response = await axios.post<LabelAnalysisResult>(`${API_URL}/users/me/analyze-label`, formData, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   return response.data;

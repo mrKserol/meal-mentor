@@ -49,6 +49,11 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    allergens = relationship(
+        "Allergen",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
 
 class NutritionTarget(Base):
@@ -72,6 +77,20 @@ class NutritionTarget(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship("User", back_populates="nutrition_targets")
+
+
+class Allergen(Base):
+    __tablename__ = "allergens"
+    __table_args__ = (
+        UniqueConstraint("user_id", "allergen_key", name="uq_allergens_user_key"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    allergen_key = Column(String(64), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="allergens")
 
 
 class Meal(Base):

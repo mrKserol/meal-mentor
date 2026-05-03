@@ -1,6 +1,7 @@
 from datetime import date, datetime
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class AuthRegisterRequest(BaseModel):
@@ -97,6 +98,7 @@ class UserMeResponse(BaseModel):
     updated_at: datetime | None
     profile_completed: bool
     nutrition_target: NutritionTargetResponse | None = None
+    allergens: list[str] = Field(default_factory=list)
 
 
 class MyNutritionTargetResponse(BaseModel):
@@ -109,6 +111,24 @@ class TelegramAuthResponse(AuthTokenPair):
     profile_completed: bool
 
 
+class LabelAnalysisResponse(BaseModel):
+    """Ответ анализа этикетки (текст как в Telegram check_ingredients)."""
+
+    text: str
+
+
+class WebMealSaveRequest(BaseModel):
+    """Сохранение приёма пищи для текущего веб-пользователя (JWT), без telegram_id."""
+
+    ingredients: dict[str, Any]
+    source_type: str = "photo"
+    telegram_file_id: str | None = None
+
+
+class WebMealSaveResponse(BaseModel):
+    status: str
+
+
 class ProfilePatchRequest(BaseModel):
     email: EmailStr | None = None
     password: str | None = None
@@ -119,3 +139,4 @@ class ProfilePatchRequest(BaseModel):
     goal: str | None = None
     activity_level: str | None = None
     target_weight_kg: float | None = None
+    allergens: list[str] | None = None

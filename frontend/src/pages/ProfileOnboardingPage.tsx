@@ -2,10 +2,27 @@ import axios from "axios";
 import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Info, Save, Target, UserRound } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  AlertTriangle,
+  Bean,
+  Cherry,
+  CircleCheck,
+  Citrus,
+  Egg,
+  Fish,
+  Info,
+  Milk,
+  Nut,
+  Save,
+  Shrimp,
+  Target,
+  Trees,
+  UserRound,
+  Wheat,
+} from "lucide-react";
 
 import { AppShell } from "../components/layout/AppShell";
-import { defaultNewMealHandler } from "../components/layout/appNav";
 import { useAuth } from "../hooks/useAuth";
 import type { ProfileUpdatePayload, User } from "../types/auth";
 
@@ -17,7 +34,23 @@ type ProfileFormState = {
   goal: string;
   activity_level: string;
   target_weight_kg: string;
+  allergens: string[];
 };
+
+const ALLERGEN_OPTIONS: { key: string; label: string; Icon: LucideIcon }[] = [
+  { key: "dairy", label: "Молочные продукты", Icon: Milk },
+  { key: "eggs", label: "Яйца", Icon: Egg },
+  { key: "peanuts", label: "Арахис", Icon: Nut },
+  { key: "shellfish", label: "Моллюски", Icon: Shrimp },
+  { key: "gluten", label: "Глютен", Icon: Wheat },
+  { key: "fish", label: "Рыба", Icon: Fish },
+  { key: "soy", label: "Соя", Icon: Bean },
+  { key: "tree_nuts", label: "Древесные орехи", Icon: Trees },
+  { key: "citrus", label: "Цитрусовые", Icon: Citrus },
+  { key: "nightshades", label: "Помидоры / пасленовые", Icon: Cherry },
+];
+
+const KNOWN_ALLERGEN_KEYS = new Set(ALLERGEN_OPTIONS.map((o) => o.key));
 
 const emptyForm: ProfileFormState = {
   sex: "",
@@ -27,6 +60,7 @@ const emptyForm: ProfileFormState = {
   goal: "",
   activity_level: "",
   target_weight_kg: "",
+  allergens: [],
 };
 
 function userToForm(u: User): ProfileFormState {
@@ -40,6 +74,7 @@ function userToForm(u: User): ProfileFormState {
     goal: u.goal ?? "",
     activity_level: u.activity_level ?? "",
     target_weight_kg: u.target_weight_kg != null ? String(u.target_weight_kg) : "",
+    allergens: (u.allergens ?? []).filter((key) => KNOWN_ALLERGEN_KEYS.has(key)),
   };
 }
 
@@ -54,6 +89,7 @@ function buildPayload(form: ProfileFormState): ProfileUpdatePayload {
     payload.activity_level = form.activity_level as ProfileUpdatePayload["activity_level"];
   }
   if (form.target_weight_kg) payload.target_weight_kg = Number(form.target_weight_kg);
+  payload.allergens = [...form.allergens];
   return payload;
 }
 
@@ -77,6 +113,16 @@ export function ProfileOnboardingPage() {
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const toggleAllergen = (key: string) => {
+    setForm((prev) => {
+      const exists = prev.allergens.includes(key);
+      return {
+        ...prev,
+        allergens: exists ? prev.allergens.filter((item) => item !== key) : [...prev.allergens, key],
+      };
+    });
   };
 
   const handleSave = async () => {
@@ -122,12 +168,7 @@ export function ProfileOnboardingPage() {
     "w-full h-12 rounded-lg border border-slate-200 bg-slate-50 px-4 outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100";
 
   return (
-    <AppShell
-      activeNav="profile"
-      avatarFallback={avatarFallback}
-      onLogout={handleLogout}
-      onNewMeal={defaultNewMealHandler}
-    >
+    <AppShell activeNav="profile" avatarFallback={avatarFallback} onLogout={handleLogout}>
       <div className="mx-auto max-w-7xl p-4 pb-8 lg:p-8">
         <header className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Профиль пользователя</h1>
@@ -253,6 +294,56 @@ export function ProfileOnboardingPage() {
                     </option>
                   </select>
                 </label>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-6 flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-orange-50">
+                  <AlertTriangle className="h-6 w-6 text-orange-600" aria-hidden />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-semibold text-slate-900">Аллергены</h2>
+                  <p className="text-sm text-slate-500">
+                    Выберите продукты, которые вам противопоказаны.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                {ALLERGEN_OPTIONS.map(({ key, label, Icon }) => {
+                  const selected = form.allergens.includes(key);
+                  return (
+                    <label
+                      key={key}
+                      htmlFor={`allergen-${key}`}
+                      className={`group relative flex cursor-pointer flex-col items-center overflow-hidden rounded-xl border p-4 transition-colors ${
+                        selected
+                          ? "border-green-600 bg-green-50/80 shadow-sm"
+                          : "border-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      <input
+                        id={`allergen-${key}`}
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => toggleAllergen(key)}
+                        className="sr-only"
+                      />
+                      <div
+                        className={`mb-2 flex h-12 w-12 items-center justify-center rounded-lg ${
+                          selected ? "bg-white shadow-sm" : "bg-slate-50"
+                        }`}
+                      >
+                        <Icon className="h-7 w-7 text-slate-600" aria-hidden />
+                      </div>
+                      <span className="text-center text-sm font-medium text-slate-800">{label}</span>
+                      {selected ? (
+                        <CircleCheck className="absolute right-1 top-1 h-5 w-5 text-green-600" aria-hidden />
+                      ) : null}
+                    </label>
+                  );
+                })}
               </div>
             </div>
           </section>

@@ -30,4 +30,5 @@ def serialize_user_me(db: Session, user: User) -> dict:
         "updated_at": user.updated_at,
         "profile_completed": is_profile_completed(user),
         "nutrition_target": nutrition.model_dump() if nutrition is not None else None,
+        "allergens": sorted(a.allergen_key for a in user.allergens),
     }

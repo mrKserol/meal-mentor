@@ -13,11 +13,12 @@ interface AppSideNavProps {
   activeItem: AppNavItem;
   onLogout: () => void | Promise<void>;
   onNewMeal?: () => void;
+  onCompositionClick?: () => void;
 }
 
-export function AppSideNav({ activeItem, onLogout, onNewMeal }: AppSideNavProps) {
+export function AppSideNav({ activeItem, onLogout, onNewMeal, onCompositionClick }: AppSideNavProps) {
   const navigate = useNavigate();
-  const meal = onNewMeal ?? (() => window.alert("Скоро добавим запись приема пищи"));
+  const meal = onNewMeal ?? (() => {});
 
   return (
     <aside className="fixed left-0 top-14 z-40 hidden h-[calc(100vh-3.5rem)] w-64 flex-col border-r border-slate-200 bg-slate-50 p-4 lg:flex">
@@ -35,11 +36,21 @@ export function AppSideNav({ activeItem, onLogout, onNewMeal }: AppSideNavProps)
           <LayoutDashboard className="h-5 w-5 shrink-0" aria-hidden />
           <span>Главная</span>
         </button>
-        <button type="button" disabled title="Скоро" className={navDisabled}>
+        <button
+          type="button"
+          onClick={() => navigate("/diary")}
+          className={activeItem === "diary" ? navActive : navInactive}
+        >
           <CalendarDays className="h-5 w-5 shrink-0" aria-hidden />
           <span>Дневник</span>
         </button>
-        <button type="button" disabled title="Скоро" className={navDisabled}>
+        <button
+          type="button"
+          onClick={onCompositionClick}
+          disabled={!onCompositionClick}
+          title={onCompositionClick ? "Проверить состав по этикетке" : undefined}
+          className={onCompositionClick ? navInactive : navDisabled}
+        >
           <BarChart3 className="h-5 w-5 shrink-0" aria-hidden />
           <span>Состав</span>
         </button>
@@ -60,7 +71,7 @@ export function AppSideNav({ activeItem, onLogout, onNewMeal }: AppSideNavProps)
           className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 font-bold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.98]"
         >
           <Plus className="h-5 w-5 shrink-0" aria-hidden />
-          Записать прием пищи
+          Добавить прием пищи
         </button>
         <button
           type="button"
