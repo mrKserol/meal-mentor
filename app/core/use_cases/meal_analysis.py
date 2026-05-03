@@ -14,6 +14,7 @@ from app.core.schemas import MacroTotals, MealAnalysisResult, MealLogRequest, Me
 from app.db.repository import create_meal, get_or_create_user
 from app.infrastructure.ai.openai_food_client import OpenAIVisionService
 from app.infrastructure.nutrition.csv_nutrition_provider import NutritionService
+from app.infrastructure.nutrition.ingredient_input import NormalizedIngredient, parse_ingredients_dict
 from app.infrastructure.storage.meal_photo_storage import save_meal_photo_pair
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ def _get_nutrition() -> NutritionService:
 
 def _scaled_row_to_nutrition_dict(row: dict[str, Any]) -> dict[str, Any]:
     """Map CSV search row (scaled) to MealItemNutrition kwargs."""
-    skip = frozenset({"match", "weight"})
+    skip = frozenset({"match", "weight", "state", "match_score", "candidates", "csv_display_name"})
     out: dict[str, Any] = {}
     if "calories" in row and row["calories"] is not None:
         out["calories"] = int(row["calories"])
@@ -78,6 +79,9 @@ def _build_meal_items(ingredients: dict[str, Any], nutrition_svc: NutritionServi
     """Map ingredients dict to rows for create_meal."""
     items: list[dict[str, Any]] = []
     lookup: dict[str, dict[str, Any]] = {}
+    norm_by_name: dict[str, NormalizedIngredient] = {}
+    if ingredients:
+        norm_by_name = {ni.input_name: ni for ni in parse_ingredients_dict(ingredients, nutrition_svc.aliases)}
     if nutrition_svc.is_available and ingredients:
         detailed = nutrition_svc.search(ingredients, search_type="fuzzy")
         for block in detailed:
@@ -85,20 +89,32 @@ def _build_meal_items(ingredients: dict[str, Any], nutrition_svc: NutritionServi
                 if data and isinstance(data, dict):
                     lookup[ing_name] = data
 
-    for name, weight in (ingredients or {}).items():
-        w = None
-        try:
-            w = int(float(weight)) if weight is not None else None
-        except (TypeError, ValueError):
-            w = None
-        row = lookup.get(name, {})
+    for name in (ingredients or {}).keys():
+        if not isinstance(name, str) or not name.strip():
+            continue
+        sk = name.strip()
+        ni = norm_by_name.get(sk)
+        w = int(ni.grams) if ni is not None else None
+        if w is None and sk in lookup and lookup[sk].get("weight") is not None:
+            try:
+                w = int(float(lookup[sk]["weight"]))
+            except (TypeError, ValueError):
+                w = None
+        if w is None and ni is None and not isinstance((ingredients or {}).get(name), dict):
+            try:
+                w = int(float((ingredients or {}).get(name)))
+            except (TypeError, ValueError):
+                w = None
+        row = lookup.get(sk, {})
         nutrition = _scaled_row_to_nutrition_dict(row) if row else None
         if nutrition == {}:
             nutrition = None
+        ing_state = ni.state if ni is not None else None
         items.append(
             {
                 "item_name": name,
                 "estimated_weight_g": w,
+                "ingredient_state": ing_state,
                 "nutrition": nutrition,
             }
         )

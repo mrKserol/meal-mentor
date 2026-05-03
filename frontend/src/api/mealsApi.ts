@@ -1,6 +1,7 @@
 import axios from "axios";
 
 import { authClient } from "./authApi";
+import type { IngredientEntry } from "../utils/mealFlow";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -21,7 +22,7 @@ export async function analyzeMealText(text: string): Promise<Record<string, unkn
 export async function saveMyMealToDiary(
   accessToken: string,
   payload: {
-    ingredients: Record<string, string | number>;
+    ingredients: Record<string, IngredientEntry>;
     source_type: string;
     telegram_file_id?: string | null;
     prediction?: string | null;
