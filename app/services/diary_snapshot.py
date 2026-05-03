@@ -1,4 +1,4 @@
-"""Сводка для веб-страницы «Дневник»: недавние приёмы, неделя, сегодня, вес."""
+"""Сводка для веб-страницы «Дневник»: недавние приёмы, статистика за прошедшую неделю и месяц, сегодня, вес."""
 
 from __future__ import annotations
 
@@ -52,10 +52,12 @@ def _utc_naive_to_local(dt: datetime, tz: zoneinfo.ZoneInfo) -> datetime:
 
 
 def _week_range_utc_naive(user: User) -> tuple[datetime, datetime, date, zoneinfo.ZoneInfo]:
+    """Завершённая календарная неделя (пн–вс в TZ профиля), не текущая."""
     tz = _resolve_tz(user)
     now_local = datetime.now(tz)
     d = now_local.date()
-    monday = d - timedelta(days=d.weekday())
+    this_monday = d - timedelta(days=d.weekday())
+    monday = this_monday - timedelta(days=7)
     next_monday = monday + timedelta(days=7)
     start_local = datetime.combine(monday, datetime.min.time(), tzinfo=tz)
     end_local = datetime.combine(next_monday, datetime.min.time(), tzinfo=tz)
@@ -77,19 +79,17 @@ def _today_range_utc_naive(user: User) -> tuple[datetime, datetime]:
 
 
 def _month_range_utc_naive(user: User) -> tuple[datetime, datetime, date, date, zoneinfo.ZoneInfo]:
+    """Полный прошедший календарный месяц в TZ профиля, не текущий."""
     tz = _resolve_tz(user)
     now_local = datetime.now(tz)
-    first = now_local.date().replace(day=1)
-    if first.month == 12:
-        next_first = first.replace(year=first.year + 1, month=1, day=1)
-    else:
-        next_first = first.replace(month=first.month + 1, day=1)
-    last = next_first - timedelta(days=1)
+    first_this = now_local.date().replace(day=1)
+    last_prev = first_this - timedelta(days=1)
+    first = last_prev.replace(day=1)
     start_local = datetime.combine(first, datetime.min.time(), tzinfo=tz)
-    end_local = datetime.combine(next_first, datetime.min.time(), tzinfo=tz)
+    end_local = datetime.combine(first_this, datetime.min.time(), tzinfo=tz)
     start_utc = start_local.astimezone(timezone.utc).replace(tzinfo=None)
     end_utc = end_local.astimezone(timezone.utc).replace(tzinfo=None)
-    return start_utc, end_utc, first, last, tz
+    return start_utc, end_utc, first, last_prev, tz
 
 
 def _sum_meal_nutrition(meal: Meal) -> dict[str, int]:

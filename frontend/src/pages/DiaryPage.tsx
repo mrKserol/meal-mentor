@@ -366,7 +366,7 @@ export function DiaryPage() {
                     <BarChart3 className="h-5 w-5 text-green-600" aria-hidden />
                   </div>
                   <h2 className="text-xl font-semibold text-slate-900">
-                    {statsPeriod === "week" ? "Статистика за неделю" : "Статистика за месяц"}
+                    {statsPeriod === "week" ? "Статистика за прошедшую неделю" : "Статистика за прошедший месяц"}
                   </h2>
                 </div>
                 <div className="flex gap-2 text-sm">
@@ -429,7 +429,9 @@ export function DiaryPage() {
                       ? "дня"
                       : "дней"}{" "}
                   с записями,{" "}
-                  {statsPeriod === "week" ? "а не за 7 дней" : "а не за весь выбранный период (все дни месяца)"}
+                  {statsPeriod === "week"
+                    ? "а не за все 7 дней периода"
+                    : "а не за каждый день полного месяца"}
                 </p>
               ) : null}
 
@@ -489,7 +491,7 @@ export function DiaryPage() {
 
               <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Прогресс за неделю</span>
+                <span className="text-slate-500">Прогресс за прошедшую неделю</span>
                 {deltaWeek != null ? (
                   <span
                     className={[
