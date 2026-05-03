@@ -126,6 +126,8 @@ class WebMealSaveRequest(BaseModel):
     prediction: str | None = None
     user_text: str | None = None
     image_base64: str | None = None
+    meal_photo_large: str | None = None
+    meal_photo_thumb: str | None = None
 
 
 class WebMealSaveResponse(BaseModel):

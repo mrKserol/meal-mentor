@@ -9,6 +9,7 @@ from typing import Any
 import zoneinfo
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.config import BASE_URL
 from app.db.models import Meal, MealItem, User
 from app.db.repository import list_user_measurements
 from app.schemas.diary import (
@@ -103,6 +104,18 @@ def _sum_meal_nutrition(meal: Meal) -> dict[str, int]:
         f += n.fat_g or 0
         cb += n.carbs_g or 0
     return {"calories": c, "protein_g": p, "fat_g": f, "carbs_g": cb}
+
+
+def _absolute_public_url(web_path: str | None) -> str | None:
+    if not web_path:
+        return None
+    p = web_path.strip()
+    if p.startswith("http://") or p.startswith("https://"):
+        return p
+    base = BASE_URL.rstrip("/")
+    if not p.startswith("/"):
+        p = "/" + p
+    return f"{base}{p}"
 
 
 def _meal_naive_dt(meal: Meal) -> datetime:
@@ -272,6 +285,12 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
                 time_local=local.strftime("%H:%M"),
                 calories=tot["calories"],
                 recorded_at=recorded,
+                prediction=meal.prediction,
+                user_text=meal.user_text,
+                meal_photo_large=meal.meal_photo_large,
+                meal_photo_thumb=meal.meal_photo_thumb,
+                meal_photo_large_url=_absolute_public_url(meal.meal_photo_large),
+                meal_photo_thumb_url=_absolute_public_url(meal.meal_photo_thumb),
             )
         )
 

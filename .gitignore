@@ -183,3 +183,6 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 meal_mentor.db
+
+# User-uploaded meal images (local dev)
+data/uploads/

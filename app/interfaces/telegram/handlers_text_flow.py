@@ -168,6 +168,7 @@ async def handle_text_flow(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             "user_text": text,
             "image_base64": ctx.get("image_base64"),
         }
+        USER_STATES[user.id]["meal_data"] = meal_data
         USER_STATES[user.id]["state"] = FlowState.MEAL_ADD_SAVE_CONFIRMATION
         USER_STATES[user.id].pop("context", None)
         await update.message.reply_text(

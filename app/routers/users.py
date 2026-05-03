@@ -8,7 +8,6 @@ from app.auth.dependencies import get_current_user
 from app.auth.security import hash_password
 from app.auth.user_me_payload import serialize_user_me
 from app.db.models import Allergen, User
-from app.core.use_cases.meal_analysis import decode_optional_image_b64
 from app.db.repository import create_meal
 from app.db.session import get_db
 from app.schemas.auth import (
@@ -22,7 +21,7 @@ from app.schemas.auth import (
 )
 from app.schemas.diary import DiarySnapshotResponse
 from app.services.diary_snapshot import build_diary_snapshot
-from app.core.use_cases.meal_analysis import build_meal_item_specs_from_ingredients
+from app.core.use_cases.meal_analysis import build_meal_item_specs_from_ingredients, resolve_meal_photo_urls_for_save
 from app.services.ingredient_checker import analyze_label_from_image_bytes, format_label_result_for_telegram
 from app.services.nutrition_targets import (
     create_or_update_active_nutrition_target,
@@ -84,7 +83,12 @@ def save_my_meal(
     if not ingredients:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="ingredients required")
     items = build_meal_item_specs_from_ingredients(ingredients)
-    img_bytes = decode_optional_image_b64(body.image_base64)
+    lg, th = resolve_meal_photo_urls_for_save(
+        current_user.id,
+        image_base64=body.image_base64,
+        meal_photo_large=body.meal_photo_large,
+        meal_photo_thumb=body.meal_photo_thumb,
+    )
     create_meal(
         db,
         current_user.id,
@@ -92,7 +96,8 @@ def save_my_meal(
         telegram_file_id=body.telegram_file_id,
         prediction=body.prediction,
         user_text=body.user_text,
-        image_bytes=img_bytes,
+        meal_photo_large=lg,
+        meal_photo_thumb=th,
         items=items,
     )
     return WebMealSaveResponse(status="success")

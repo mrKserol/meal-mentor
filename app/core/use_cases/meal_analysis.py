@@ -4,6 +4,7 @@ No Telegram or HTTP dependencies.
 """
 
 import base64
+import logging
 from datetime import datetime
 from typing import Any
 
@@ -13,6 +14,9 @@ from app.core.schemas import MacroTotals, MealAnalysisResult, MealLogRequest, Me
 from app.db.repository import create_meal, get_or_create_user
 from app.infrastructure.ai.openai_food_client import OpenAIVisionService
 from app.infrastructure.nutrition.csv_nutrition_provider import NutritionService
+from app.infrastructure.storage.meal_photo_storage import save_meal_photo_pair
+
+logger = logging.getLogger(__name__)
 
 
 def _get_vision() -> OpenAIVisionService:
@@ -151,6 +155,30 @@ def analyze_meal_from_text(user_text: str) -> MealAnalysisResult:
     return _meal_result_from_vision_dict(raw)
 
 
+def resolve_meal_photo_urls_for_save(
+    user_id: int,
+    *,
+    image_base64: str | None,
+    meal_photo_large: str | None,
+    meal_photo_thumb: str | None,
+) -> tuple[str | None, str | None]:
+    """Decode optional base64; save originals if no explicit URLs provided."""
+    lg = meal_photo_large
+    th = meal_photo_thumb
+    if image_base64 and not lg:
+        image_bytes = decode_optional_image_b64(image_base64)
+        if image_bytes:
+            try:
+                saved = save_meal_photo_pair(image_bytes, user_id=user_id)
+                lg = saved.get("meal_photo_large")
+                th = saved.get("meal_photo_thumb")
+            except Exception as e:
+                logger.exception("Failed to save meal photo: %s", e)
+                lg = None
+                th = None
+    return lg, th
+
+
 def decode_optional_image_b64(raw: str | None) -> bytes | None:
     if not raw or not str(raw).strip():
         return None
@@ -178,7 +206,12 @@ def persist_meal_to_database(db: Session, req: MealLogRequest) -> MealLogRespons
     )
     nutrition_svc = _get_nutrition()
     items = _build_meal_items(ingredients, nutrition_svc)
-    img_bytes = decode_optional_image_b64(req.image_base64)
+    lg, th = resolve_meal_photo_urls_for_save(
+        user.id,
+        image_base64=req.image_base64,
+        meal_photo_large=req.meal_photo_large,
+        meal_photo_thumb=req.meal_photo_thumb,
+    )
     create_meal(
         db,
         user.id,
@@ -187,7 +220,8 @@ def persist_meal_to_database(db: Session, req: MealLogRequest) -> MealLogRespons
         telegram_file_id=req.telegram_file_id,
         prediction=req.prediction,
         user_text=req.user_text,
-        image_bytes=img_bytes,
+        meal_photo_large=lg,
+        meal_photo_thumb=th,
         items=items,
     )
     return MealLogResponse(status="success")

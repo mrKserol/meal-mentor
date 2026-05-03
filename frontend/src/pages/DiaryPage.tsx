@@ -33,6 +33,9 @@ type MealHistoryItem = {
   tag: string;
   icon: "breakfast" | "lunch" | "snack";
   tagTone: "green" | "slate";
+  thumbUrl?: string | null;
+  prediction?: string | null;
+  userText?: string | null;
 };
 
 type GoalIconKind = "calories" | "protein" | "fat" | "carbs";
@@ -137,6 +140,17 @@ function buildDailyGoals(nt: NutritionTarget | null, today: DiarySnapshot["today
   ];
 }
 
+function mealThumbSrc(m: DiarySnapshot["recent_meals"][number]): string | undefined {
+  if (m.meal_photo_thumb_url) return m.meal_photo_thumb_url;
+  const api = import.meta.env.VITE_API_URL as string | undefined;
+  if (api && m.meal_photo_thumb) {
+    const base = api.replace(/\/$/, "");
+    const path = m.meal_photo_thumb.startsWith("/") ? m.meal_photo_thumb : `/${m.meal_photo_thumb}`;
+    return `${base}${path}`;
+  }
+  return undefined;
+}
+
 function mapRecentToHistory(snapshot: DiarySnapshot | null): MealHistoryItem[] {
   if (!snapshot?.recent_meals?.length) return [];
   return snapshot.recent_meals.map((m) => ({
@@ -148,6 +162,9 @@ function mapRecentToHistory(snapshot: DiarySnapshot | null): MealHistoryItem[] {
     tag: m.meal_type_label,
     icon: iconFromMealType(m.meal_type),
     tagTone: "slate" as const,
+    thumbUrl: mealThumbSrc(m) ?? null,
+    prediction: m.prediction ?? null,
+    userText: m.user_text?.trim() ? m.user_text : null,
   }));
 }
 
@@ -553,12 +570,27 @@ export function DiaryPage() {
                 ) : (
                   mealHistory.map((meal) => (
                     <div key={meal.id} className="flex items-center gap-4 p-4 transition hover:bg-slate-50 md:p-5">
-                      <MealIconCard icon={meal.icon} />
+                      {meal.thumbUrl ? (
+                        <img
+                          src={meal.thumbUrl}
+                          alt={meal.prediction || meal.title}
+                          className="h-16 w-16 shrink-0 rounded-xl object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <MealIconCard icon={meal.icon} />
+                      )}
                       <div className="min-w-0 flex-1">
                         <h3 className="truncate text-base font-semibold text-slate-900">{meal.title}</h3>
+                        {meal.prediction && meal.prediction.trim() !== meal.title.trim() ? (
+                          <p className="mt-0.5 truncate text-sm text-slate-600">{meal.prediction}</p>
+                        ) : null}
                         <p className="mt-1 text-sm text-slate-500">
                           {meal.mealType} • {meal.time}
                         </p>
+                        {meal.userText ? (
+                          <p className="mt-1 line-clamp-2 text-xs text-slate-500">{meal.userText}</p>
+                        ) : null}
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-slate-900">{formatIntRu(meal.calories)} kcal</p>

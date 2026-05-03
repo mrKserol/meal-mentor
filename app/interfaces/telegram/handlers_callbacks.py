@@ -49,6 +49,8 @@ async def save_confirmed_meal(
         "prediction": meal_data.get("prediction"),
         "user_text": meal_data.get("user_text"),
         "image_base64": meal_data.get("image_base64"),
+        "meal_photo_large": meal_data.get("meal_photo_large"),
+        "meal_photo_thumb": meal_data.get("meal_photo_thumb"),
     }
     try:
         r = requests.post(url, json=payload, timeout=60)
