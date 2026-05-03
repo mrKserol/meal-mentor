@@ -8,7 +8,13 @@ import pandas as pd
 
 from app.core.config import FOOD_ALIASES_PATH, NUTRITION_CSV_PATH, NUTRITION_ENABLE_SEMANTIC
 from app.infrastructure.nutrition.food_aliases import FoodAliasIndex
-from app.infrastructure.nutrition.ingredient_input import NormalizedIngredient, is_grain_like_ingredient, parse_ingredients_dict
+from app.infrastructure.nutrition.ingredient_input import (
+    NormalizedIngredient,
+    is_grain_like_ingredient,
+    is_legume_like_ingredient,
+    is_poultry_breast_query,
+    parse_ingredients_dict,
+)
 from app.infrastructure.nutrition.state_match import state_score
 
 logger = logging.getLogger(__name__)
@@ -218,11 +224,20 @@ class NutritionService:
         raw_candidates: list[tuple[str, float]],
     ) -> list[NutritionCandidate]:
         grain = is_grain_like_ingredient(ni)
+        legume = is_legume_like_ingredient(ni)
+        poultry_breast = is_poultry_breast_query(ni)
         out: list[NutritionCandidate] = []
         for name_key, text_score in raw_candidates:
             row = self._data.get(name_key) or {}
             display = str(row.get("csv_display_name") or name_key)
-            st, st_reasons = state_score(ni.state, display, query=ni.canonical_query, is_grain_like=grain)
+            st, st_reasons = state_score(
+                ni.state,
+                display,
+                query=ni.canonical_query,
+                is_grain_like=grain,
+                is_legume_like=legume,
+                is_poultry_breast_query=poultry_breast,
+            )
             exact_bonus, exact_reasons = self._exact_row_bonus(ni.canonical_query, display)
             final = float(text_score) + float(st) + exact_bonus
             reasons = [f"text={text_score:.1f}"] + st_reasons + exact_reasons

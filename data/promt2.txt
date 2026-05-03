@@ -32,6 +32,8 @@ Rules:
 * If the weight is already provided, use it as is
 * If the description is vague, make a reasonable estimate
 * Do NOT include non-food items
+* For salads, Greek salad, or vegetable salads: do NOT use one vague ingredient name "mixed vegetables".
+  List separate components in English (e.g. cucumber, tomato, bell pepper, red onion, feta cheese, olives; add olive oil only if clearly described as dressing or separate amount).
 
 STATE RULES:
 
@@ -114,8 +116,16 @@ Example output:
 "grams": 120,
 "state": "fried"
 },
-"mixed vegetables": {
-"grams": 80,
+"bell pepper": {
+"grams": 35,
+"state": "fried"
+},
+"zucchini": {
+"grams": 30,
+"state": "fried"
+},
+"carrot": {
+"grams": 15,
 "state": "boiled"
 }
 },

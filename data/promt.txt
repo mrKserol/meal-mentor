@@ -32,6 +32,8 @@ Rules:
 * If multiple ingredients are mixed in one dish, try to separate them logically
 * If the exact weight is unknown, make a reasonable estimate
 * Ignore non-food objects (plates, utensils, packaging, etc.)
+* For salads, Greek salad, or vegetable salads: do NOT use one vague ingredient name "mixed vegetables".
+  List separate, visible components in English (e.g. cucumber, tomato, bell pepper, red onion, feta cheese, olives; add olive oil only if clearly visible as a separate layer or dressing).
 
 STATE RULES:
 

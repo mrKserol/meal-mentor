@@ -46,12 +46,104 @@ def _query_implies_flour_powder(query: str) -> bool:
     return any(w in q for w in ("flour", "powder", "mix", "meal", "starch"))
 
 
+def _word_cooked(n: str) -> bool:
+    return bool(re.search(r"\bcooked\b", n))
+
+
+def _poultry_breast_bad_match(n: str) -> float:
+    """Penalty when user asked for breast/fillet but candidate is processed / other cut."""
+    score = 0.0
+    bad = (
+        ("skin", -80),
+        ("breaded", -85),
+        ("patty", -85),
+        ("nuggets", -90),
+        ("fast food", -90),
+        (" wing", -80),
+        ("wing,", -80),
+        (" thigh", -80),
+        ("thigh,", -80),
+        ("dark meat", -75),
+        ("canned", -70),
+        ("spread", -75),
+        ("sausage", -80),
+        ("honey glazed", -60),
+        ("honey-glazed", -60),
+        ("deli", -50),
+        ("rotisserie seasoned", -45),
+        ("batter, fried", -70),
+        ("flour, fried", -70),
+        ("meat and skin", -55),
+    )
+    for needle, pen in bad:
+        if needle in n:
+            score += pen
+    return max(score, -220.0)
+
+
+def _legume_cooked_boiled_extra(n: str, query_lower: str) -> tuple[float, list[str]]:
+    reasons: list[str] = []
+    score = 0.0
+    if "boiled" in n:
+        score += 45
+        reasons.append("+45:legume_boiled")
+    if _word_cooked(n):
+        score += 35
+        reasons.append("+35:legume_cooked")
+    if "canned" in n:
+        score += 20
+        reasons.append("+20:legume_canned")
+    if re.search(r"\braw\b", n) or ", raw" in n:
+        score -= 70
+        reasons.append("-70:legume_raw")
+    if "dry" in n or "uncooked" in n or "unprepared" in n:
+        score -= 70
+        reasons.append("-70:legume_dry")
+    has_prep = "boiled" in n or _word_cooked(n) or "canned" in n
+    if "mature seeds" in n and not has_prep:
+        score -= 70
+        reasons.append("-70:legume_mature_seeds_unprepared")
+    if "sprouted" in n and "sprouted" not in query_lower:
+        score -= 50
+        reasons.append("-50:legume_sprouted")
+    return score, reasons
+
+
+def _grain_cooked_extra(n: str) -> tuple[float, list[str]]:
+    reasons: list[str] = []
+    score = 0.0
+    if _word_cooked(n) or ", cooked" in n:
+        score += 45
+        reasons.append("+45:grain_cooked")
+    if "boiled" in n:
+        score += 35
+        reasons.append("+35:grain_boiled")
+    if "dry" in n or re.search(r"\bdry\b", n):
+        score -= 80
+        reasons.append("-80:grain_dry")
+    if "uncooked" in n:
+        score -= 80
+        reasons.append("-80:grain_uncooked")
+    if "unprepared" in n:
+        score -= 80
+        reasons.append("-80:grain_unprepared")
+    if "flour" in n:
+        score -= 60
+        reasons.append("-60:grain_flour")
+    if "dry mix" in n:
+        score -= 60
+        reasons.append("-60:grain_dry_mix")
+    return score, reasons
+
+
 def state_score(
     requested_state: str,
     candidate_name: str,
     *,
     query: str,
     is_grain_like: bool,
+    is_legume_like: bool = False,
+    is_poultry_breast_query: bool = False,
 ) -> tuple[float, list[str]]:
     """
     Returns (score_adjustment, reason strings).
@@ -59,6 +151,7 @@ def state_score(
     """
     rs = (requested_state or "unknown").strip().lower()
     n = candidate_name.lower()
+    query_lower = query.lower()
     reasons: list[str] = []
 
     cooked_soft = ("cooked", "boiled", "steamed", "simmered")
@@ -100,9 +193,10 @@ def state_score(
         if has_dry and not _query_implies_flour_powder(query) and any(w in n for w in ("flour", "powder", "mix")):
             score -= 25
             add(-25, "flour/powder vs non-flour query")
-        if is_grain_like and (has_dry or "uncooked" in n or "unprepared" in n):
-            score -= 30
-            add(-30, "grain cooked vs dry row")
+        if is_grain_like:
+            gs, gr = _grain_cooked_extra(n)
+            score += gs
+            reasons.extend(gr)
 
     elif rs == "boiled":
         if has_boiled:
@@ -203,5 +297,16 @@ def state_score(
         if has_raw or has_dry:
             score -= 30
             add(-30, "raw/dry")
+
+    if is_legume_like and rs in ("cooked", "boiled"):
+        le, lr = _legume_cooked_boiled_extra(n, query_lower)
+        score += le
+        reasons.extend(lr)
+
+    if is_poultry_breast_query:
+        pen = _poultry_breast_bad_match(n)
+        if pen < 0:
+            score += pen
+            reasons.append(f"{pen:.0f}:poultry_breast_mismatch")
 
     return score, reasons

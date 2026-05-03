@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -123,6 +124,25 @@ def parse_ingredients_dict(
         alias_category = entry.category if entry else None
         if state == "unknown" and entry and entry.default_state and entry.default_state != "unknown":
             state = entry.default_state
+        if (
+            state == "dry"
+            and entry
+            and "dry" not in canonical.lower()
+            and "uncooked" not in canonical.lower()
+            and "raw" not in canonical.lower()
+        ):
+            alt = alias_index.lookup(f"dry {input_name}") or alias_index.lookup(f"{input_name} dry")
+            if alt:
+                canonical = alt.canonical
+                alias_category = alt.category or alias_category
+                alias_hit = True
+
+        if state in ("fried", "grilled", "baked", "boiled") and entry and state not in canonical.lower():
+            alt = alias_index.lookup(f"{state} {input_name}") or alias_index.lookup(f"{input_name} {state}")
+            if alt:
+                canonical = alt.canonical
+                alias_category = alt.category or alias_category
+                alias_hit = True
 
         out.append(
             NormalizedIngredient(
@@ -139,3 +159,29 @@ def parse_ingredients_dict(
 
 def is_grain_like_ingredient(ni: NormalizedIngredient) -> bool:
     return _is_grain_like(ni.input_name, ni.alias_category) or _is_grain_like(ni.canonical_query, ni.alias_category)
+
+
+def is_legume_like_ingredient(ni: NormalizedIngredient) -> bool:
+    if ni.alias_category == "legume":
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if re.search(r"\b(beans?|peas?|lentils?|chickpeas?|garbanzos?|фасоль|фасоли)\b", blob):
+        return True
+    return "legume" in blob
+
+
+def is_poultry_breast_query(ni: NormalizedIngredient) -> bool:
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if "wing" in blob or "thigh" in blob or "drumstick" in blob:
+        return False
+    return any(
+        k in blob
+        for k in (
+            "breast",
+            "грудк",
+            "филе",
+            "fillet",
+            "skinless",
+            "boneless",
+        )
+    )

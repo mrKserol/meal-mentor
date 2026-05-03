@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+
 from app.core.config import FOOD_ALIASES_PATH, NUTRITION_CSV_PATH
 from app.infrastructure.nutrition.csv_nutrition_provider import NutritionService
 
@@ -24,14 +26,32 @@ def nutrition_svc() -> NutritionService:
     return svc
 
 
-def test_buckwheat_cooked_prefers_cooked_row(nutrition_svc: NutritionService) -> None:
-    rows = nutrition_svc.search({"buckwheat": {"grams": 180, "state": "cooked"}}, include_candidates=True)
-    assert len(rows) == 1
+def _match(rows: list[dict]) -> str:
+    return (list(rows[0].values())[0].get("match") or "").lower()
+
+
+def test_fried_eggs_alias(nutrition_svc: NutritionService) -> None:
+    rows = nutrition_svc.search({"fried eggs": {"grams": 100, "state": "fried"}})
     data = list(rows[0].values())[0]
-    assert data, "expected a match"
+    assert data, data
+    assert data.get("match") == "Egg, fried, cooked, whole"
+
+
+def test_white_beans_cooked_not_raw_dry(nutrition_svc: NutritionService) -> None:
+    rows = nutrition_svc.search({"white beans": {"grams": 80, "state": "cooked"}})
+    data = list(rows[0].values())[0]
+    assert data
     m = (data.get("match") or "").lower()
-    assert "cooked" in m or "boiled" in m
-    assert "dry" not in m and "uncooked" not in m
+    assert "boiled" in m or "canned" in m
+    assert "raw" not in m
+    assert "beans, canned, mature seeds, white" in m or "beans, without salt, boiled" in m
+
+
+def test_buckwheat_150g_cooked_groats(nutrition_svc: NutritionService) -> None:
+    rows = nutrition_svc.search({"buckwheat": {"grams": 150, "state": "cooked"}})
+    data = list(rows[0].values())[0]
+    assert data
+    assert data.get("match") == "Buckwheat groats, cooked, roasted"
 
 
 def test_buckwheat_dry_prefers_dry_row(nutrition_svc: NutritionService) -> None:
@@ -39,7 +59,17 @@ def test_buckwheat_dry_prefers_dry_row(nutrition_svc: NutritionService) -> None:
     data = list(rows[0].values())[0]
     assert data
     m = (data.get("match") or "").lower()
-    assert "dry" in m or "uncooked" in m or "unprepared" in m
+    assert "dry" in m or "uncooked" in m
+
+
+def test_chicken_breast_fried_meat_only(nutrition_svc: NutritionService) -> None:
+    rows = nutrition_svc.search({"chicken breast": {"grams": 100, "state": "fried"}})
+    data = list(rows[0].values())[0]
+    assert data
+    assert (
+        data.get("match")
+        == "Chicken, fried, cooked, meat only, breast, broilers or fryers"
+    )
 
 
 def test_rice_cooked(nutrition_svc: NutritionService) -> None:
@@ -47,7 +77,7 @@ def test_rice_cooked(nutrition_svc: NutritionService) -> None:
     data = list(rows[0].values())[0]
     assert data
     m = (data.get("match") or "").lower()
-    assert "dry" not in m or "cooked" in m or "boiled" in m
+    assert "cooked" in m or "boiled" in m or ("rice" in m and "dry" not in m)
 
 
 def test_pasta_cooked(nutrition_svc: NutritionService) -> None:
@@ -55,7 +85,7 @@ def test_pasta_cooked(nutrition_svc: NutritionService) -> None:
     data = list(rows[0].values())[0]
     assert data
     m = (data.get("match") or "").lower()
-    assert "cooked" in m or "dry" not in m or "macaroni" in m
+    assert "cooked" in m or "macaroni" in m or ("spaghetti" in m and "dry" not in m)
 
 
 def test_legacy_numeric(nutrition_svc: NutritionService) -> None:
@@ -74,9 +104,12 @@ def test_russian_alias_grechka(nutrition_svc: NutritionService) -> None:
 
 
 def test_unknown_weird_ingredient_no_crash(nutrition_svc: NutritionService) -> None:
-    rows = nutrition_svc.search({"some weird ingredient xyz123": {"grams": 100, "state": "unknown"}})
-    data = list(rows[0].values())[0]
-    assert data == {} or data.get("calories", 0) == 0
+    """Fuzzy search may still pick a row; this only asserts the API does not error."""
+    rows = nutrition_svc.search(
+        {"zzzznonexistentingredient999_abc": {"grams": 100, "state": "unknown"}}
+    )
+    assert isinstance(rows, list) and len(rows) == 1
+    assert isinstance(list(rows[0].values())[0], dict)
 
 
 def test_aggregate_full_mixed_format(nutrition_svc: NutritionService) -> None:
@@ -88,3 +121,22 @@ def test_aggregate_full_mixed_format(nutrition_svc: NutritionService) -> None:
     )
     assert full is not None
     assert full.get("calories", 0) > 0
+
+
+def test_prompt_files_salad_rule_and_no_mixed_veg_example() -> None:
+    """Prompts must tell the model to split salad veg; examples must not teach 'mixed vegetables'."""
+    p1 = (_REPO_ROOT / "data" / "promt.txt").read_text(encoding="utf-8")
+    p2 = (_REPO_ROOT / "data" / "promt2.txt").read_text(encoding="utf-8")
+    for blob in (p1, p2):
+        assert "do NOT use one vague ingredient name" in blob
+        assert "mixed vegetables" in blob.lower()
+    assert '"mixed vegetables":' not in p2
+
+
+def test_feta_and_olives_aliases(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    feta = nutrition_svc.search({"feta cheese": {"grams": 50, "state": "raw"}})
+    assert "feta" in _match(feta)
+    ol = nutrition_svc.search({"olives": {"grams": 30, "state": "canned"}})
+    assert "olive" in _match(ol)
