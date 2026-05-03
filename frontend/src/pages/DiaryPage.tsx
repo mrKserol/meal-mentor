@@ -26,16 +26,13 @@ import type { NutritionTarget } from "../types/auth";
 
 type MealHistoryItem = {
   id: string;
-  title: string;
   mealType: string;
   time: string;
   calories: number;
-  tag: string;
   icon: "breakfast" | "lunch" | "snack";
-  tagTone: "green" | "slate";
   thumbUrl?: string | null;
-  prediction?: string | null;
-  userText?: string | null;
+  predictionLine: string;
+  composition: string;
 };
 
 type GoalIconKind = "calories" | "protein" | "fat" | "carbs";
@@ -153,19 +150,21 @@ function mealThumbSrc(m: DiarySnapshot["recent_meals"][number]): string | undefi
 
 function mapRecentToHistory(snapshot: DiarySnapshot | null): MealHistoryItem[] {
   if (!snapshot?.recent_meals?.length) return [];
-  return snapshot.recent_meals.map((m) => ({
-    id: String(m.id),
-    title: m.title,
-    mealType: m.meal_type_label,
-    time: m.time_local,
-    calories: m.calories,
-    tag: m.meal_type_label,
-    icon: iconFromMealType(m.meal_type),
-    tagTone: "slate" as const,
-    thumbUrl: mealThumbSrc(m) ?? null,
-    prediction: m.prediction ?? null,
-    userText: m.user_text?.trim() ? m.user_text : null,
-  }));
+  return snapshot.recent_meals.map((m) => {
+    const pred = typeof m.prediction === "string" && m.prediction.trim() ? m.prediction.trim() : "";
+    const predictionLine = pred || "—";
+    const composition = (m.composition && m.composition.trim()) || "—";
+    return {
+      id: String(m.id),
+      mealType: m.meal_type_label,
+      time: m.time_local,
+      calories: m.calories,
+      icon: iconFromMealType(m.meal_type),
+      thumbUrl: mealThumbSrc(m) ?? null,
+      predictionLine,
+      composition,
+    };
+  });
 }
 
 function getMealIcon(icon: MealHistoryItem["icon"]) {
@@ -383,7 +382,7 @@ export function DiaryPage() {
                     <BarChart3 className="h-5 w-5 text-green-600" aria-hidden />
                   </div>
                   <h2 className="text-xl font-semibold text-slate-900">
-                    {statsPeriod === "week" ? "Статистика за прошедшую неделю" : "Статистика за прошедший месяц"}
+                    {statsPeriod === "week" ? "Статистика за неделю" : "Статистика за месяц"}
                   </h2>
                 </div>
                 <div className="flex gap-2 text-sm">
@@ -447,8 +446,8 @@ export function DiaryPage() {
                       : "дней"}{" "}
                   с записями,{" "}
                   {statsPeriod === "week"
-                    ? "а не за все 7 дней периода"
-                    : "а не за каждый день полного месяца"}
+                    ? "а не за все 7 дней интервала"
+                    : "а не за все 30 дней интервала"}
                 </p>
               ) : null}
 
@@ -508,7 +507,7 @@ export function DiaryPage() {
 
               <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Прогресс за прошедшую неделю</span>
+                <span className="text-slate-500">Прогресс за неделю</span>
                 {deltaWeek != null ? (
                   <span
                     className={[
@@ -569,11 +568,11 @@ export function DiaryPage() {
                   </div>
                 ) : (
                   mealHistory.map((meal) => (
-                    <div key={meal.id} className="flex items-center gap-4 p-4 transition hover:bg-slate-50 md:p-5">
+                    <div key={meal.id} className="flex items-start gap-4 p-4 transition hover:bg-slate-50 md:p-5">
                       {meal.thumbUrl ? (
                         <img
                           src={meal.thumbUrl}
-                          alt={meal.prediction || meal.title}
+                          alt={meal.predictionLine}
                           className="h-16 w-16 shrink-0 rounded-xl object-cover"
                           loading="lazy"
                         />
@@ -581,22 +580,16 @@ export function DiaryPage() {
                         <MealIconCard icon={meal.icon} />
                       )}
                       <div className="min-w-0 flex-1">
-                        <h3 className="truncate text-base font-semibold text-slate-900">{meal.title}</h3>
-                        {meal.prediction && meal.prediction.trim() !== meal.title.trim() ? (
-                          <p className="mt-0.5 truncate text-sm text-slate-600">{meal.prediction}</p>
-                        ) : null}
-                        <p className="mt-1 text-sm text-slate-500">
-                          {meal.mealType} • {meal.time}
+                        <h3 className="text-base font-semibold leading-snug text-slate-900">{meal.predictionLine}</h3>
+                        <p className="mt-1 text-sm text-slate-600">
+                          Приём пищи * {meal.time}
                         </p>
-                        {meal.userText ? (
-                          <p className="mt-1 line-clamp-2 text-xs text-slate-500">{meal.userText}</p>
-                        ) : null}
+                        <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                          <span className="font-medium text-slate-800">Состав:</span> {meal.composition}
+                        </p>
                       </div>
-                      <div className="text-right">
+                      <div className="shrink-0 text-right">
                         <p className="font-bold text-slate-900">{formatIntRu(meal.calories)} kcal</p>
-                        <span className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-                          {meal.tag}
-                        </span>
                       </div>
                     </div>
                   ))
