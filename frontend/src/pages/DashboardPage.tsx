@@ -6,12 +6,14 @@ import { getMe, getMyNutritionTarget } from "../api/authApi";
 import { getMyDiary } from "../api/diaryApi";
 import { HeroBanner } from "../components/dashboard/HeroBanner";
 import { NutritionDiaryCard } from "../components/dashboard/NutritionDiaryCard";
+import { RecentMealsCard } from "../components/dashboard/RecentMealsCard";
 import { ProfileCard } from "../components/dashboard/ProfileCard";
 import { SubscriptionCard } from "../components/dashboard/SubscriptionCard";
 import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
 import type { NutritionTarget, User } from "../types/auth";
-import type { DiaryTodayTotals } from "../types/diary";
+import type { DiarySnapshot, DiaryTodayTotals } from "../types/diary";
+import { mapRecentMealsToHistory } from "../utils/recentMeals";
 
 const MEAL_MENTOR_ACCESS_TOKEN_KEY = "meal_mentor_access_token";
 
@@ -23,6 +25,7 @@ export function DashboardPage() {
   const [profile, setProfile] = useState<User | null>(null);
   const [nutritionTarget, setNutritionTarget] = useState<NutritionTarget | null>(null);
   const [todayTotals, setTodayTotals] = useState<DiaryTodayTotals | null>(null);
+  const [diarySnapshot, setDiarySnapshot] = useState<DiarySnapshot | null>(null);
 
   const loadDashboard = useCallback(async () => {
     setPhase("loading");
@@ -40,6 +43,7 @@ export function DashboardPage() {
       }
       const [me, diary] = await Promise.all([getMe(token), getMyDiary(token)]);
       setProfile(me);
+      setDiarySnapshot(diary);
       setTodayTotals(diary.today);
       let nt: NutritionTarget | null = me.nutrition_target ?? null;
       if (nt === null || nt === undefined) {
@@ -83,6 +87,8 @@ export function DashboardPage() {
     }
     return `Сегодня держим ориентир: ${nutritionTarget.target_calories} ккал.`;
   }, [nutritionTarget]);
+
+  const recentMeals = useMemo(() => mapRecentMealsToHistory(diarySnapshot), [diarySnapshot]);
 
   const avatarFallback =
     profile?.first_name?.trim()?.[0] ??
@@ -140,6 +146,7 @@ export function DashboardPage() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="space-y-8 lg:col-span-2">
             <NutritionDiaryCard nutritionTarget={nutritionTarget} todayTotals={todayTotals} />
+            <RecentMealsCard items={recentMeals} />
           </div>
           <div className="flex flex-col gap-8">
             <ProfileCard user={profile} />
