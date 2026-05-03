@@ -13,6 +13,7 @@ export type MealAnalyzePayload = {
   ingredients: Record<string, string | number>;
   confidence: number | null;
   nutrition: MealNutrition | null;
+  prediction: string | null;
   error?: string;
 };
 
@@ -28,6 +29,9 @@ export function parseAnalyzeResponse(raw: Record<string, unknown>): MealAnalyzeP
   const ingredients: Record<string, string | number> =
     ing && typeof ing === "object" && !Array.isArray(ing) ? (ing as Record<string, string | number>) : {};
   const confidence = typeof raw.confidence === "number" ? raw.confidence : null;
+  const predRaw = raw.prediction;
+  const prediction =
+    typeof predRaw === "string" && predRaw.trim() ? predRaw.trim() : null;
   const nut = raw.nutrition;
   let nutrition: MealNutrition | null = null;
   if (nut && typeof nut === "object" && !Array.isArray(nut)) {
@@ -44,6 +48,7 @@ export function parseAnalyzeResponse(raw: Record<string, unknown>): MealAnalyzeP
     ingredients,
     confidence,
     nutrition,
+    prediction,
     error: typeof raw.error === "string" ? raw.error : undefined,
   };
 }

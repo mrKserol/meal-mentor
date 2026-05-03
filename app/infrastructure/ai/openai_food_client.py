@@ -92,6 +92,7 @@ class OpenAIVisionService:
                 "status": "success",
                 "ingredients": {},
                 "confidence": None,
+                "prediction": None,
                 "result": {},
                 "error": "",
             }
@@ -101,10 +102,16 @@ class OpenAIVisionService:
             try:
                 raw = json.loads(content[start : end + 1])
                 ingredients, confidence = _normalize_model_json(raw)
+                prediction = None
+                if isinstance(raw, dict):
+                    p = raw.get("prediction")
+                    if isinstance(p, str) and p.strip():
+                        prediction = p.strip()
                 return {
                     "status": "success",
                     "ingredients": ingredients,
                     "confidence": confidence,
+                    "prediction": prediction,
                     "result": ingredients,
                     "error": "",
                 }
@@ -113,6 +120,7 @@ class OpenAIVisionService:
                     "status": "error",
                     "ingredients": {},
                     "confidence": None,
+                    "prediction": None,
                     "result": {},
                     "error": str(e),
                 }
@@ -120,6 +128,7 @@ class OpenAIVisionService:
             "status": "error",
             "ingredients": {},
             "confidence": None,
+            "prediction": None,
             "result": {},
             "error": f"No JSON in response: {content[:100]}",
         }
@@ -138,6 +147,7 @@ class OpenAIVisionService:
                     "status": "error",
                     "ingredients": {},
                     "confidence": None,
+                    "prediction": None,
                     "result": {},
                     "error": "Empty model response",
                 }
@@ -147,6 +157,7 @@ class OpenAIVisionService:
                 "status": "error",
                 "ingredients": {},
                 "confidence": None,
+                "prediction": None,
                 "result": {},
                 "error": str(e),
             }
@@ -167,6 +178,7 @@ class OpenAIVisionService:
                     "status": "error",
                     "ingredients": {},
                     "confidence": None,
+                    "prediction": None,
                     "result": {},
                     "error": "Empty model response",
                 }
@@ -176,6 +188,7 @@ class OpenAIVisionService:
                 "status": "error",
                 "ingredients": {},
                 "confidence": None,
+                "prediction": None,
                 "result": {},
                 "error": str(e),
             }

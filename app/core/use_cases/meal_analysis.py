@@ -3,6 +3,7 @@ Central orchestration: vision/text → ingredients → nutrition.csv → optiona
 No Telegram or HTTP dependencies.
 """
 
+import base64
 from datetime import datetime
 from typing import Any
 
@@ -111,12 +112,15 @@ def _meal_result_from_vision_dict(out: dict[str, Any]) -> MealAnalysisResult:
             status="error",
             ingredients={},
             confidence=None,
+            prediction=None,
             error=out.get("error") or "unknown",
         )
     ingredients = out.get("ingredients") or {}
     if not isinstance(ingredients, dict):
         ingredients = {}
     conf = out.get("confidence")
+    pred = out.get("prediction")
+    prediction = pred.strip() if isinstance(pred, str) and pred.strip() else None
     nutrition_svc = _get_nutrition()
     nutrition = None
     if nutrition_svc.is_available and ingredients:
@@ -128,6 +132,7 @@ def _meal_result_from_vision_dict(out: dict[str, Any]) -> MealAnalysisResult:
         ingredients=ingredients,
         confidence=conf,
         nutrition=nutrition,
+        prediction=prediction,
         error="",
     )
 
@@ -146,6 +151,20 @@ def analyze_meal_from_text(user_text: str) -> MealAnalysisResult:
     return _meal_result_from_vision_dict(raw)
 
 
+def decode_optional_image_b64(raw: str | None) -> bytes | None:
+    if not raw or not str(raw).strip():
+        return None
+    try:
+        normalized = "".join(str(raw).strip().split())
+        padded = normalized + "=" * (-len(normalized) % 4)
+        out = base64.b64decode(padded, validate=True)
+        if len(out) > 15 * 1024 * 1024:
+            return None
+        return out
+    except Exception:
+        return None
+
+
 def persist_meal_to_database(db: Session, req: MealLogRequest) -> MealLogResponse:
     """Log confirmed meal after user approval (any channel)."""
     ingredients = req.ingredients
@@ -159,12 +178,16 @@ def persist_meal_to_database(db: Session, req: MealLogRequest) -> MealLogRespons
     )
     nutrition_svc = _get_nutrition()
     items = _build_meal_items(ingredients, nutrition_svc)
+    img_bytes = decode_optional_image_b64(req.image_base64)
     create_meal(
         db,
         user.id,
         source_type=req.source_type,
         meal_datetime=datetime.utcnow(),
         telegram_file_id=req.telegram_file_id,
+        prediction=req.prediction,
+        user_text=req.user_text,
+        image_bytes=img_bytes,
         items=items,
     )
     return MealLogResponse(status="success")
@@ -188,6 +211,8 @@ def analyze_and_log_meal_legacy(
     if payload["status"] != "success":
         return payload
     ingredients = payload.get("ingredients") or {}
+    pred = payload.get("prediction")
+    prediction_val = pred if isinstance(pred, str) and pred.strip() else None
     save = persist_meal_to_database(
         db,
         MealLogRequest(
@@ -197,6 +222,8 @@ def analyze_and_log_meal_legacy(
             ingredients=ingredients,
             source_type="photo",
             telegram_file_id=telegram_file_id,
+            prediction=prediction_val,
+            image_base64=image_base64,
         ),
     )
     save_d = save.to_api_dict()

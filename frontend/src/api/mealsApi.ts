@@ -24,6 +24,9 @@ export async function saveMyMealToDiary(
     ingredients: Record<string, string | number>;
     source_type: string;
     telegram_file_id?: string | null;
+    prediction?: string | null;
+    user_text?: string | null;
+    image_base64?: string | null;
   },
 ): Promise<void> {
   await authClient.post("/users/me/meals/save", payload, {

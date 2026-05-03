@@ -39,6 +39,13 @@ class MealFlowTextFilter(filters.MessageFilter):
 meal_flow_text = MealFlowTextFilter()
 
 
+def _prediction_from_api(data: dict | None) -> str | None:
+    if not data:
+        return None
+    p = data.get("prediction")
+    return p.strip() if isinstance(p, str) and p.strip() else None
+
+
 def _post_analyze_text(text: str) -> tuple[dict | None, str | None]:
     url = f"{BASE_URL.rstrip('/')}/meals/analyze-text"
     try:
@@ -110,6 +117,8 @@ async def handle_text_flow(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             "nutrition": nutrition,
             "telegram_file_id": None,
             "source_type": "text",
+            "prediction": _prediction_from_api(data),
+            "user_text": text,
         }
         USER_STATES[user.id]["meal_data"] = meal_data
         USER_STATES[user.id]["state"] = FlowState.MEAL_ADD_RECOGNITION_CHECK
@@ -145,14 +154,20 @@ async def handle_text_flow(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             return
 
         ctx = st.get("context") or {}
+        pred = _prediction_from_api(data)
+        if not pred:
+            cr = ctx.get("prediction")
+            pred = cr.strip() if isinstance(cr, str) and cr.strip() else None
         meal_data = {
             "ingredients": ingredients,
             "confidence": confidence,
             "nutrition": nutrition,
             "telegram_file_id": ctx.get("telegram_file_id"),
             "source_type": "text",
+            "prediction": pred,
+            "user_text": text,
+            "image_base64": ctx.get("image_base64"),
         }
-        USER_STATES[user.id]["meal_data"] = meal_data
         USER_STATES[user.id]["state"] = FlowState.MEAL_ADD_SAVE_CONFIRMATION
         USER_STATES[user.id].pop("context", None)
         await update.message.reply_text(

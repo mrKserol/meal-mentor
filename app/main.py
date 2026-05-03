@@ -2,7 +2,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
+from app.core.config import MEAL_PHOTOS_DIR
 from app.db.session import init_db
 from app.interfaces.api.routes_users import router as users_router
 from app.interfaces.api.routes_meals import router as meals_router
@@ -16,6 +18,7 @@ from app.core.use_cases.meal_analysis import analyze_meal_from_image_base64
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    MEAL_PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
     init_db()
     yield
     # shutdown if needed
@@ -31,6 +34,12 @@ app.include_router(nutrition_router)
 app.include_router(subscriptions_router)
 app.include_router(auth_router)
 app.include_router(users_web_router)
+
+app.mount(
+    "/media/meals",
+    StaticFiles(directory=str(MEAL_PHOTOS_DIR)),
+    name="meal_photos",
+)
 
 
 # Legacy: Streamlit (ui.py) calls POST /generate_response

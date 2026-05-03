@@ -46,6 +46,9 @@ async def save_confirmed_meal(
         "ingredients": ingredients,
         "source_type": meal_data.get("source_type") or "photo",
         "telegram_file_id": meal_data.get("telegram_file_id"),
+        "prediction": meal_data.get("prediction"),
+        "user_text": meal_data.get("user_text"),
+        "image_base64": meal_data.get("image_base64"),
     }
     try:
         r = requests.post(url, json=payload, timeout=60)
@@ -94,6 +97,19 @@ async def handle_meal_callback(update: Update, context: ContextTypes.DEFAULT_TYP
 
     if data == "meal_rec_no":
         st = USER_STATES.setdefault(user.id, {})
+        prev = st.get("meal_data") or {}
+        ctx = dict(st.get("context") or {})
+        if prev.get("telegram_file_id"):
+            ctx["telegram_file_id"] = prev.get("telegram_file_id")
+        if prev.get("image_base64"):
+            ctx["image_base64"] = prev.get("image_base64")
+        if prev.get("prediction"):
+            ctx["prediction"] = prev.get("prediction")
+        if prev.get("source_type"):
+            ctx["source_type"] = prev.get("source_type")
+        if ctx:
+            st["context"] = ctx
+        st.pop("meal_data", None)
         st["mode"] = UIMode.DIARY_ADD_MEAL
         st["state"] = FlowState.MEAL_ADD_TEXT_MANUAL
         await context.bot.send_message(
