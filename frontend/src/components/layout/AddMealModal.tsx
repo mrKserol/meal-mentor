@@ -220,7 +220,7 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
           {ui.kind === "menu" ? (
             <div className="space-y-4">
               <p className="text-center text-sm text-slate-600">
-                Сфотографируйте еду, загрузите снимок или опишите блюдо текстом — как в Telegram-команде add_meal.
+                Сфотографируйте еду, загрузите снимок или опишите блюдо текстом
               </p>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <button

@@ -47,8 +47,28 @@ class DiaryWeightCard(BaseModel):
     )
 
 
+class DiaryPeriodDay(BaseModel):
+    date: date
+    label: str
+    calories: int
+    bar_percent: int = Field(ge=0, le=100, description="Высота столбца 0–100 относительно максимума за период")
+
+
+class DiaryPeriodBlock(BaseModel):
+    days: list[DiaryPeriodDay]
+    avg_calories: float
+    avg_protein_g: float
+    avg_fat_g: float
+    avg_carbs_g: float
+    days_with_data: int = Field(
+        ...,
+        description="Дней с ненулевыми калориями; средние делятся на это число (минимум 1)",
+    )
+
+
 class DiarySnapshotResponse(BaseModel):
     recent_meals: list[DiaryRecentMeal]
     week: DiaryWeekBlock
+    month: DiaryPeriodBlock
     today: DiaryTodayTotals
     weight: DiaryWeightCard

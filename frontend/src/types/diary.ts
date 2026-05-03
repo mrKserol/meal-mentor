@@ -36,9 +36,26 @@ export interface DiaryWeightCard {
   delta_week_kg: number | null;
 }
 
+export interface DiaryPeriodDay {
+  date: string;
+  label: string;
+  calories: number;
+  bar_percent: number;
+}
+
+export interface DiaryPeriodBlock {
+  days: DiaryPeriodDay[];
+  avg_calories: number;
+  avg_protein_g: number;
+  avg_fat_g: number;
+  avg_carbs_g: number;
+  days_with_data: number;
+}
+
 export interface DiarySnapshot {
   recent_meals: DiaryRecentMeal[];
   week: DiaryWeekBlock;
+  month: DiaryPeriodBlock;
   today: DiaryTodayTotals;
   weight: DiaryWeightCard;
 }

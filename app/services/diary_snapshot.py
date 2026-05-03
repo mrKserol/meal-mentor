@@ -12,6 +12,8 @@ from sqlalchemy.orm import Session, joinedload
 from app.db.models import Meal, MealItem, User
 from app.db.repository import list_user_measurements
 from app.schemas.diary import (
+    DiaryPeriodBlock,
+    DiaryPeriodDay,
     DiaryRecentMeal,
     DiarySnapshotResponse,
     DiaryTodayTotals,
@@ -72,6 +74,22 @@ def _today_range_utc_naive(user: User) -> tuple[datetime, datetime]:
     start_utc = start_local.astimezone(timezone.utc).replace(tzinfo=None)
     end_utc = end_local.astimezone(timezone.utc).replace(tzinfo=None)
     return start_utc, end_utc
+
+
+def _month_range_utc_naive(user: User) -> tuple[datetime, datetime, date, date, zoneinfo.ZoneInfo]:
+    tz = _resolve_tz(user)
+    now_local = datetime.now(tz)
+    first = now_local.date().replace(day=1)
+    if first.month == 12:
+        next_first = first.replace(year=first.year + 1, month=1, day=1)
+    else:
+        next_first = first.replace(month=first.month + 1, day=1)
+    last = next_first - timedelta(days=1)
+    start_local = datetime.combine(first, datetime.min.time(), tzinfo=tz)
+    end_local = datetime.combine(next_first, datetime.min.time(), tzinfo=tz)
+    start_utc = start_local.astimezone(timezone.utc).replace(tzinfo=None)
+    end_utc = end_local.astimezone(timezone.utc).replace(tzinfo=None)
+    return start_utc, end_utc, first, last, tz
 
 
 def _sum_meal_nutrition(meal: Meal) -> dict[str, int]:
@@ -155,6 +173,55 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         days_with_data=days_with_data,
     )
 
+    m_start_utc, m_end_utc, month_first, month_last, tz_m = _month_range_utc_naive(user)
+    meals_month = (
+        db.query(Meal)
+        .options(joinedload(Meal.items).joinedload(MealItem.nutrition))
+        .filter(Meal.user_id == user.id, Meal.meal_datetime >= m_start_utc, Meal.meal_datetime < m_end_utc)
+        .all()
+    )
+    month_by_cal: dict[date, int] = defaultdict(int)
+    month_p = month_f = month_cb = 0
+    for meal in meals_month:
+        local = _utc_naive_to_local(_meal_naive_dt(meal), tz_m)
+        d = local.date()
+        if d < month_first or d > month_last:
+            continue
+        t = _sum_meal_nutrition(meal)
+        month_by_cal[d] += t["calories"]
+        month_p += t["protein_g"]
+        month_f += t["fat_g"]
+        month_cb += t["carbs_g"]
+
+    month_span = (month_last - month_first).days + 1
+    month_days_with = sum(
+        1 for i in range(month_span) if month_by_cal.get(month_first + timedelta(days=i), 0) > 0
+    )
+    month_div = max(1, month_days_with)
+    month_max_cal = max(
+        (month_by_cal.get(month_first + timedelta(days=i), 0) for i in range(month_span)),
+        default=0,
+    )
+    period_days: list[DiaryPeriodDay] = []
+    for i in range(month_span):
+        dd = month_first + timedelta(days=i)
+        cal = month_by_cal.get(dd, 0)
+        if month_max_cal <= 0 or cal <= 0:
+            pct = 0
+        else:
+            pct = min(100, max(8, int(round(100 * cal / month_max_cal))))
+        period_days.append(
+            DiaryPeriodDay(date=dd, label=str(dd.day), calories=cal, bar_percent=pct),
+        )
+    month_block = DiaryPeriodBlock(
+        days=period_days,
+        avg_calories=round(sum(month_by_cal.values()) / month_div, 1),
+        avg_protein_g=round(month_p / month_div, 1),
+        avg_fat_g=round(month_f / month_div, 1),
+        avg_carbs_g=round(month_cb / month_div, 1),
+        days_with_data=month_days_with,
+    )
+
     t_start, t_end = _today_range_utc_naive(user)
     meals_today = (
         db.query(Meal)
@@ -219,6 +286,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
     return DiarySnapshotResponse(
         recent_meals=recent,
         week=week_block,
+        month=month_block,
         today=today,
         weight=weight_card,
     )

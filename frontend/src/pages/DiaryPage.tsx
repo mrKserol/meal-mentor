@@ -5,7 +5,6 @@ import {
   Apple,
   BarChart3,
   Beef,
-  Camera,
   ChevronRight,
   CirclePlus,
   Coffee,
@@ -14,7 +13,6 @@ import {
   Info,
   Salad,
   Scale,
-  Sparkles,
   Target,
   Wheat,
 } from "lucide-react";
@@ -22,9 +20,8 @@ import {
 import { getMyNutritionTarget } from "../api/authApi";
 import { getMyDiary } from "../api/diaryApi";
 import { AppShell } from "../components/layout/AppShell";
-import { useOpenAddMeal } from "../context/AddMealContext";
 import { useAuth } from "../hooks/useAuth";
-import type { DiarySnapshot } from "../types/diary";
+import type { DiaryPeriodDay, DiarySnapshot, DiaryWeekDay } from "../types/diary";
 import type { NutritionTarget } from "../types/auth";
 
 type MealHistoryItem = {
@@ -51,6 +48,15 @@ type DailyGoalItem = {
 };
 
 const MEAL_MENTOR_ACCESS_TOKEN_KEY = "meal_mentor_access_token";
+
+type ChartDay = DiaryWeekDay | DiaryPeriodDay;
+
+function chartDayLabel(d: ChartDay): string {
+  if ("weekday_short" in d && typeof d.weekday_short === "string" && d.weekday_short.length > 0) {
+    return d.weekday_short;
+  }
+  return (d as DiaryPeriodDay).label;
+}
 
 function formatIntRu(n: number): string {
   return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(n);
@@ -219,11 +225,11 @@ function DailyGoalProgress({ item }: { item: DailyGoalItem }) {
 export function DiaryPage() {
   const navigate = useNavigate();
   const { user, validateSession, logout, getAccessToken } = useAuth();
-  const openAddMeal = useOpenAddMeal();
   const [snapshot, setSnapshot] = useState<DiarySnapshot | null>(null);
   const [nutritionTarget, setNutritionTarget] = useState<NutritionTarget | null>(null);
   const [diaryPhase, setDiaryPhase] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [diaryError, setDiaryError] = useState<string | null>(null);
+  const [statsPeriod, setStatsPeriod] = useState<"week" | "month">("week");
 
   const loadDiary = useCallback(async () => {
     setDiaryPhase("loading");
@@ -273,11 +279,6 @@ export function DiaryPage() {
     navigate("/login", { replace: true });
   }, [logout, navigate]);
 
-  const handleAddMealClick = useCallback(() => {
-    const fn = openAddMeal;
-    if (typeof fn === "function") fn();
-  }, [openAddMeal]);
-
   const avatarFallback =
     user?.first_name?.trim()?.[0] ?? user?.username?.trim()?.[0] ?? user?.email?.trim()?.[0] ?? "U";
 
@@ -314,10 +315,18 @@ export function DiaryPage() {
     );
   }
 
-  const weekDays = snapshot?.week.days ?? [];
-  const week = snapshot?.week;
   const weightKg = snapshot?.weight.weight_kg ?? user.weight_kg ?? null;
   const deltaWeek = snapshot?.weight.delta_week_kg ?? null;
+
+  const activeStats = statsPeriod === "week" ? snapshot?.week : snapshot?.month;
+  const periodLength = statsPeriod === "week" ? 7 : (snapshot?.month.days.length ?? 0);
+  const chartDays: ChartDay[] = (activeStats?.days ?? []) as ChartDay[];
+  const isMonth = statsPeriod === "month";
+  const showAvgHint =
+    Boolean(activeStats) &&
+    periodLength > 0 &&
+    activeStats!.days_with_data > 0 &&
+    activeStats!.days_with_data < periodLength;
 
   return (
     <AppShell
@@ -326,91 +335,128 @@ export function DiaryPage() {
       onLogout={handleLogout}
       onMealSaved={() => void loadDiary()}
     >
-      <div className="mx-auto max-w-7xl space-y-6 p-4 pb-8 lg:p-8">
-        <section className="flex flex-col justify-between gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Обзор питания</h1>
-            <p className="mt-2 text-slate-500">
-              Отслеживайте свой прогресс и записывайте приёмы пищи за {getTodayRu()}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleAddMealClick}
-            className="flex items-center justify-center gap-2 rounded-lg bg-green-500 px-6 py-3 font-semibold text-green-950 shadow-sm transition hover:bg-green-400 active:scale-[0.98]"
-          >
-            <CirclePlus className="h-5 w-5" aria-hidden />
-            Добавить прием пищи
-          </button>
-        </section>
-
-        {diaryPhase === "loading" && !snapshot ? (
-          <p className="text-center text-slate-500">Загружаем данные дневника…</p>
-        ) : null}
-
-        <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:col-span-2">
-            <div className="mb-6 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50">
-                  <BarChart3 className="h-5 w-5 text-green-600" aria-hidden />
-                </div>
-                <h2 className="text-xl font-semibold text-slate-900">Статистика за неделю</h2>
-              </div>
-              <div className="flex gap-2 text-sm">
-                <span className="rounded-full bg-green-100 px-3 py-1 font-medium text-green-700">Неделя</span>
-                <span className="rounded-full px-3 py-1 font-medium text-slate-400">Месяц</span>
-              </div>
-            </div>
-
-            <div className="flex h-48 w-full items-end justify-between gap-2 px-2">
-              {weekDays.map((item) => (
-                <div key={item.date} className="flex h-full min-h-0 flex-1 flex-col items-stretch justify-end px-0.5">
-                  <div className="relative flex min-h-[120px] w-full flex-1 items-end rounded-t-lg bg-slate-100">
-                    <div
-                      className="w-full min-h-[2px] rounded-t-lg bg-green-400 transition-all"
-                      style={{ height: item.bar_percent > 0 ? `${item.bar_percent}%` : "2px" }}
-                    />
-                  </div>
-                  <span className="mt-2 block text-center text-xs text-slate-400">{item.weekday_short}</span>
-                </div>
-              ))}
-            </div>
-
-            {week && week.days_with_data > 0 && week.days_with_data < 7 ? (
-              <p className="mt-2 text-center text-xs text-slate-400">
-                Средние посчитаны за {week.days_with_data}{" "}
-                {week.days_with_data === 1
-                  ? "день"
-                  : week.days_with_data >= 2 && week.days_with_data <= 4
-                    ? "дня"
-                    : "дней"}{" "}
-                с записями, а не за 7 дней
+      {({ openAddMeal }) => (
+        <div className="mx-auto max-w-7xl space-y-6 p-4 pb-8 lg:p-8">
+          <section className="flex flex-col justify-between gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Обзор питания</h1>
+              <p className="mt-2 text-slate-500">
+                Отслеживайте свой прогресс и записывайте приёмы пищи за {getTodayRu()}
               </p>
-            ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={() => openAddMeal()}
+              className="flex items-center justify-center gap-2 rounded-lg bg-green-500 px-6 py-3 font-semibold text-green-950 shadow-sm transition hover:bg-green-400 active:scale-[0.98]"
+            >
+              <CirclePlus className="h-5 w-5" aria-hidden />
+              Добавить прием пищи
+            </button>
+          </section>
 
-            <div className="mt-6 grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 text-center md:grid-cols-4">
-              <div>
-                <p className="text-xl font-bold text-green-700">{formatFixedRu(week?.avg_calories ?? 0, 0)}</p>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Средние ккал</p>
+          {diaryPhase === "loading" && !snapshot ? (
+            <p className="text-center text-slate-500">Загружаем данные дневника…</p>
+          ) : null}
+
+          <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:col-span-2">
+              <div className="mb-6 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50">
+                    <BarChart3 className="h-5 w-5 text-green-600" aria-hidden />
+                  </div>
+                  <h2 className="text-xl font-semibold text-slate-900">
+                    {statsPeriod === "week" ? "Статистика за неделю" : "Статистика за месяц"}
+                  </h2>
+                </div>
+                <div className="flex gap-2 text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setStatsPeriod("week")}
+                    className={
+                      statsPeriod === "week"
+                        ? "rounded-full bg-green-100 px-3 py-1 font-medium text-green-700"
+                        : "rounded-full px-3 py-1 font-medium text-slate-400 transition hover:bg-slate-100"
+                    }
+                  >
+                    Неделя
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatsPeriod("month")}
+                    className={
+                      statsPeriod === "month"
+                        ? "rounded-full bg-green-100 px-3 py-1 font-medium text-green-700"
+                        : "rounded-full px-3 py-1 font-medium text-slate-400 transition hover:bg-slate-100"
+                    }
+                  >
+                    Месяц
+                  </button>
+                </div>
               </div>
-              <div>
-                <p className="text-xl font-bold text-orange-600">{formatFixedRu(week?.avg_protein_g ?? 0, 0)} г</p>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Белки</p>
+
+              <div
+                className={[
+                  "flex h-48 w-full items-end px-2",
+                  isMonth ? "justify-between gap-1 overflow-x-auto" : "justify-between gap-2",
+                ].join(" ")}
+              >
+                {chartDays.map((item) => (
+                  <div
+                    key={item.date}
+                    className={[
+                      "flex h-full min-h-0 flex-col items-stretch justify-end px-0.5",
+                      isMonth ? "min-w-[18px] flex-1" : "flex-1",
+                    ].join(" ")}
+                  >
+                    <div className="relative flex min-h-[120px] w-full flex-1 items-end rounded-t-lg bg-slate-100">
+                      <div
+                        className="w-full min-h-[2px] rounded-t-lg bg-green-400 transition-all"
+                        style={{ height: item.bar_percent > 0 ? `${item.bar_percent}%` : "2px" }}
+                      />
+                    </div>
+                    <span className="mt-2 block text-center text-xs text-slate-400">{chartDayLabel(item)}</span>
+                  </div>
+                ))}
               </div>
-              <div>
-                <p className="text-xl font-bold text-slate-900">{formatFixedRu(week?.avg_fat_g ?? 0, 0)} г</p>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Жиры</p>
-              </div>
-              <div>
-                <p className="text-xl font-bold text-slate-900">{formatFixedRu(week?.avg_carbs_g ?? 0, 0)} г</p>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Углеводы</p>
+
+              {showAvgHint ? (
+                <p className="mt-2 text-center text-xs text-slate-400">
+                  Средние посчитаны за {activeStats!.days_with_data}{" "}
+                  {activeStats!.days_with_data === 1
+                    ? "день"
+                    : activeStats!.days_with_data >= 2 && activeStats!.days_with_data <= 4
+                      ? "дня"
+                      : "дней"}{" "}
+                  с записями,{" "}
+                  {statsPeriod === "week" ? "а не за 7 дней" : "а не за весь выбранный период (все дни месяца)"}
+                </p>
+              ) : null}
+
+              <div className="mt-6 grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 text-center md:grid-cols-4">
+                <div>
+                  <p className="text-xl font-bold text-green-700">{formatFixedRu(activeStats?.avg_calories ?? 0, 0)}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Средние ккал</p>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-orange-600">
+                    {formatFixedRu(activeStats?.avg_protein_g ?? 0, 0)} г
+                  </p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Белки</p>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-slate-900">{formatFixedRu(activeStats?.avg_fat_g ?? 0, 0)} г</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Жиры</p>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-slate-900">{formatFixedRu(activeStats?.avg_carbs_g ?? 0, 0)} г</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Углеводы</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
+            <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-3 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-slate-900">Текущий вес</h2>
                 <p className="mt-1 text-3xl font-bold text-green-700">
@@ -426,9 +472,9 @@ export function DiaryPage() {
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-green-50">
                 <Scale className="h-5 w-5 text-green-600" aria-hidden />
               </div>
-            </div>
+              </div>
 
-            <div className="flex flex-1 items-center justify-center py-4">
+              <div className="flex flex-1 items-center justify-center py-4">
               <svg className="h-28 w-full" viewBox="0 0 100 40" aria-hidden>
                 <path
                   d="M0 35 Q 20 30, 40 32 T 80 15 T 100 10"
@@ -439,9 +485,9 @@ export function DiaryPage() {
                 />
                 <circle cx="100" cy="10" fill="#15803d" r="2.5" />
               </svg>
-            </div>
+              </div>
 
-            <div className="space-y-2">
+              <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500">Прогресс за неделю</span>
                 {deltaWeek != null ? (
@@ -469,119 +515,98 @@ export function DiaryPage() {
                   }}
                 />
               </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="grid grid-cols-1 gap-6 md:grid-cols-12">
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm md:col-span-8">
-            <div className="flex items-center justify-between border-b border-slate-100 p-6">
-              <div>
-                <h2 className="text-xl font-semibold text-slate-900">История приёмов пищи</h2>
-                <p className="mt-1 text-sm text-slate-500">Последние 3 приёма пищи</p>
               </div>
-              <button
-                type="button"
-                onClick={handleAddMealClick}
-                className="flex items-center gap-1 text-sm font-bold text-green-700 transition hover:text-green-800"
-              >
-                Добавить
-                <ChevronRight className="h-4 w-4" aria-hidden />
-              </button>
             </div>
+          </section>
 
-            <div className="divide-y divide-slate-100">
-              {mealHistory.length === 0 ? (
-                <div className="p-8 text-center text-slate-500">
-                  <p>Пока нет записей.</p>
-                  <button
-                    type="button"
-                    onClick={handleAddMealClick}
-                    className="mt-3 font-semibold text-green-700 underline hover:text-green-800"
-                  >
-                    Добавить приём пищи
-                  </button>
-                </div>
-              ) : (
-                mealHistory.map((meal) => (
-                  <div key={meal.id} className="flex items-center gap-4 p-4 transition hover:bg-slate-50 md:p-5">
-                    <MealIconCard icon={meal.icon} />
-                    <div className="min-w-0 flex-1">
-                      <h3 className="truncate text-base font-semibold text-slate-900">{meal.title}</h3>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {meal.mealType} • {meal.time}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-slate-900">{formatIntRu(meal.calories)} kcal</p>
-                      <span className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-                        {meal.tag}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-6 md:col-span-4">
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-5 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50">
-                  <Target className="h-5 w-5 text-green-600" aria-hidden />
-                </div>
-                <h2 className="text-xl font-semibold text-slate-900">Дневные цели</h2>
-              </div>
-
-              {dailyGoals.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  Цели не рассчитаны. Заполните профиль (вес, цель, активность), чтобы появились нормы КБЖУ.
-                </p>
-              ) : (
-                <div className="space-y-5">
-                  {dailyGoals.map((item) => (
-                    <DailyGoalProgress key={item.id} item={item} />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="overflow-hidden rounded-xl bg-gradient-to-br from-green-600 to-green-800 p-6 text-white shadow-lg shadow-green-900/20">
-              <div className="mb-4 flex items-start justify-between">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15">
-                  <Sparkles className="h-5 w-5" aria-hidden />
-                </div>
-                <span className="rounded-full bg-white/20 px-2 py-1 text-xs font-bold uppercase tracking-wide">
-                  Standard
-                </span>
-              </div>
-              <h2 className="text-xl font-semibold">ИИ распознавание еды</h2>
-              <p className="mt-2 text-sm leading-relaxed text-white/80">
-                Разблокируйте фото-логирование еды и подробный анализ микронутриентов.
-              </p>
-              <button
-                type="button"
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-white py-2.5 text-sm font-bold text-green-700 transition active:scale-[0.98]"
-              >
-                <Camera className="h-4 w-4" aria-hidden />
-                Обновить до Pro
-              </button>
-            </div>
-
-            <div className="rounded-xl border border-green-100 bg-green-50 p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
-                  <Info className="h-5 w-5 text-green-600" aria-hidden />
-                </div>
+          <section className="grid grid-cols-1 gap-6 md:grid-cols-12">
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm md:col-span-8">
+              <div className="flex items-center justify-between border-b border-slate-100 p-6">
                 <div>
-                  <p className="text-sm font-bold text-green-950">Совет ИИ</p>
-                  <p className="mt-1 text-sm text-slate-600">Пейте больше воды сегодня!</p>
+                  <h2 className="text-xl font-semibold text-slate-900">История приёмов пищи</h2>
+                  <p className="mt-1 text-sm text-slate-500">Последние 3 приёма пищи</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openAddMeal()}
+                  className="flex items-center gap-1 text-sm font-bold text-green-700 transition hover:text-green-800"
+                >
+                  Добавить
+                  <ChevronRight className="h-4 w-4" aria-hidden />
+                </button>
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                {mealHistory.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500">
+                    <p>Пока нет записей.</p>
+                    <button
+                      type="button"
+                      onClick={() => openAddMeal()}
+                      className="mt-3 font-semibold text-green-700 underline hover:text-green-800"
+                    >
+                      Добавить приём пищи
+                    </button>
+                  </div>
+                ) : (
+                  mealHistory.map((meal) => (
+                    <div key={meal.id} className="flex items-center gap-4 p-4 transition hover:bg-slate-50 md:p-5">
+                      <MealIconCard icon={meal.icon} />
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate text-base font-semibold text-slate-900">{meal.title}</h3>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {meal.mealType} • {meal.time}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-slate-900">{formatIntRu(meal.calories)} kcal</p>
+                        <span className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                          {meal.tag}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-6 md:col-span-4">
+              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50">
+                    <Target className="h-5 w-5 text-green-600" aria-hidden />
+                  </div>
+                  <h2 className="text-xl font-semibold text-slate-900">Дневные цели</h2>
+                </div>
+
+                {dailyGoals.length === 0 ? (
+                  <p className="text-sm text-slate-500">
+                    Цели не рассчитаны. Заполните профиль (вес, цель, активность), чтобы появились нормы КБЖУ.
+                  </p>
+                ) : (
+                  <div className="space-y-5">
+                    {dailyGoals.map((item) => (
+                      <DailyGoalProgress key={item.id} item={item} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-green-100 bg-green-50 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
+                    <Info className="h-5 w-5 text-green-600" aria-hidden />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-green-950">Совет ИИ</p>
+                    <p className="mt-1 text-sm text-slate-600">Пейте больше воды сегодня!</p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-      </div>
+          </section>
+        </div>
+      )}
     </AppShell>
   );
 }

@@ -369,17 +369,9 @@ export function ProfileOnboardingPage() {
                     <span className="text-white/90">Жиры</span>
                     <span className="font-bold">{nutritionTarget.target_fat_g} g</span>
                   </div>
-                  <div className="flex justify-between border-b border-white/15 py-2">
+                  <div className="flex justify-between py-2">
                     <span className="text-white/90">Углеводы</span>
                     <span className="font-bold">{nutritionTarget.target_carbs_g} g</span>
-                  </div>
-                  <div className="flex justify-between border-b border-white/15 py-2">
-                    <span className="text-white/90">BMR</span>
-                    <span className="font-bold">{nutritionTarget.bmr_kcal} kcal</span>
-                  </div>
-                  <div className="flex justify-between py-2">
-                    <span className="text-white/90">TDEE</span>
-                    <span className="font-bold">{nutritionTarget.tdee_kcal} kcal</span>
                   </div>
                 </div>
               ) : (
