@@ -8,6 +8,7 @@ from app.auth.dependencies import get_current_user
 from app.auth.security import hash_password
 from app.auth.user_me_payload import serialize_user_me
 from app.db.models import Allergen, User
+from app.core.use_cases.meal_analysis import decode_optional_image_b64
 from app.db.repository import create_meal
 from app.db.session import get_db
 from app.schemas.auth import (
@@ -83,11 +84,15 @@ def save_my_meal(
     if not ingredients:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="ingredients required")
     items = build_meal_item_specs_from_ingredients(ingredients)
+    img_bytes = decode_optional_image_b64(body.image_base64)
     create_meal(
         db,
         current_user.id,
         source_type=body.source_type or "photo",
         telegram_file_id=body.telegram_file_id,
+        prediction=body.prediction,
+        user_text=body.user_text,
+        image_bytes=img_bytes,
         items=items,
     )
     return WebMealSaveResponse(status="success")

@@ -88,10 +88,13 @@ def format_weight_correction_intro() -> str:
     )
 
 
-def format_recognition_question(ingredients: dict[str, Any]) -> str:
-    """Short human-readable line before detailed macros."""
+def format_recognition_question(prediction: str | None, ingredients: dict[str, Any]) -> str:
+    """Короткий вопрос до детальных макросов: приоритет — prediction из LLM, иначе сводка по ingredients."""
+    p = (prediction or "").strip()
+    if p:
+        return f"Это похоже на: {p}.\n\nЯ верно определил?"
     if not ingredients:
-        return "Я не смог выделить ингредиенты. Опиши блюдо текстом или попробуй другое фото."
+        return "Я не смог выделить блюдо. Опиши текстом или попробуй другое фото."
     parts = []
     for name, w in ingredients.items():
         parts.append(f"{name} ({w} г)")

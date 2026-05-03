@@ -104,6 +104,10 @@ class Meal(Base):
     meal_datetime = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     notes = Column(Text, nullable=True)
+    prediction = Column(Text, nullable=True)
+    user_text = Column(Text, nullable=True)
+    meal_photo_large = Column(String(512), nullable=True)
+    meal_photo_thumb = Column(String(512), nullable=True)
 
     user = relationship("User", back_populates="meals")
     items = relationship(

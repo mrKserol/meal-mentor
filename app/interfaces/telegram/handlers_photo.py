@@ -94,14 +94,20 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     nutrition = data.get("nutrition")
 
     if _needs_user_description(ingredients, confidence):
+        pred_raw = data.get("prediction")
+        pred_stored = pred_raw.strip() if isinstance(pred_raw, str) and pred_raw.strip() else None
+        ctx: dict = {
+            "telegram_file_id": photo.file_id,
+            "source_type": "photo",
+            "image_base64": image_base64,
+        }
+        if pred_stored:
+            ctx["prediction"] = pred_stored
         USER_STATES[user.id].update(
             {
                 "mode": UIMode.DIARY_ADD_MEAL,
                 "state": FlowState.MEAL_ADD_TEXT_MANUAL,
-                "context": {
-                    "telegram_file_id": photo.file_id,
-                    "source_type": "photo",
-                },
+                "context": ctx,
             }
         )
         await update.message.reply_text(
@@ -110,16 +116,20 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         )
         return
 
+    pred_raw = data.get("prediction")
+    pred_stored = pred_raw.strip() if isinstance(pred_raw, str) and pred_raw.strip() else None
     meal_data = {
         "ingredients": ingredients,
         "confidence": confidence,
         "nutrition": nutrition,
         "telegram_file_id": photo.file_id,
         "source_type": "photo",
+        "prediction": pred_stored,
+        "image_base64": image_base64,
     }
     USER_STATES[user.id]["meal_data"] = meal_data
     USER_STATES[user.id]["state"] = FlowState.MEAL_ADD_RECOGNITION_CHECK
     await update.message.reply_text(
-        format_recognition_question(ingredients),
+        format_recognition_question(pred_stored, ingredients),
         reply_markup=kb_recognition_confirm(),
     )

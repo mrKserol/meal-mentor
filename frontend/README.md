@@ -1,25 +1,28 @@
-# Meal Mentor Frontend
+# Meal Mentor — фронтенд
 
-Standalone frontend service for Meal Mentor auth flow.
+SPA на **React + Vite + TypeScript + Tailwind**: дашборд, дневник питания, онбординг профиля, вход (email/пароль, Telegram), **PWA** (манифест и `sw.js` в `public/`).
 
-## Stack
+Полное описание продукта, API и запуска бэкенда — в [корневом README](../README.md).
 
-- React + Vite + TypeScript
-- React Router
-- Tailwind CSS
-- Axios
+## Окружение
 
-## Environment
-
-Create `.env` from `.env.example`:
+Создайте `.env` из `.env.example`:
 
 ```bash
-VITE_API_URL=https://your-backend-url.up.railway.app
+VITE_API_URL=http://127.0.0.1:8000
 ```
 
-## Scripts
+Для продакшена укажите URL развёрнутого FastAPI (например Railway).
 
-- `npm run dev` - local development
-- `npm run build` - production build
-- `npm run preview` - preview local build
-- `npm run start` - static server command for Railway
+## Скрипты
+
+| Команда | Назначение |
+|---------|------------|
+| `npm run dev` | Локальная разработка (Vite) |
+| `npm run build` | Сборка (`tsc` + Vite) |
+| `npm run preview` | Просмотр production-сборки |
+| `npm run start` | Статическая отдача `dist` (например на Railway) |
+
+## Важно для контрибьюторов
+
+- Общие хелперы анализа приёма пищи лежат в **`src/utils/mealFlow.ts`**. Каталог с именем `lib/` в путях фронта **не используется**: в корневом `.gitignore` есть правило `lib/` (для Python), из‑за него файлы в `frontend/src/lib/` не попадали бы в git.

@@ -9,23 +9,27 @@ import { AppSideNav } from "./AppSideNav";
 import { AppTopBar } from "./AppTopBar";
 import { CompositionLabelModal } from "./CompositionLabelModal";
 
+export type AppShellActions = {
+  openAddMeal: () => void;
+};
+
+type AppShellChildren = ReactNode | ((actions: AppShellActions) => ReactNode);
+
 interface AppShellProps {
   activeNav: AppNavItem;
   avatarFallback: string;
   onLogout: () => void | Promise<void>;
-  onNewMeal?: () => void;
   /** Вызывается после успешного сохранения приёма пищи (обновление дневника и т.п.). */
   onMealSaved?: () => void;
   /** Show floating + on small screens (above bottom nav) */
   showMobileFab?: boolean;
-  children: ReactNode;
+  children: AppShellChildren;
 }
 
 export function AppShell({
   activeNav,
   avatarFallback,
   onLogout,
-  onNewMeal,
   onMealSaved,
   showMobileFab = true,
   children,
@@ -33,7 +37,13 @@ export function AppShell({
   const [addMealOpen, setAddMealOpen] = useState(false);
   const openAddMeal = useCallback(() => setAddMealOpen(true), []);
   const closeAddMeal = useCallback(() => setAddMealOpen(false), []);
-  const meal = onNewMeal ?? openAddMeal;
+
+  const renderChildren = () => {
+    if (typeof children === "function") {
+      return (children as (actions: AppShellActions) => ReactNode)({ openAddMeal });
+    }
+    return children;
+  };
 
   const [compositionOpen, setCompositionOpen] = useState(false);
   const openComposition = useCallback(() => setCompositionOpen(true), []);
@@ -41,17 +51,17 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24 text-slate-900 antialiased lg:pb-8">
-      <AppTopBar avatarFallback={avatarFallback} />
+      <AppTopBar avatarFallback={avatarFallback} onLogout={onLogout} />
       <div className="flex min-h-screen">
         <AppSideNav
           activeItem={activeNav}
           onLogout={onLogout}
-          onNewMeal={meal}
+          onNewMeal={openAddMeal}
           onCompositionClick={openComposition}
         />
         <div className="flex min-h-screen flex-1 flex-col pt-14 lg:ml-64">
           <main className="flex-1">
-            <AddMealOpenProvider onOpen={openAddMeal}>{children}</AddMealOpenProvider>
+            <AddMealOpenProvider onOpen={openAddMeal}>{renderChildren()}</AddMealOpenProvider>
           </main>
         </div>
       </div>
@@ -59,7 +69,7 @@ export function AppShell({
       {showMobileFab ? (
         <button
           type="button"
-          onClick={meal}
+          onClick={openAddMeal}
           className="fixed bottom-24 right-4 z-[45] flex h-14 w-14 items-center justify-center rounded-full bg-green-600 text-white shadow-lg transition hover:bg-green-700 active:scale-95 lg:hidden"
           aria-label="Добавить прием пищи"
         >

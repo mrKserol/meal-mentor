@@ -30,6 +30,7 @@ class MealAnalysisResult(BaseModel):
     ingredients: dict[str, Any] = Field(default_factory=dict)
     confidence: float | None = None
     nutrition: MacroTotals | None = None
+    prediction: str | None = None
     error: str = ""
 
     def to_api_dict(self) -> dict[str, Any]:
@@ -41,6 +42,8 @@ class MealAnalysisResult(BaseModel):
             "result": self.ingredients,
             "error": self.error,
         }
+        if self.prediction is not None:
+            out["prediction"] = self.prediction
         if self.nutrition is not None:
             out["nutrition"] = self.nutrition.model_dump()
         return out
@@ -55,6 +58,9 @@ class MealLogRequest(BaseModel):
     ingredients: dict[str, Any] = Field(default_factory=dict)
     source_type: str = "photo"
     telegram_file_id: str | None = None
+    prediction: str | None = None
+    user_text: str | None = None
+    image_base64: str | None = None
 
 
 class MealLogResponse(BaseModel):

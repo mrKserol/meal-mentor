@@ -15,6 +15,7 @@ from app.db.models import (
     UserMeasurement,
 )
 from app.db.nutrition_columns import MEAL_ITEM_NUTRITION_KEYS
+from app.services.meal_photo_storage import try_save_meal_photos
 
 
 def get_or_create_user(
@@ -85,6 +86,9 @@ def create_meal(
     meal_datetime: Optional[datetime] = None,
     telegram_file_id: Optional[str] = None,
     notes: Optional[str] = None,
+    prediction: Optional[str] = None,
+    user_text: Optional[str] = None,
+    image_bytes: Optional[bytes] = None,
     items: Optional[list[dict[str, Any]]] = None,
 ) -> Meal:
     """
@@ -99,9 +103,17 @@ def create_meal(
         source_type=source_type,
         meal_datetime=meal_datetime or datetime.utcnow(),
         notes=notes,
+        prediction=prediction,
+        user_text=user_text,
     )
     db.add(meal)
     db.flush()
+
+    if image_bytes:
+        lg, th = try_save_meal_photos(user_id, meal.id, image_bytes)
+        meal.meal_photo_large = lg
+        meal.meal_photo_thumb = th
+        db.flush()
 
     for spec in items or []:
         name = spec.get("item_name")

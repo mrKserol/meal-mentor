@@ -13,6 +13,7 @@ export type MealAnalyzePayload = {
   ingredients: Record<string, string | number>;
   confidence: number | null;
   nutrition: MealNutrition | null;
+  prediction: string | null;
   error?: string;
 };
 
@@ -28,6 +29,9 @@ export function parseAnalyzeResponse(raw: Record<string, unknown>): MealAnalyzeP
   const ingredients: Record<string, string | number> =
     ing && typeof ing === "object" && !Array.isArray(ing) ? (ing as Record<string, string | number>) : {};
   const confidence = typeof raw.confidence === "number" ? raw.confidence : null;
+  const predRaw = raw.prediction;
+  const prediction =
+    typeof predRaw === "string" && predRaw.trim() ? predRaw.trim() : null;
   const nut = raw.nutrition;
   let nutrition: MealNutrition | null = null;
   if (nut && typeof nut === "object" && !Array.isArray(nut)) {
@@ -44,14 +48,22 @@ export function parseAnalyzeResponse(raw: Record<string, unknown>): MealAnalyzeP
     ingredients,
     confidence,
     nutrition,
+    prediction,
     error: typeof raw.error === "string" ? raw.error : undefined,
   };
 }
 
-export function formatRecognitionQuestion(ingredients: Record<string, string | number>): string {
+export function formatRecognitionQuestion(
+  prediction: string | null | undefined,
+  ingredients: Record<string, string | number>,
+): string {
+  const p = typeof prediction === "string" && prediction.trim() ? prediction.trim() : "";
+  if (p) {
+    return `Это похоже на: ${p}.\n\nЯ верно определил?`;
+  }
   const keys = Object.keys(ingredients);
   if (keys.length === 0) {
-    return "Я не смог выделить ингредиенты. Опиши блюдо текстом или попробуй другое фото.";
+    return "Я не смог выделить блюдо. Опиши текстом или попробуй другое фото.";
   }
   const parts = keys.map((name) => `${name} (${ingredients[name]} г)`);
   let tail: string;

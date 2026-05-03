@@ -43,6 +43,9 @@ class SaveMealBody(BaseModel):
     ingredients: dict[str, Any]
     source_type: str = "photo"
     telegram_file_id: str | None = None
+    prediction: str | None = None
+    user_text: str | None = None
+    image_base64: str | None = None
 
 
 class LogMealBody(BaseModel):
@@ -92,6 +95,9 @@ def save_meal(body: SaveMealBody, db: Session = Depends(get_db)):
             ingredients=body.ingredients,
             source_type=body.source_type,
             telegram_file_id=body.telegram_file_id,
+            prediction=body.prediction,
+            user_text=body.user_text,
+            image_base64=body.image_base64,
         ),
     ).to_api_dict()
     if out.get("status") != "success":

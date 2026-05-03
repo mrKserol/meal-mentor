@@ -27,6 +27,9 @@ type MealData = {
   nutrition: MealNutrition | null;
   source_type: string;
   telegram_file_id: string | null;
+  prediction: string | null;
+  user_text?: string | null;
+  image_base64?: string | null;
 };
 
 type UiState =
@@ -52,10 +55,12 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
   const [textDraft, setTextDraft] = useState("");
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const photoB64Ref = useRef<string | null>(null);
 
   const reset = useCallback(() => {
     setUi({ kind: "menu" });
     setTextDraft("");
+    photoB64Ref.current = null;
   }, []);
 
   useEffect(() => {
@@ -75,13 +80,14 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
     setUi({ kind: "busy", message: "Анализирую фото…" });
     try {
       const b64 = await fileToBase64(file);
+      photoB64Ref.current = b64;
       const raw = await analyzeMealImageBase64(b64);
       const parsed = parseAnalyzeResponse(raw);
       if (parsed.status !== "success") {
         setUi({ kind: "error", message: parsed.error || "Не удалось разобрать еду на фото." });
         return;
       }
-      const { ingredients, confidence, nutrition } = parsed;
+      const { ingredients, confidence, nutrition, prediction } = parsed;
       if (needsUserDescription(ingredients, confidence)) {
         setUi({
           kind: "text",
@@ -98,6 +104,8 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
           nutrition,
           source_type: "photo",
           telegram_file_id: null,
+          prediction,
+          image_base64: b64,
         },
       });
     } catch (err) {
@@ -122,7 +130,7 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
         setUi({ kind: "error", message: parsed.error || "Ошибка анализа текста." });
         return;
       }
-      const { ingredients, confidence, nutrition } = parsed;
+      const { ingredients, confidence, nutrition, prediction } = parsed;
       if (needsUserDescription(ingredients, confidence)) {
         setUi({
           kind: "text",
@@ -138,8 +146,11 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
         ingredients,
         confidence,
         nutrition,
-        source_type: mode === "after_photo" ? "text" : "text",
+        source_type: "text",
         telegram_file_id: null,
+        prediction,
+        user_text: trimmed,
+        ...(mode === "after_photo" && photoB64Ref.current ? { image_base64: photoB64Ref.current } : {}),
       };
       if (mode === "after_photo") {
         setUi({ kind: "confirm", mealData });
@@ -173,6 +184,9 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
         ingredients: ui.mealData.ingredients,
         source_type: ui.mealData.source_type,
         telegram_file_id: ui.mealData.telegram_file_id,
+        prediction: ui.mealData.prediction,
+        user_text: ui.mealData.user_text ?? undefined,
+        image_base64: ui.mealData.image_base64 ?? undefined,
       });
       onMealSaved?.();
       setUi({ kind: "menu" });
@@ -220,7 +234,7 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
           {ui.kind === "menu" ? (
             <div className="space-y-4">
               <p className="text-center text-sm text-slate-600">
-                Сфотографируйте еду, загрузите снимок или опишите блюдо текстом — как в Telegram-команде add_meal.
+                Сфотографируйте еду, загрузите снимок или опишите блюдо текстом
               </p>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <button
@@ -244,6 +258,7 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
                 type="button"
                 onClick={() => {
                   setTextDraft("");
+                  photoB64Ref.current = null;
                   setUi({ kind: "text", mode: "standalone" });
                 }}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-100"
@@ -284,7 +299,7 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
                 </div>
               </div>
               <p className="whitespace-pre-wrap text-center text-sm leading-relaxed text-slate-800">
-                {formatRecognitionQuestion(ui.mealData.ingredients)}
+                {formatRecognitionQuestion(ui.mealData.prediction, ui.mealData.ingredients)}
               </p>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <button

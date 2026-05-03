@@ -123,6 +123,9 @@ class WebMealSaveRequest(BaseModel):
     ingredients: dict[str, Any]
     source_type: str = "photo"
     telegram_file_id: str | None = None
+    prediction: str | None = None
+    user_text: str | None = None
+    image_base64: str | None = None
 
 
 class WebMealSaveResponse(BaseModel):
