@@ -15,6 +15,7 @@ import {
 
 import { getMyNutritionTarget } from "../api/authApi";
 import { getMyDiary } from "../api/diaryApi";
+import { MealHistoryDaySection } from "../components/diary/MealHistoryDaySection";
 import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
 import type { DiaryPeriodDay, DiarySnapshot, DiaryWeekDay } from "../types/diary";
@@ -229,6 +230,8 @@ export function DiaryPage() {
 
   const avatarFallback =
     user?.first_name?.trim()?.[0] ?? user?.username?.trim()?.[0] ?? user?.email?.trim()?.[0] ?? "U";
+
+  const webDiaryToken = getAccessToken() ?? localStorage.getItem(MEAL_MENTOR_ACCESS_TOKEN_KEY) ?? "";
 
   const dailyGoals = useMemo(() => {
     if (!snapshot || !nutritionTarget) return [];
@@ -466,6 +469,10 @@ export function DiaryPage() {
               </div>
             </div>
           </section>
+
+          {webDiaryToken ? (
+            <MealHistoryDaySection accessToken={webDiaryToken} onMealsChanged={() => void loadDiary()} />
+          ) : null}
 
           <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">

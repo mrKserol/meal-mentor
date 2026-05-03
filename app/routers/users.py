@@ -1,14 +1,15 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from starlette.responses import Response
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.auth.security import hash_password
 from app.auth.user_me_payload import serialize_user_me
 from app.db.models import Allergen, User
-from app.db.repository import create_meal
+from app.db.repository import create_meal, delete_meal_for_user, list_meals_for_user_local_date
 from app.db.session import get_db
 from app.schemas.auth import (
     LabelAnalysisResponse,
@@ -18,9 +19,11 @@ from app.schemas.auth import (
     UserMeResponse,
     WebMealSaveRequest,
     WebMealSaveResponse,
+    WebMealsDayResponse,
 )
 from app.schemas.diary import DiarySnapshotResponse
-from app.services.diary_snapshot import build_diary_snapshot
+from app.services.diary_snapshot import _resolve_tz, build_diary_snapshot
+from app.services.web_meals_day import build_web_meal_day_row
 from app.core.use_cases.meal_analysis import build_meal_item_specs_from_ingredients, resolve_meal_photo_urls_for_save
 from app.services.ingredient_checker import analyze_label_from_image_bytes, format_label_result_for_telegram
 from app.services.nutrition_targets import (
@@ -112,6 +115,30 @@ def get_me(current_user: User = Depends(get_current_user), db: Session = Depends
 def get_my_diary(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Сводка для страницы «Дневник»: последние приёмы, неделя, сегодня, вес."""
     return build_diary_snapshot(db, current_user)
+
+
+@router.get("/me/meals/day", response_model=WebMealsDayResponse)
+def get_my_meals_for_day(
+    date_q: date = Query(..., alias="date"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Все приёмы за календарный день в часовом поясе профиля (query `date=YYYY-MM-DD`)."""
+    tz = _resolve_tz(current_user)
+    meals = list_meals_for_user_local_date(db, current_user.id, date_q, tz)
+    rows = [build_web_meal_day_row(m, current_user) for m in meals]
+    return WebMealsDayResponse(date=date_q, items=rows)
+
+
+@router.delete("/me/meals/{meal_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_my_meal(
+    meal_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not delete_meal_for_user(db, meal_id, current_user.id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Приём не найден")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/me/nutrition-target", response_model=MyNutritionTargetResponse)

@@ -1,5 +1,6 @@
 import json
-from datetime import date, datetime
+import zoneinfo
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Optional
 
 from sqlalchemy.orm import Session, joinedload
@@ -163,6 +164,26 @@ def delete_meal_for_user(db: Session, meal_id: int, user_id: int) -> bool:
     db.delete(meal)
     db.commit()
     return True
+
+
+def list_meals_for_user_local_date(
+    db: Session,
+    user_id: int,
+    d: date,
+    tz: zoneinfo.ZoneInfo,
+) -> list[Meal]:
+    """Приёмы за календарный день `d` в часовом поясе `tz` (meal_datetime хранится как UTC-naive)."""
+    start_local = datetime.combine(d, datetime.min.time(), tzinfo=tz)
+    end_local = datetime.combine(d + timedelta(days=1), datetime.min.time(), tzinfo=tz)
+    start_utc = start_local.astimezone(timezone.utc).replace(tzinfo=None)
+    end_utc = end_local.astimezone(timezone.utc).replace(tzinfo=None)
+    return (
+        db.query(Meal)
+        .options(joinedload(Meal.items).joinedload(MealItem.nutrition))
+        .filter(Meal.user_id == user_id, Meal.meal_datetime >= start_utc, Meal.meal_datetime < end_utc)
+        .order_by(Meal.meal_datetime.asc())
+        .all()
+    )
 
 
 def update_meal_item_weight(

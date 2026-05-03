@@ -134,6 +134,37 @@ class WebMealSaveResponse(BaseModel):
     status: str
 
 
+class WebMealDayItemLine(BaseModel):
+    id: int
+    item_name: str | None = None
+    estimated_weight_g: int | None = None
+    calories: int | None = None
+    protein_g: int | None = None
+    fat_g: int | None = None
+    carbs_g: int | None = None
+
+
+class WebMealDayRow(BaseModel):
+    id: int
+    prediction: str | None = None
+    user_text: str | None = None
+    time_local: str
+    meal_type: str | None = None
+    meal_type_label: str
+    composition: str
+    calories: int
+    meal_photo_thumb: str | None = None
+    meal_photo_large: str | None = None
+    meal_photo_thumb_url: str | None = None
+    meal_photo_large_url: str | None = None
+    items: list[WebMealDayItemLine] = Field(default_factory=list)
+
+
+class WebMealsDayResponse(BaseModel):
+    date: date
+    items: list[WebMealDayRow]
+
+
 class ProfilePatchRequest(BaseModel):
     email: EmailStr | None = None
     password: str | None = None

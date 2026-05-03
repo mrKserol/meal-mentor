@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.config import BASE_URL
 from app.db.models import Meal, MealItem, User
+from app.services.meal_serialization import meal_composition_line
 from app.db.repository import list_user_measurements
 from app.schemas.diary import (
     DiaryPeriodBlock,
@@ -138,24 +139,6 @@ def _meal_list_title(meal: Meal, max_len: int = 160) -> str:
     if pr:
         return pr if len(pr) <= max_len else pr[: max_len - 1] + "…"
     return _meal_title_from_items(meal)
-
-
-def _meal_composition_line(meal: Meal) -> str:
-    """Ингредиенты и вес для строки «Состав: …»."""
-    parts: list[str] = []
-    for it in meal.items:
-        name = (it.item_name or "").strip()
-        if not name:
-            continue
-        w = it.estimated_weight_g
-        if w is not None:
-            try:
-                parts.append(f"{name} {int(round(float(w)))} г")
-            except (TypeError, ValueError):
-                parts.append(name)
-        else:
-            parts.append(name)
-    return ", ".join(parts) if parts else "—"
 
 
 def _meal_type_label(raw: str | None) -> str:
@@ -302,7 +285,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
                 recorded_at=recorded,
                 prediction=meal.prediction,
                 user_text=meal.user_text,
-                composition=_meal_composition_line(meal),
+                composition=meal_composition_line(meal),
                 meal_photo_large=meal.meal_photo_large,
                 meal_photo_thumb=meal.meal_photo_thumb,
                 meal_photo_large_url=_absolute_public_url(meal.meal_photo_large),
