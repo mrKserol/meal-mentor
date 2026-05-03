@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.core.config import MEAL_PHOTOS_DIR
+from app.infrastructure.storage.meal_photo_storage import get_upload_root
 from app.db.session import init_db
 from app.interfaces.api.routes_users import router as users_router
 from app.interfaces.api.routes_meals import router as meals_router
@@ -34,12 +34,13 @@ app.include_router(subscriptions_router)
 app.include_router(auth_router)
 app.include_router(users_web_router)
 
-# StaticFiles checks the path at import/configure time — before lifespan runs.
-MEAL_PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
+# StaticFiles checks the path at import time — before lifespan runs.
+_meal_photo_root = get_upload_root()
+_meal_photo_root.mkdir(parents=True, exist_ok=True)
 app.mount(
-    "/media/meals",
-    StaticFiles(directory=str(MEAL_PHOTOS_DIR)),
-    name="meal_photos",
+    "/media/meal_photos",
+    StaticFiles(directory=str(_meal_photo_root)),
+    name="meal_photos_media",
 )
 
 

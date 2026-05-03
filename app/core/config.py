@@ -88,10 +88,10 @@ DATABASE_URL = os.getenv(
     "sqlite:///./meal_mentor.db",
 )
 
-# Meal photos on disk (large + thumb); paths in DB are relative to this directory
-MEAL_PHOTOS_DIR = Path(os.getenv("MEAL_PHOTOS_DIR", REPO_ROOT / "data" / "meal_photos"))
-if not MEAL_PHOTOS_DIR.is_absolute():
-    MEAL_PHOTOS_DIR = REPO_ROOT / MEAL_PHOTOS_DIR
+# Meal photos on disk; DB stores web paths /media/meal_photos/... only (not absolute filesystem paths)
+MEAL_PHOTO_UPLOAD_DIR = Path(os.getenv("MEAL_PHOTO_UPLOAD_DIR", "data/uploads/meal_photos"))
+if not MEAL_PHOTO_UPLOAD_DIR.is_absolute():
+    MEAL_PHOTO_UPLOAD_DIR = REPO_ROOT / MEAL_PHOTO_UPLOAD_DIR
 
 # Auth / JWT
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change-me-in-production")

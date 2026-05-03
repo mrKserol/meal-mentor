@@ -1,7 +1,7 @@
 import base64
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -46,6 +46,8 @@ class SaveMealBody(BaseModel):
     prediction: str | None = None
     user_text: str | None = None
     image_base64: str | None = None
+    meal_photo_large: str | None = None
+    meal_photo_thumb: str | None = None
 
 
 class LogMealBody(BaseModel):
@@ -98,6 +100,8 @@ def save_meal(body: SaveMealBody, db: Session = Depends(get_db)):
             prediction=body.prediction,
             user_text=body.user_text,
             image_base64=body.image_base64,
+            meal_photo_large=body.meal_photo_large,
+            meal_photo_thumb=body.meal_photo_thumb,
         ),
     ).to_api_dict()
     if out.get("status") != "success":
@@ -124,12 +128,26 @@ def log_meal_from_photo(body: LogMealBody, db: Session = Depends(get_db)):
     )
 
 
-def _meal_to_json(meal) -> dict[str, Any]:
+def _absolute_url(request: Request, path: str | None) -> str | None:
+    if not path:
+        return None
+    if path.startswith("http://") or path.startswith("https://"):
+        return path
+    return str(request.base_url).rstrip("/") + (path if path.startswith("/") else "/" + path)
+
+
+def _meal_to_json(meal, request: Request) -> dict[str, Any]:
     return {
         "id": meal.id,
         "meal_datetime": meal.meal_datetime.isoformat(),
         "source_type": meal.source_type,
         "telegram_file_id": meal.telegram_file_id,
+        "prediction": meal.prediction,
+        "user_text": meal.user_text,
+        "meal_photo_large": meal.meal_photo_large,
+        "meal_photo_thumb": meal.meal_photo_thumb,
+        "meal_photo_large_url": _absolute_url(request, meal.meal_photo_large),
+        "meal_photo_thumb_url": _absolute_url(request, meal.meal_photo_thumb),
         "items": [
             {
                 "id": it.id,
@@ -154,6 +172,7 @@ def _meal_to_json(meal) -> dict[str, Any]:
 
 @router.get("/list")
 def meals_list(
+    request: Request,
     telegram_id: int = Query(...),
     limit: int = 10,
     offset: int = 0,
@@ -163,11 +182,12 @@ def meals_list(
     if not user:
         raise HTTPException(404, "user not found")
     meals = get_meals(db, user.id, limit=min(limit, 50), offset=offset)
-    return {"items": [_meal_to_json(m) for m in meals], "limit": limit, "offset": offset}
+    return {"items": [_meal_to_json(m, request) for m in meals], "limit": limit, "offset": offset}
 
 
 @router.get("/{meal_id}")
 def meal_detail(
+    request: Request,
     meal_id: int,
     telegram_id: int = Query(...),
     db: Session = Depends(get_db),
@@ -178,7 +198,7 @@ def meal_detail(
     meal = get_meal_by_id_for_user(db, meal_id, user.id)
     if not meal:
         raise HTTPException(404, "meal not found")
-    return _meal_to_json(meal)
+    return _meal_to_json(meal, request)
 
 
 @router.delete("/{meal_id}")

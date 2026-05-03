@@ -11,6 +11,13 @@ class DiaryRecentMeal(BaseModel):
     time_local: str
     calories: int
     recorded_at: datetime
+    prediction: str | None = None
+    user_text: str | None = None
+    composition: str = ""
+    meal_photo_large: str | None = None
+    meal_photo_thumb: str | None = None
+    meal_photo_large_url: str | None = None
+    meal_photo_thumb_url: str | None = None
 
 
 class DiaryWeekDay(BaseModel):

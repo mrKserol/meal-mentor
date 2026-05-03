@@ -2,16 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
-  Apple,
   BarChart3,
   Beef,
-  ChevronRight,
   CirclePlus,
-  Coffee,
   EggFried,
   Flame,
   Info,
-  Salad,
   Scale,
   Target,
   Wheat,
@@ -23,17 +19,6 @@ import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
 import type { DiaryPeriodDay, DiarySnapshot, DiaryWeekDay } from "../types/diary";
 import type { NutritionTarget } from "../types/auth";
-
-type MealHistoryItem = {
-  id: string;
-  title: string;
-  mealType: string;
-  time: string;
-  calories: number;
-  tag: string;
-  icon: "breakfast" | "lunch" | "snack";
-  tagTone: "green" | "slate";
-};
 
 type GoalIconKind = "calories" | "protein" | "fat" | "carbs";
 
@@ -71,13 +56,6 @@ function getTodayRu(): string {
     day: "numeric",
     month: "long",
   }).format(new Date());
-}
-
-function iconFromMealType(mt: string | null): MealHistoryItem["icon"] {
-  const m = (mt || "").toLowerCase();
-  if (m === "breakfast") return "breakfast";
-  if (m === "lunch" || m === "dinner") return "lunch";
-  return "snack";
 }
 
 function pctCurrentTarget(current: number, target: number): number {
@@ -137,26 +115,6 @@ function buildDailyGoals(nt: NutritionTarget | null, today: DiarySnapshot["today
   ];
 }
 
-function mapRecentToHistory(snapshot: DiarySnapshot | null): MealHistoryItem[] {
-  if (!snapshot?.recent_meals?.length) return [];
-  return snapshot.recent_meals.map((m) => ({
-    id: String(m.id),
-    title: m.title,
-    mealType: m.meal_type_label,
-    time: m.time_local,
-    calories: m.calories,
-    tag: m.meal_type_label,
-    icon: iconFromMealType(m.meal_type),
-    tagTone: "slate" as const,
-  }));
-}
-
-function getMealIcon(icon: MealHistoryItem["icon"]) {
-  if (icon === "breakfast") return Coffee;
-  if (icon === "lunch") return Salad;
-  return Apple;
-}
-
 function getGoalIcon(icon: GoalIconKind) {
   if (icon === "calories") return Flame;
   if (icon === "protein") return Beef;
@@ -174,16 +132,6 @@ function goalIconClass(tone: DailyGoalItem["tone"]): string {
   if (tone === "green") return "text-green-600";
   if (tone === "orange") return "text-orange-500";
   return "text-slate-700";
-}
-
-function MealIconCard({ icon }: { icon: MealHistoryItem["icon"] }) {
-  const Icon = getMealIcon(icon);
-
-  return (
-    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
-      <Icon className="h-7 w-7" aria-hidden />
-    </div>
-  );
 }
 
 function DailyGoalProgress({ item }: { item: DailyGoalItem }) {
@@ -281,8 +229,6 @@ export function DiaryPage() {
 
   const avatarFallback =
     user?.first_name?.trim()?.[0] ?? user?.username?.trim()?.[0] ?? user?.email?.trim()?.[0] ?? "U";
-
-  const mealHistory = useMemo(() => mapRecentToHistory(snapshot), [snapshot]);
 
   const dailyGoals = useMemo(() => {
     if (!snapshot || !nutritionTarget) return [];
@@ -429,7 +375,9 @@ export function DiaryPage() {
                       ? "дня"
                       : "дней"}{" "}
                   с записями,{" "}
-                  {statsPeriod === "week" ? "а не за 7 дней" : "а не за весь выбранный период (все дни месяца)"}
+                  {statsPeriod === "week"
+                    ? "а не за все 7 дней интервала"
+                    : "а не за все 30 дней интервала"}
                 </p>
               ) : null}
 
@@ -519,88 +467,36 @@ export function DiaryPage() {
             </div>
           </section>
 
-          <section className="grid grid-cols-1 gap-6 md:grid-cols-12">
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm md:col-span-8">
-              <div className="flex items-center justify-between border-b border-slate-100 p-6">
-                <div>
-                  <h2 className="text-xl font-semibold text-slate-900">История приёмов пищи</h2>
-                  <p className="mt-1 text-sm text-slate-500">Последние 3 приёма пищи</p>
+          <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50">
+                  <Target className="h-5 w-5 text-green-600" aria-hidden />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => openAddMeal()}
-                  className="flex items-center gap-1 text-sm font-bold text-green-700 transition hover:text-green-800"
-                >
-                  Добавить
-                  <ChevronRight className="h-4 w-4" aria-hidden />
-                </button>
+                <h2 className="text-xl font-semibold text-slate-900">Дневные цели</h2>
               </div>
 
-              <div className="divide-y divide-slate-100">
-                {mealHistory.length === 0 ? (
-                  <div className="p-8 text-center text-slate-500">
-                    <p>Пока нет записей.</p>
-                    <button
-                      type="button"
-                      onClick={() => openAddMeal()}
-                      className="mt-3 font-semibold text-green-700 underline hover:text-green-800"
-                    >
-                      Добавить приём пищи
-                    </button>
-                  </div>
-                ) : (
-                  mealHistory.map((meal) => (
-                    <div key={meal.id} className="flex items-center gap-4 p-4 transition hover:bg-slate-50 md:p-5">
-                      <MealIconCard icon={meal.icon} />
-                      <div className="min-w-0 flex-1">
-                        <h3 className="truncate text-base font-semibold text-slate-900">{meal.title}</h3>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {meal.mealType} • {meal.time}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-slate-900">{formatIntRu(meal.calories)} kcal</p>
-                        <span className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-                          {meal.tag}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+              {dailyGoals.length === 0 ? (
+                <p className="text-sm text-slate-500">
+                  Цели не рассчитаны. Заполните профиль (вес, цель, активность), чтобы появились нормы КБЖУ.
+                </p>
+              ) : (
+                <div className="space-y-5">
+                  {dailyGoals.map((item) => (
+                    <DailyGoalProgress key={item.id} item={item} />
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div className="space-y-6 md:col-span-4">
-              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="mb-5 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50">
-                    <Target className="h-5 w-5 text-green-600" aria-hidden />
-                  </div>
-                  <h2 className="text-xl font-semibold text-slate-900">Дневные цели</h2>
+            <div className="rounded-xl border border-green-100 bg-green-50 p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
+                  <Info className="h-5 w-5 text-green-600" aria-hidden />
                 </div>
-
-                {dailyGoals.length === 0 ? (
-                  <p className="text-sm text-slate-500">
-                    Цели не рассчитаны. Заполните профиль (вес, цель, активность), чтобы появились нормы КБЖУ.
-                  </p>
-                ) : (
-                  <div className="space-y-5">
-                    {dailyGoals.map((item) => (
-                      <DailyGoalProgress key={item.id} item={item} />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-xl border border-green-100 bg-green-50 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
-                    <Info className="h-5 w-5 text-green-600" aria-hidden />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-green-950">Совет ИИ</p>
-                    <p className="mt-1 text-sm text-slate-600">Пейте больше воды сегодня!</p>
-                  </div>
+                <div>
+                  <p className="text-sm font-bold text-green-950">Совет ИИ</p>
+                  <p className="mt-1 text-sm text-slate-600">Пейте больше воды сегодня!</p>
                 </div>
               </div>
             </div>

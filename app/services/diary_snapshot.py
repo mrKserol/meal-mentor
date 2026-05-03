@@ -1,4 +1,4 @@
-"""Сводка для веб-страницы «Дневник»: недавние приёмы, неделя, сегодня, вес."""
+"""Сводка для веб-страницы «Дневник»: недавние приёмы, статистика за последние 7 / 30 дней, сегодня, вес."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from typing import Any
 import zoneinfo
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.config import BASE_URL
 from app.db.models import Meal, MealItem, User
 from app.db.repository import list_user_measurements
 from app.schemas.diary import (
@@ -51,17 +52,17 @@ def _utc_naive_to_local(dt: datetime, tz: zoneinfo.ZoneInfo) -> datetime:
     return utc.astimezone(tz)
 
 
-def _week_range_utc_naive(user: User) -> tuple[datetime, datetime, date, zoneinfo.ZoneInfo]:
+def _rolling_7_days_utc_naive(user: User) -> tuple[datetime, datetime, date, date, zoneinfo.ZoneInfo]:
+    """Последние 7 календарных дней включая сегодня (локаль TZ профиля)."""
     tz = _resolve_tz(user)
-    now_local = datetime.now(tz)
-    d = now_local.date()
-    monday = d - timedelta(days=d.weekday())
-    next_monday = monday + timedelta(days=7)
-    start_local = datetime.combine(monday, datetime.min.time(), tzinfo=tz)
-    end_local = datetime.combine(next_monday, datetime.min.time(), tzinfo=tz)
+    today = datetime.now(tz).date()
+    first = today - timedelta(days=6)
+    tomorrow = today + timedelta(days=1)
+    start_local = datetime.combine(first, datetime.min.time(), tzinfo=tz)
+    end_local = datetime.combine(tomorrow, datetime.min.time(), tzinfo=tz)
     start_utc = start_local.astimezone(timezone.utc).replace(tzinfo=None)
     end_utc = end_local.astimezone(timezone.utc).replace(tzinfo=None)
-    return start_utc, end_utc, monday, tz
+    return start_utc, end_utc, first, today, tz
 
 
 def _today_range_utc_naive(user: User) -> tuple[datetime, datetime]:
@@ -76,20 +77,17 @@ def _today_range_utc_naive(user: User) -> tuple[datetime, datetime]:
     return start_utc, end_utc
 
 
-def _month_range_utc_naive(user: User) -> tuple[datetime, datetime, date, date, zoneinfo.ZoneInfo]:
+def _rolling_30_days_utc_naive(user: User) -> tuple[datetime, datetime, date, date, zoneinfo.ZoneInfo]:
+    """Последние 30 календарных дней включая сегодня (локаль TZ профиля)."""
     tz = _resolve_tz(user)
-    now_local = datetime.now(tz)
-    first = now_local.date().replace(day=1)
-    if first.month == 12:
-        next_first = first.replace(year=first.year + 1, month=1, day=1)
-    else:
-        next_first = first.replace(month=first.month + 1, day=1)
-    last = next_first - timedelta(days=1)
+    today = datetime.now(tz).date()
+    first = today - timedelta(days=29)
+    tomorrow = today + timedelta(days=1)
     start_local = datetime.combine(first, datetime.min.time(), tzinfo=tz)
-    end_local = datetime.combine(next_first, datetime.min.time(), tzinfo=tz)
+    end_local = datetime.combine(tomorrow, datetime.min.time(), tzinfo=tz)
     start_utc = start_local.astimezone(timezone.utc).replace(tzinfo=None)
     end_utc = end_local.astimezone(timezone.utc).replace(tzinfo=None)
-    return start_utc, end_utc, first, last, tz
+    return start_utc, end_utc, first, today, tz
 
 
 def _sum_meal_nutrition(meal: Meal) -> dict[str, int]:
@@ -103,6 +101,18 @@ def _sum_meal_nutrition(meal: Meal) -> dict[str, int]:
         f += n.fat_g or 0
         cb += n.carbs_g or 0
     return {"calories": c, "protein_g": p, "fat_g": f, "carbs_g": cb}
+
+
+def _absolute_public_url(web_path: str | None) -> str | None:
+    if not web_path:
+        return None
+    p = web_path.strip()
+    if p.startswith("http://") or p.startswith("https://"):
+        return p
+    base = BASE_URL.rstrip("/")
+    if not p.startswith("/"):
+        p = "/" + p
+    return f"{base}{p}"
 
 
 def _meal_naive_dt(meal: Meal) -> datetime:
@@ -130,6 +140,24 @@ def _meal_list_title(meal: Meal, max_len: int = 160) -> str:
     return _meal_title_from_items(meal)
 
 
+def _meal_composition_line(meal: Meal) -> str:
+    """Ингредиенты и вес для строки «Состав: …»."""
+    parts: list[str] = []
+    for it in meal.items:
+        name = (it.item_name or "").strip()
+        if not name:
+            continue
+        w = it.estimated_weight_g
+        if w is not None:
+            try:
+                parts.append(f"{name} {int(round(float(w)))} г")
+            except (TypeError, ValueError):
+                parts.append(name)
+        else:
+            parts.append(name)
+    return ", ".join(parts) if parts else "—"
+
+
 def _meal_type_label(raw: str | None) -> str:
     if not raw:
         return "Приём пищи"
@@ -137,13 +165,12 @@ def _meal_type_label(raw: str | None) -> str:
 
 
 def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
-    start_utc, end_utc, monday, tz = _week_range_utc_naive(user)
-    sunday = monday + timedelta(days=6)
+    week_start_utc, week_end_utc, week_first, week_last, tz = _rolling_7_days_utc_naive(user)
 
     meals_week = (
         db.query(Meal)
         .options(joinedload(Meal.items).joinedload(MealItem.nutrition))
-        .filter(Meal.user_id == user.id, Meal.meal_datetime >= start_utc, Meal.meal_datetime < end_utc)
+        .filter(Meal.user_id == user.id, Meal.meal_datetime >= week_start_utc, Meal.meal_datetime < week_end_utc)
         .all()
     )
 
@@ -153,7 +180,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
     for meal in meals_week:
         local = _utc_naive_to_local(_meal_naive_dt(meal), tz)
         d = local.date()
-        if d < monday or d > sunday:
+        if d < week_first or d > week_last:
             continue
         t = _sum_meal_nutrition(meal)
         by_day_cal[d] += t["calories"]
@@ -161,19 +188,20 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         week_f += t["fat_g"]
         week_cb += t["carbs_g"]
 
-    days_with_data = sum(1 for i in range(7) if by_day_cal.get(monday + timedelta(days=i), 0) > 0)
+    days_with_data = sum(1 for i in range(7) if by_day_cal.get(week_first + timedelta(days=i), 0) > 0)
     div = max(1, days_with_data)
 
-    max_cal = max((by_day_cal.get(monday + timedelta(days=i), 0) for i in range(7)), default=0)
+    max_cal = max((by_day_cal.get(week_first + timedelta(days=i), 0) for i in range(7)), default=0)
     week_days: list[DiaryWeekDay] = []
     for i in range(7):
-        dd = monday + timedelta(days=i)
+        dd = week_first + timedelta(days=i)
         cal = by_day_cal.get(dd, 0)
         if max_cal <= 0 or cal <= 0:
             pct = 0
         else:
             pct = min(100, max(8, int(round(100 * cal / max_cal))))
-        week_days.append(DiaryWeekDay(date=dd, weekday_short=_WEEKDAY_RU[i], calories=cal, bar_percent=pct))
+        day_label = _WEEKDAY_RU[dd.weekday()]
+        week_days.append(DiaryWeekDay(date=dd, weekday_short=day_label, calories=cal, bar_percent=pct))
 
     week_block = DiaryWeekBlock(
         days=week_days,
@@ -184,7 +212,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         days_with_data=days_with_data,
     )
 
-    m_start_utc, m_end_utc, month_first, month_last, tz_m = _month_range_utc_naive(user)
+    m_start_utc, m_end_utc, month_first, month_last, tz_m = _rolling_30_days_utc_naive(user)
     meals_month = (
         db.query(Meal)
         .options(joinedload(Meal.items).joinedload(MealItem.nutrition))
@@ -204,7 +232,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         month_f += t["fat_g"]
         month_cb += t["carbs_g"]
 
-    month_span = (month_last - month_first).days + 1
+    month_span = 30
     month_days_with = sum(
         1 for i in range(month_span) if month_by_cal.get(month_first + timedelta(days=i), 0) > 0
     )
@@ -222,7 +250,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         else:
             pct = min(100, max(8, int(round(100 * cal / month_max_cal))))
         period_days.append(
-            DiaryPeriodDay(date=dd, label=str(dd.day), calories=cal, bar_percent=pct),
+            DiaryPeriodDay(date=dd, label=f"{dd.day}.{dd.month}", calories=cal, bar_percent=pct),
         )
     month_block = DiaryPeriodBlock(
         days=period_days,
@@ -272,6 +300,13 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
                 time_local=local.strftime("%H:%M"),
                 calories=tot["calories"],
                 recorded_at=recorded,
+                prediction=meal.prediction,
+                user_text=meal.user_text,
+                composition=_meal_composition_line(meal),
+                meal_photo_large=meal.meal_photo_large,
+                meal_photo_thumb=meal.meal_photo_thumb,
+                meal_photo_large_url=_absolute_public_url(meal.meal_photo_large),
+                meal_photo_thumb_url=_absolute_public_url(meal.meal_photo_thumb),
             )
         )
 
@@ -283,7 +318,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
             continue
         at = m.measured_at
         at_u = at.replace(tzinfo=None) if at.tzinfo is None else _as_utc_naive(at)
-        if start_utc <= at_u < end_utc:
+        if week_start_utc <= at_u < week_end_utc:
             in_week_w.append(m)
     if len(in_week_w) >= 2:
         asc = sorted(in_week_w, key=lambda x: x.measured_at)

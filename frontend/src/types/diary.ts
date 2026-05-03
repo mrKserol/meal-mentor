@@ -6,6 +6,13 @@ export interface DiaryRecentMeal {
   time_local: string;
   calories: number;
   recorded_at: string;
+  prediction?: string | null;
+  user_text?: string | null;
+  composition?: string;
+  meal_photo_large?: string | null;
+  meal_photo_thumb?: string | null;
+  meal_photo_large_url?: string | null;
+  meal_photo_thumb_url?: string | null;
 }
 
 export interface DiaryWeekDay {
