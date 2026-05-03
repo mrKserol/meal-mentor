@@ -53,10 +53,17 @@ export function parseAnalyzeResponse(raw: Record<string, unknown>): MealAnalyzeP
   };
 }
 
-export function formatRecognitionQuestion(ingredients: Record<string, string | number>): string {
+export function formatRecognitionQuestion(
+  prediction: string | null | undefined,
+  ingredients: Record<string, string | number>,
+): string {
+  const p = typeof prediction === "string" && prediction.trim() ? prediction.trim() : "";
+  if (p) {
+    return `Это похоже на: ${p}.\n\nЯ верно определил?`;
+  }
   const keys = Object.keys(ingredients);
   if (keys.length === 0) {
-    return "Я не смог выделить ингредиенты. Опиши блюдо текстом или попробуй другое фото.";
+    return "Я не смог выделить блюдо. Опиши текстом или попробуй другое фото.";
   }
   const parts = keys.map((name) => `${name} (${ingredients[name]} г)`);
   let tail: string;

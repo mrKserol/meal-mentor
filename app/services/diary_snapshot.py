@@ -110,13 +110,24 @@ def _meal_naive_dt(meal: Meal) -> datetime:
     return dt.replace(tzinfo=None) if dt.tzinfo else dt
 
 
-def _meal_title(meal: Meal, max_parts: int = 3) -> str:
+def _meal_title_from_items(meal: Meal, max_parts: int = 3) -> str:
     names = [it.item_name for it in meal.items if it.item_name]
     if not names:
         return "Приём пищи"
     head = names[:max_parts]
     tail = "…" if len(names) > max_parts else ""
     return ", ".join(head) + tail
+
+
+def _meal_list_title(meal: Meal, max_len: int = 160) -> str:
+    """Строка для списка «История»: user_text, иначе prediction, иначе старая сводка из meal_items."""
+    ut = (meal.user_text or "").strip()
+    if ut:
+        return ut if len(ut) <= max_len else ut[: max_len - 1] + "…"
+    pr = (meal.prediction or "").strip()
+    if pr:
+        return pr if len(pr) <= max_len else pr[: max_len - 1] + "…"
+    return _meal_title_from_items(meal)
 
 
 def _meal_type_label(raw: str | None) -> str:
@@ -255,7 +266,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         recent.append(
             DiaryRecentMeal(
                 id=meal.id,
-                title=_meal_title(meal),
+                title=_meal_list_title(meal),
                 meal_type=meal.meal_type,
                 meal_type_label=_meal_type_label(meal.meal_type),
                 time_local=local.strftime("%H:%M"),

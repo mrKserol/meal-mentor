@@ -123,7 +123,7 @@ async def handle_text_flow(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         USER_STATES[user.id]["meal_data"] = meal_data
         USER_STATES[user.id]["state"] = FlowState.MEAL_ADD_RECOGNITION_CHECK
         await update.message.reply_text(
-            format_recognition_question(ingredients),
+            format_recognition_question(_prediction_from_api(data), ingredients),
             reply_markup=kb_recognition_confirm(),
         )
         return

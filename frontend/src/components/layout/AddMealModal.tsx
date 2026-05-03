@@ -299,7 +299,7 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
                 </div>
               </div>
               <p className="whitespace-pre-wrap text-center text-sm leading-relaxed text-slate-800">
-                {formatRecognitionQuestion(ui.mealData.ingredients)}
+                {formatRecognitionQuestion(ui.mealData.prediction, ui.mealData.ingredients)}
               </p>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <button

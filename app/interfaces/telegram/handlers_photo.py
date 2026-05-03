@@ -130,6 +130,6 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     USER_STATES[user.id]["meal_data"] = meal_data
     USER_STATES[user.id]["state"] = FlowState.MEAL_ADD_RECOGNITION_CHECK
     await update.message.reply_text(
-        format_recognition_question(ingredients),
+        format_recognition_question(pred_stored, ingredients),
         reply_markup=kb_recognition_confirm(),
     )
