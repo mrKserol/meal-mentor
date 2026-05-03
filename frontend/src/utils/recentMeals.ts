@@ -29,9 +29,9 @@ export function mealThumbSrcForRecent(m: DiaryRecentMeal): string | undefined {
   return undefined;
 }
 
-export function mapRecentMealsToHistory(snapshot: DiarySnapshot | null): MealHistoryItem[] {
-  if (!snapshot?.recent_meals?.length) return [];
-  return snapshot.recent_meals.map((m) => {
+export function mapTodayMealsToHistory(snapshot: DiarySnapshot | null): MealHistoryItem[] {
+  if (!snapshot?.today_meals?.length) return [];
+  return snapshot.today_meals.map((m) => {
     const pred = typeof m.prediction === "string" && m.prediction.trim() ? m.prediction.trim() : "";
     const predictionLine = pred || "—";
     const composition = (m.composition && m.composition.trim()) || "—";

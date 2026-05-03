@@ -28,7 +28,7 @@ export function RecentMealsCard({ items }: RecentMealsCardProps) {
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="flex items-center justify-between border-b border-slate-100 p-6">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">Последние 3 приёма пищи</h2>
+          <h2 className="text-xl font-semibold text-slate-900">Приемы пищи сегодня</h2>
         </div>
         <Link
           to="/diary"

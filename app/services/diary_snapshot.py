@@ -260,21 +260,14 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         tcb += nut["carbs_g"]
     today = DiaryTodayTotals(calories=tc, protein_g=tp, fat_g=tf, carbs_g=tcb)
 
-    recent_db = (
-        db.query(Meal)
-        .options(joinedload(Meal.items).joinedload(MealItem.nutrition))
-        .filter(Meal.user_id == user.id)
-        .order_by(Meal.meal_datetime.desc())
-        .limit(3)
-        .all()
-    )
-    recent: list[DiaryRecentMeal] = []
-    for meal in recent_db:
+    meals_today_desc = sorted(meals_today, key=lambda m: m.meal_datetime, reverse=True)
+    today_meals: list[DiaryRecentMeal] = []
+    for meal in meals_today_desc:
         local = _utc_naive_to_local(_meal_naive_dt(meal), tz)
         tot = _sum_meal_nutrition(meal)
         raw_dt = meal.meal_datetime
         recorded = raw_dt.replace(tzinfo=None) if raw_dt.tzinfo else raw_dt
-        recent.append(
+        today_meals.append(
             DiaryRecentMeal(
                 id=meal.id,
                 title=_meal_list_title(meal),
@@ -313,7 +306,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
     )
 
     return DiarySnapshotResponse(
-        recent_meals=recent,
+        today_meals=today_meals,
         week=week_block,
         month=month_block,
         today=today,

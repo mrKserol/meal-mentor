@@ -74,7 +74,7 @@ class DiaryPeriodBlock(BaseModel):
 
 
 class DiarySnapshotResponse(BaseModel):
-    recent_meals: list[DiaryRecentMeal]
+    today_meals: list[DiaryRecentMeal]
     week: DiaryWeekBlock
     month: DiaryPeriodBlock
     today: DiaryTodayTotals

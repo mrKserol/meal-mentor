@@ -181,7 +181,7 @@ def list_meals_for_user_local_date(
         db.query(Meal)
         .options(joinedload(Meal.items).joinedload(MealItem.nutrition))
         .filter(Meal.user_id == user_id, Meal.meal_datetime >= start_utc, Meal.meal_datetime < end_utc)
-        .order_by(Meal.meal_datetime.asc())
+        .order_by(Meal.meal_datetime.desc())
         .all()
     )
 

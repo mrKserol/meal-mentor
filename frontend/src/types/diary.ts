@@ -60,7 +60,7 @@ export interface DiaryPeriodBlock {
 }
 
 export interface DiarySnapshot {
-  recent_meals: DiaryRecentMeal[];
+  today_meals: DiaryRecentMeal[];
   week: DiaryWeekBlock;
   month: DiaryPeriodBlock;
   today: DiaryTodayTotals;
