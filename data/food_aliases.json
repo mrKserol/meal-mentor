@@ -6187,7 +6187,7 @@
     "семена чиа": {
       "canonical": "Seeds, dried, chia seeds",
       "default_state": "dry",
-      "category": "seeds"
+      "category": "seed"
     },
     "семечки": {
       "canonical": "Seeds, dried, sunflower seed kernels",
@@ -6290,9 +6290,9 @@
       "category": "fish"
     },
     "творог": {
-      "canonical": "Cheese, large or small curd, creamed, cottage",
+      "canonical": "Cheese, 2% milkfat, lowfat, cottage",
       "default_state": "unknown",
-      "category": "dairy"
+      "category": "cottage_cheese"
     },
     "тилапия": {
       "canonical": "Fish, dry heat, cooked, tilapia",
@@ -6818,6 +6818,146 @@
       "canonical": "Beverages, prepared with tap water, brewed, black, tea",
       "default_state": "unknown",
       "category": "beverage"
+    },
+    "tea": {
+      "canonical": "Beverages, prepared with tap water, brewed, black, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "brewed tea": {
+      "canonical": "Beverages, prepared with tap water, brewed, black, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "green tea": {
+      "canonical": "Beverages, regular, brewed, green, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "зеленый чай": {
+      "canonical": "Beverages, regular, brewed, green, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "зелёный чай": {
+      "canonical": "Beverages, regular, brewed, green, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "herbal tea": {
+      "canonical": "Beverages, brewed, other than chamomile, herb, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "травяной чай": {
+      "canonical": "Beverages, brewed, other than chamomile, herb, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "черный чай": {
+      "canonical": "Beverages, prepared with tap water, brewed, black, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "чёрный чай": {
+      "canonical": "Beverages, prepared with tap water, brewed, black, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "cottage cheese": {
+      "canonical": "Cheese, 2% milkfat, lowfat, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "curd": {
+      "canonical": "Cheese, 2% milkfat, lowfat, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "творог 0%": {
+      "canonical": "Cheese, 1% milkfat, lowfat, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "творог обезжиренный": {
+      "canonical": "Cheese, 1% milkfat, lowfat, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "обезжиренный творог": {
+      "canonical": "Cheese, 1% milkfat, lowfat, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "творог 2%": {
+      "canonical": "Cheese, 2% milkfat, lowfat, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "творог 5%": {
+      "canonical": "Cheese, large or small curd, creamed, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "творог 9%": {
+      "canonical": "Cheese, large or small curd, creamed, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "домашний творог": {
+      "canonical": "Cheese, 2% milkfat, lowfat, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "banana": {
+      "canonical": "Bananas, raw",
+      "default_state": "raw",
+      "category": "fruit"
+    },
+    "bananas": {
+      "canonical": "Bananas, raw",
+      "default_state": "raw",
+      "category": "fruit"
+    },
+    "pumpkin seeds": {
+      "canonical": "Seeds, dried, pumpkin and squash seed kernels",
+      "default_state": "dry",
+      "category": "seed"
+    },
+    "pumpkin seed": {
+      "canonical": "Seeds, dried, pumpkin and squash seed kernels",
+      "default_state": "dry",
+      "category": "seed"
+    },
+    "pepitas": {
+      "canonical": "Seeds, dried, pumpkin and squash seed kernels",
+      "default_state": "dry",
+      "category": "seed"
+    },
+    "тыквенные семечки": {
+      "canonical": "Seeds, dried, pumpkin and squash seed kernels",
+      "default_state": "dry",
+      "category": "seed"
+    },
+    "семечки тыквы": {
+      "canonical": "Seeds, dried, pumpkin and squash seed kernels",
+      "default_state": "dry",
+      "category": "seed"
+    },
+    "семена тыквы": {
+      "canonical": "Seeds, dried, pumpkin and squash seed kernels",
+      "default_state": "dry",
+      "category": "seed"
+    },
+    "chia seeds": {
+      "canonical": "Seeds, dried, chia seeds",
+      "default_state": "dry",
+      "category": "seed"
+    },
+    "chia seed": {
+      "canonical": "Seeds, dried, chia seeds",
+      "default_state": "dry",
+      "category": "seed"
     },
     "чай": {
       "canonical": "Beverages, prepared with tap water, brewed, black, tea",

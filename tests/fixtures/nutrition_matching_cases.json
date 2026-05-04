@@ -211,5 +211,44 @@
         "dates": "dry"
       }
     }
+  },
+  {
+    "name": "toast cottage cheese banana seeds tea",
+    "description": "Breakfast-style LLM split: tea, bread, peanut butter, cottage cheese, banana, seeds",
+    "ingredients": {
+      "tea": {"grams": 200, "state": "unknown"},
+      "bread": {"grams": 50, "state": "unknown"},
+      "peanut butter": {"grams": 20, "state": "unknown"},
+      "cottage cheese": {"grams": 100, "state": "unknown"},
+      "banana": {"grams": 80, "state": "raw"},
+      "pumpkin seeds": {"grams": 10, "state": "dry"},
+      "chia seeds": {"grams": 5, "state": "dry"}
+    },
+    "expected": {
+      "calories_min": 480,
+      "calories_max": 900,
+      "protein_min": 20,
+      "aggregate_macros": {
+        "proteins": [20, 50],
+        "fats": [18, 58],
+        "carbohydrates": [50, 120]
+      },
+      "forbidden_match_contains": {
+        "tea": ["powder", "dry mix", "instant", "milkshake mix", "cereal", "dessert", "teaseed"],
+        "cottage cheese": ["cheddar", "cream cheese", "cheesecake", "dessert", "processed", "cottage-cut"],
+        "banana": ["babyfood", "juice", "beverage", "dessert", "pepper, raw, banana"],
+        "pumpkin seeds": ["oil,", "babyfood", "flour", "meal", "soup", "beverage"],
+        "chia seeds": ["babyfood", "beverage", "soup"]
+      },
+      "match_all_substrings": {
+        "cottage cheese": ["cottage"],
+        "banana": ["banana"],
+        "pumpkin seeds": ["pumpkin"],
+        "chia seeds": ["chia"]
+      },
+      "match_any_substrings": {
+        "tea": ["brewed", "prepared with tap water", "prepared with distilled water", "green, tea", "herb, tea"]
+      }
+    }
   }
 ]

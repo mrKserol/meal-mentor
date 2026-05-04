@@ -15,9 +15,13 @@ from app.core.config import (
 from app.infrastructure.nutrition.food_aliases import FoodAliasIndex
 from app.infrastructure.nutrition.ingredient_input import (
     NormalizedIngredient,
+    is_banana_fruit_like,
+    is_cottage_cheese_like,
     is_grain_like_ingredient,
     is_legume_like_ingredient,
     is_poultry_breast_query,
+    is_seed_kernel_query,
+    is_tea_drink_query,
     is_tuna_like_ingredient,
     parse_ingredients_dict,
 )
@@ -233,6 +237,10 @@ class NutritionService:
         legume = is_legume_like_ingredient(ni)
         poultry_breast = is_poultry_breast_query(ni)
         tuna_like = is_tuna_like_ingredient(ni)
+        tea_drink = is_tea_drink_query(ni)
+        cottage = is_cottage_cheese_like(ni)
+        banana_f = is_banana_fruit_like(ni)
+        seed_q = is_seed_kernel_query(ni)
         out: list[NutritionCandidate] = []
         for name_key, text_score in raw_candidates:
             row = self._data.get(name_key) or {}
@@ -246,6 +254,10 @@ class NutritionService:
                 is_legume_like=legume,
                 is_poultry_breast_query=poultry_breast,
                 is_tuna_like=tuna_like,
+                tea_drink_q=tea_drink,
+                cottage_cheese_q=cottage,
+                banana_fruit_q=banana_f,
+                seed_kernel_q=seed_q,
             )
             exact_bonus, exact_reasons = self._exact_row_bonus(ni.canonical_query, display)
             final = float(text_score) + float(st) + exact_bonus
@@ -277,7 +289,7 @@ class NutritionService:
         if nutrition_debug_matching():
             detail = [
                 f"{c.display_name!r} final={c.final_score:.1f} text={c.text_score:.1f} "
-                f"state_adj={c.state_score:.1f} reasons={c.reasons[:10]}"
+                f"state_score={c.state_score:.1f} reasons={c.reasons[:12]}"
                 for c in ranked[:15]
             ]
             logger.info(

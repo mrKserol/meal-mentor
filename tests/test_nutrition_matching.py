@@ -149,6 +149,76 @@ def test_milk_tea_not_powder_low_calories(nutrition_svc: NutritionService) -> No
     assert int(data.get("calories") or 0) < 50
 
 
+def test_tea_plain_200g_low_calories_brewed_row(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"tea": {"grams": 200, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert int(data.get("calories") or 0) <= 10
+    assert "brewed" in m or "prepared with tap water" in m or "prepared with distilled water" in m
+    assert "tea" in m
+    for bad in ("powder", "dry mix", "instant", "cereal", "dessert", "teaseed"):
+        assert bad not in m
+
+
+def test_cottage_cheese_100g_reasonable_calories(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"cottage cheese": {"grams": 100, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "cottage" in m
+    cal = int(data.get("calories") or 0)
+    assert 70 <= cal <= 180, f"cottage cheese scaled kcal {cal}"
+    for bad in ("cheddar", "cream cheese", "cheesecake", "dessert", "processed"):
+        assert bad not in m
+
+
+def test_banana_80g_raw_calories(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"banana": {"grams": 80, "state": "raw"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "bananas, raw" in m or ("banana" in m and "raw" in m)
+    cal = int(data.get("calories") or 0)
+    assert 60 <= cal <= 100, f"banana 80g kcal {cal}"
+    for bad in ("babyfood", "juice", "beverage", "dessert"):
+        assert bad not in m
+
+
+def test_pumpkin_seeds_10g_dry_calories(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"pumpkin seeds": {"grams": 10, "state": "dry"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "pumpkin" in m and ("seed" in m or "kernels" in m)
+    cal = int(data.get("calories") or 0)
+    assert 40 <= cal <= 70, f"pumpkin seeds 10g kcal {cal}"
+    for bad in ("fish oil", "babyfood", "flour", "meal", "soup", "beverage"):
+        assert bad not in m
+
+
+def test_chia_seeds_5g_dry_calories(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"chia seeds": {"grams": 5, "state": "dry"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "chia" in m
+    cal = int(data.get("calories") or 0)
+    assert 15 <= cal <= 35, f"chia 5g kcal {cal}"
+    for bad in ("babyfood", "beverage"):
+        assert bad not in m
+
+
 def test_nutrition_debug_log_when_env_enabled(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
@@ -156,8 +226,15 @@ def test_nutrition_debug_log_when_env_enabled(
 ) -> None:
     monkeypatch.setenv("NUTRITION_DEBUG_MATCHING", "1")
     caplog.set_level(logging.INFO)
-    nutrition_svc.search({"milk tea": {"grams": 200, "state": "unknown"}})
-    assert any("nutrition_match_debug" in r.message for r in caplog.records)
+    nutrition_svc.search(
+        {
+            "tea": {"grams": 200, "state": "unknown"},
+            "milk tea": {"grams": 100, "state": "unknown"},
+        }
+    )
+    dbg = [r for r in caplog.records if "nutrition_match_debug" in r.message]
+    assert len(dbg) >= 2
+    assert any("tea" in r.message for r in dbg)
 
 
 def test_canned_tuna_100g_water_match_and_protein(nutrition_svc: NutritionService) -> None:
@@ -403,6 +480,23 @@ def assert_min_scaled_proteins(
         )
 
 
+def assert_aggregate_macros(
+    aggregate_full: dict[str, Any],
+    spec: dict[str, Any],
+    *,
+    case_name: str,
+) -> None:
+    """spec: { \"proteins\": [min, max], \"fats\": [...], \"carbohydrates\": [...] }"""
+    for key, pair in spec.items():
+        if not isinstance(pair, (list, tuple)) or len(pair) != 2:
+            continue
+        lo, hi = float(pair[0]), float(pair[1])
+        val = float(aggregate_full.get(key, 0) or 0)
+        assert lo <= val <= hi, (
+            f"{case_name}: aggregate {key}={val} not in [{lo}, {hi}]"
+        )
+
+
 def _run_nutrition_case(nutrition_svc: NutritionService, case: dict[str, Any]) -> None:
     if not nutrition_svc.aliases.is_loaded:
         pytest.skip("food_aliases.json not loaded")
@@ -441,6 +535,9 @@ def _run_nutrition_case(nutrition_svc: NutritionService, case: dict[str, Any]) -
         assert_min_aggregate_proteins(
             full, float(expected["protein_min"]), case_name=name
         )
+    macros = expected.get("aggregate_macros")
+    if isinstance(macros, dict) and macros:
+        assert_aggregate_macros(full, macros, case_name=name)
     assert_min_scaled_proteins(
         flat, expected.get("min_scaled_proteins") or {}, case_name=name
     )

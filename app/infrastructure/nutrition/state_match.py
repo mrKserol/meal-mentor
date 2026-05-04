@@ -121,33 +121,209 @@ def _beverage_candidate_adjustment(n: str) -> tuple[float, list[str]]:
     score = 0.0
     nl = n.lower()
     if "brewed" in nl or "prepared with tap water" in nl or "prepared with distilled water" in nl:
-        score += 38
-        reasons.append("+38:beverage_brewed_or_prepared_water")
-    penalties: list[tuple[str, str]] = [
-        ("powder", "beverage_powder"),
-        ("dry mix", "beverage_dry_mix"),
-        ("protein powder", "beverage_protein_powder"),
-        ("beverage powder", "beverage_powder_label"),
-        ("milkshake mix", "beverage_milkshake_mix"),
-        ("instant", "beverage_instant"),
-        ("cereal", "beverage_cereal"),
-        ("dessert", "beverage_dessert"),
+        score += 45
+        reasons.append("+45:beverage_brewed_or_prepared_water")
+    penalties: list[tuple[str, str, int]] = [
+        ("powder", "beverage_powder", 90),
+        ("sweetened powder", "beverage_sweetened_powder", 90),
+        ("prepared from powder", "beverage_prepared_from_powder", 90),
+        ("dry mix", "beverage_dry_mix", 90),
+        ("protein powder", "beverage_protein_powder", 90),
+        ("beverage powder", "beverage_powder_label", 90),
+        ("milkshake mix", "beverage_milkshake_mix", 90),
+        ("instant", "beverage_instant", 85),
+        ("cereal", "beverage_cereal", 85),
+        ("dessert", "beverage_dessert", 85),
     ]
-    for needle, tag in penalties:
+    for needle, tag, pen in penalties:
         if needle in nl:
-            score -= 80
-            reasons.append(f"-80:{tag}")
+            score -= float(pen)
+            reasons.append(f"-{pen}:{tag}")
     if re.search(r"milk,\s*dry|nonfat dry milk|dry milk", nl):
-        score -= 80
-        reasons.append("-80:beverage_dry_milk")
+        score -= 85
+        reasons.append("-85:beverage_dry_milk")
     if re.search(r"\bmix\b", nl) and "brewed" not in nl and "prepared with tap water" not in nl:
-        score -= 80
-        reasons.append("-80:beverage_mix_non_brewed")
+        score -= 85
+        reasons.append("-85:beverage_mix_non_brewed")
     if re.search(r"\bdry\b", nl) and "brewed" not in nl and "prepared with tap water" not in nl:
         if any(x in nl for x in ("beverage", "drink", "tea", "coffee", "cocoa", "juice")):
+            score -= 85
+            reasons.append("-85:beverage_dry_drink_product")
+    return max(score, -320.0), reasons
+
+
+def _tea_drink_row_adjustment(n: str, ing_lower: str) -> tuple[float, list[str]]:
+    """Avoid teaseed oil / non-tea rows when user asked for a tea drink."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    if "teaseed" in nl or "tea seed" in nl:
+        score -= 220
+        reasons.append("-220:tea_teaseed_oil")
+    if nl.startswith("oil,") and "tea" in ing_lower:
+        score -= 120
+        reasons.append("-120:tea_oil_row")
+    if ("brewed" in nl or "prepared with tap water" in nl or "prepared with distilled water" in nl) and (
+        ", tea" in nl or ", herb, tea" in nl or nl.endswith(" tea")
+    ):
+        score += 55
+        reasons.append("+55:tea_brewed_row")
+    if "tea" in nl and "beverage" in nl and ("brewed" in nl or "prepared with tap water" in nl):
+        score += 25
+        reasons.append("+25:tea_beverage_brewed")
+    return max(score, -280.0), reasons
+
+
+def _cottage_cheese_adjustment(n: str, query_lower: str) -> tuple[float, list[str]]:
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    if "cottage-cut" in nl or "cottage cut" in nl:
+        score -= 150
+        reasons.append("-150:cottage_cut_potato")
+    if "cottage" in nl:
+        score += 70
+        reasons.append("+70:cottage_word")
+    if "cheese, cottage" in nl or ("cheese, " in nl and "cottage" in nl):
+        score += 40
+        reasons.append("+40:cottage_cheese_phrase")
+    if ("lowfat" in nl or "creamed" in nl or "nonfat" in nl) and "cottage" in nl:
+        score += 20
+        reasons.append("+20:cottage_lowfat_or_creamed")
+
+    def q_has(s: str) -> bool:
+        return s in query_lower
+
+    for needle, pen in (
+        ("cheddar", -100),
+        ("cream cheese", -100),
+        ("cheese spread", -100),
+        ("cheesecake", -100),
+        ("dessert", -100),
+        ("processed", -80),
+        ("pasteurized process", -80),
+        ("parmesan", -80),
+        ("swiss", -80),
+        ("feta", -80),
+        ("mozzarella", -80),
+    ):
+        if needle in nl and not q_has(needle):
+            score += float(pen)
+            reasons.append(f"{pen:.0f}:cottage_bad_{needle.replace(' ', '_')}")
+    if "cottage" not in nl and re.search(r"\bcheese\b", nl):
+        score -= 60
+        reasons.append("-60:cottage_missing")
+    return max(score, -320.0), reasons
+
+
+def _banana_fruit_adjustment(n: str, query_lower: str, requested_state: str) -> tuple[float, list[str]]:
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    rs = (requested_state or "unknown").lower()
+
+    if "bananas" in nl and "raw" in nl:
+        score += 75
+        reasons.append("+75:bananas_raw")
+    elif "banana" in nl and "raw" in nl and "pepper" not in nl:
+        score += 45
+        reasons.append("+45:banana_raw")
+    elif "raw" in nl and "banana" in nl:
+        score += 30
+        reasons.append("+30:banana_raw_soft")
+
+    if "pepper" in nl and "banana" in nl and "pepper" not in query_lower:
+        score -= 120
+        reasons.append("-120:banana_pepper_confusion")
+    if "melon" in nl and "banana" in nl and "navajo" in nl:
+        score -= 100
+        reasons.append("-100:banana_melon_navajo")
+
+    def qx(*words: str) -> bool:
+        return any(w in query_lower for w in words)
+
+    if "babyfood" in nl and not qx("babyfood", "baby"):
+        score -= 85
+        reasons.append("-85:banana_babyfood")
+    for bad, tag in (
+        ("juice", "juice"),
+        ("beverage", "beverage"),
+        ("chips", "chips"),
+        ("flour", "flour"),
+        ("dessert", "dessert"),
+        ("pudding", "pudding"),
+        ("cake", "cake"),
+    ):
+        if bad in nl and not qx(bad):
             score -= 80
-            reasons.append("-80:beverage_dry_drink_product")
-    return max(score, -260.0), reasons
+            reasons.append(f"-80:banana_{tag}")
+    if rs != "dry" and any(x in nl for x in ("dried", "dehydrated", "powder")):
+        score -= 85
+        reasons.append("-85:banana_not_dry_but_dried_row")
+    return max(score, -280.0), reasons
+
+
+def _seed_kernel_adjustment(n: str, query_lower: str) -> tuple[float, list[str]]:
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    wants_chia = "chia" in query_lower
+    wants_pumpkin_blob = "pumpkin" in query_lower or "тыкв" in query_lower or "pepitas" in query_lower
+    wants_pumpkin_seed = wants_pumpkin_blob and (
+        "seed" in query_lower
+        or "pepitas" in query_lower
+        or "семеч" in query_lower
+        or "семен" in query_lower
+    )
+
+    def qx(*words: str) -> bool:
+        return any(w in query_lower for w in words)
+
+    if wants_chia:
+        if "chia" in nl:
+            score += 70
+            reasons.append("+70:chia_word")
+        if "dried" in nl or "dry" in nl:
+            score += 25
+            reasons.append("+25:chia_dried")
+        if "pumpkin" in nl and "chia" not in nl:
+            score -= 80
+            reasons.append("-80:chia_query_pumpkin_row")
+    if wants_pumpkin_seed:
+        if "pumpkin" in nl:
+            score += 60
+            reasons.append("+60:pumpkin_seed_word")
+        if "seeds" in nl or "seed" in nl:
+            score += 45
+            reasons.append("+45:seeds_word")
+        if "kernels" in nl:
+            score += 35
+            reasons.append("+35:kernels")
+        if "dried" in nl:
+            score += 25
+            reasons.append("+25:seed_dried")
+        if "chia" in nl and "pumpkin" not in nl:
+            score -= 70
+            reasons.append("-70:pumpkin_query_chia_row")
+
+    for bad, pen in (
+        ("fish oil", 100),
+        ("babyfood", 85),
+        ("flour", 85),
+        ("meal", 85),
+        ("butter", 85),
+        ("beverage", 85),
+        ("soup", 85),
+        ("sprouts", 85),
+    ):
+        if bad in nl and not qx(bad):
+            score -= float(pen)
+            reasons.append(f"-{pen:.0f}:seed_{bad.replace(' ', '_')}")
+    if (wants_chia or wants_pumpkin_seed) and nl.startswith("oil,"):
+        score -= 110
+        reasons.append("-110:seed_query_oil_row")
+
+    return max(score, -300.0), reasons
 
 
 def _tuna_canned_adjustment(n: str, ing: str, query_lower: str) -> tuple[float, list[str]]:
@@ -305,6 +481,10 @@ def state_score(
     is_legume_like: bool = False,
     is_poultry_breast_query: bool = False,
     is_tuna_like: bool = False,
+    tea_drink_q: bool = False,
+    cottage_cheese_q: bool = False,
+    banana_fruit_q: bool = False,
+    seed_kernel_q: bool = False,
 ) -> tuple[float, list[str]]:
     """
     Returns (score_adjustment, reason strings).
@@ -485,5 +665,25 @@ def state_score(
         if pen < 0:
             score += pen
             reasons.append(f"{pen:.0f}:poultry_breast_mismatch")
+
+    if tea_drink_q:
+        td, tdr = _tea_drink_row_adjustment(n, ing)
+        score += td
+        reasons.extend(tdr)
+
+    if cottage_cheese_q:
+        cc, cr = _cottage_cheese_adjustment(n, query_lower)
+        score += cc
+        reasons.extend(cr)
+
+    if banana_fruit_q:
+        ba, bar = _banana_fruit_adjustment(n, query_lower, rs)
+        score += ba
+        reasons.extend(bar)
+
+    if seed_kernel_q:
+        sk, skr = _seed_kernel_adjustment(n, query_lower)
+        score += sk
+        reasons.extend(skr)
 
     return score, reasons

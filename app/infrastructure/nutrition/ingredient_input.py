@@ -236,6 +236,60 @@ def is_egg_like_name(name: str) -> bool:
     return False
 
 
+def is_tea_drink_query(ni: NormalizedIngredient) -> bool:
+    """Plain tea / чай (not powder); excludes milk tea phrasing handled separately."""
+    if query_implies_beverage_powder_or_dry_mix(ni.input_name):
+        return False
+    il = ni.input_name.strip().lower()
+    if "milk" in il and "tea" in il:
+        return False
+    if "молок" in il and "чай" in il:
+        return False
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if "tea" not in blob and "чай" not in blob:
+        return False
+    return is_beverage_like_query(ni.input_name)
+
+
+def is_cottage_cheese_like(ni: NormalizedIngredient) -> bool:
+    if ni.alias_category == "cottage_cheese":
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if "творог" in blob:
+        return True
+    if re.search(r"\bcottage\s+cheese\b", blob):
+        return True
+    if "cottage" in blob and "cheese" in blob:
+        return True
+    if re.search(r"\bcurd\b", blob) and "cheesecake" not in blob:
+        return True
+    return False
+
+
+def is_banana_fruit_like(ni: NormalizedIngredient) -> bool:
+    if ni.alias_category == "fruit" and "banana" in ni.canonical_query.lower():
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if re.search(r"\b(bananas?|бананы?|банан)\b", blob):
+        return True
+    return False
+
+
+def is_seed_kernel_query(ni: NormalizedIngredient) -> bool:
+    if ni.alias_category in ("seed", "seeds"):
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if "chia" in blob:
+        return True
+    if "pumpkin seed" in blob or "pepitas" in blob:
+        return True
+    if "тыкв" in blob and ("семеч" in blob or "семен" in blob):
+        return True
+    if "тыквенные" in blob:
+        return True
+    return False
+
+
 def is_tuna_like_ingredient(ni: NormalizedIngredient) -> bool:
     """True for canned/fresh tuna queries (not generic fish)."""
     blob = f"{ni.input_name} {ni.canonical_query}".lower()
