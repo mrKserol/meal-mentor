@@ -8,6 +8,7 @@ export interface DiaryRecentMeal {
   protein_g?: number;
   fat_g?: number;
   carbs_g?: number;
+  fiber_g?: number;
   recorded_at: string;
   prediction?: string | null;
   user_text?: string | null;

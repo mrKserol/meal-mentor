@@ -26,16 +26,23 @@ export function MealMacroInline({
   proteinG,
   fatG,
   carbsG,
+  fiberG,
   className = "",
 }: {
   proteinG: number;
   fatG: number;
   carbsG: number;
+  /** If set, appends «Клетчатка» (dietary fiber), grams. */
+  fiberG?: number | null;
   className?: string;
 }) {
+  const base = `Б: ${formatIntRu(proteinG)} г · Ж: ${formatIntRu(fatG)} г · У: ${formatIntRu(carbsG)} г`;
+  const fib =
+    fiberG !== undefined && fiberG !== null ? ` · Клетчатка: ${formatIntRu(fiberG)} г` : "";
   return (
     <span className={`text-slate-600 ${className}`.trim()}>
-      Б: {formatIntRu(proteinG)} г · Ж: {formatIntRu(fatG)} г · У: {formatIntRu(carbsG)} г
+      {base}
+      {fib}
     </span>
   );
 }

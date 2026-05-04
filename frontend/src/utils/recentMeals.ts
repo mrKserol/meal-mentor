@@ -8,10 +8,10 @@ export type MealHistoryItem = {
   protein_g: number;
   fat_g: number;
   carbs_g: number;
+  fiber_g: number;
   icon: "breakfast" | "lunch" | "snack";
   thumbUrl?: string | null;
   predictionLine: string;
-  composition: string;
 };
 
 function iconFromMealType(mt: string | null): MealHistoryItem["icon"] {
@@ -37,7 +37,6 @@ export function mapTodayMealsToHistory(snapshot: DiarySnapshot | null): MealHist
   return snapshot.today_meals.map((m) => {
     const pred = typeof m.prediction === "string" && m.prediction.trim() ? m.prediction.trim() : "";
     const predictionLine = pred || "—";
-    const composition = (m.composition && m.composition.trim()) || "—";
     return {
       id: String(m.id),
       mealType: m.meal_type_label,
@@ -46,10 +45,10 @@ export function mapTodayMealsToHistory(snapshot: DiarySnapshot | null): MealHist
       protein_g: m.protein_g ?? 0,
       fat_g: m.fat_g ?? 0,
       carbs_g: m.carbs_g ?? 0,
+      fiber_g: m.fiber_g ?? 0,
       icon: iconFromMealType(m.meal_type),
       thumbUrl: mealThumbSrcForRecent(m) ?? null,
       predictionLine,
-      composition,
     };
   });
 }

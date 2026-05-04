@@ -92,7 +92,7 @@ def _rolling_30_days_utc_naive(user: User) -> tuple[datetime, datetime, date, da
 
 
 def _sum_meal_nutrition(meal: Meal) -> dict[str, int]:
-    c = p = f = cb = 0
+    c = p = f = cb = fib = 0
     for item in meal.items:
         n = item.nutrition
         if n is None:
@@ -101,7 +101,8 @@ def _sum_meal_nutrition(meal: Meal) -> dict[str, int]:
         p += n.protein_g or 0
         f += n.fat_g or 0
         cb += n.carbs_g or 0
-    return {"calories": c, "protein_g": p, "fat_g": f, "carbs_g": cb}
+        fib += n.fiber_g or 0
+    return {"calories": c, "protein_g": p, "fat_g": f, "carbs_g": cb, "fiber_g": fib}
 
 
 def _absolute_public_url(web_path: str | None) -> str | None:
@@ -278,6 +279,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
                 protein_g=tot["protein_g"],
                 fat_g=tot["fat_g"],
                 carbs_g=tot["carbs_g"],
+                fiber_g=tot["fiber_g"],
                 recorded_at=recorded,
                 prediction=meal.prediction,
                 user_text=meal.user_text,

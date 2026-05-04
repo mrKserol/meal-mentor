@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Apple, ChevronRight, Coffee, Salad } from "lucide-react";
 
-import { MealMacroLines } from "../meals/MealMacroLines";
+import { MealMacroInline } from "../meals/MealMacroLines";
 import type { MealHistoryItem } from "../../utils/recentMeals";
 import { formatIntRu } from "../../utils/recentMeals";
 
@@ -57,12 +57,6 @@ export function RecentMealsCard({ items }: RecentMealsCardProps) {
               <div className="flex w-[4.5rem] shrink-0 flex-col items-end pt-0.5 sm:w-16">
                 <span className="text-base font-bold leading-none text-slate-900">{formatIntRu(meal.calories)}</span>
                 <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">kcal</span>
-                <MealMacroLines
-                  proteinG={meal.protein_g}
-                  fatG={meal.fat_g}
-                  carbsG={meal.carbs_g}
-                  className="mt-1"
-                />
               </div>
               {meal.thumbUrl ? (
                 <img
@@ -77,8 +71,14 @@ export function RecentMealsCard({ items }: RecentMealsCardProps) {
               <div className="min-w-0 flex-1">
                 <h3 className="text-base font-semibold leading-snug text-slate-900">{meal.predictionLine}</h3>
                 <p className="mt-1 text-sm text-slate-600">Приём пищи в {meal.time}</p>
-                <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                  <span className="font-medium text-slate-800">Состав:</span> {meal.composition}
+                <p className="mt-2 text-left text-xs leading-snug text-slate-600 sm:text-right">
+                  <MealMacroInline
+                    proteinG={meal.protein_g}
+                    fatG={meal.fat_g}
+                    carbsG={meal.carbs_g}
+                    fiberG={meal.fiber_g}
+                    className="inline-block max-w-full text-left sm:text-right"
+                  />
                 </p>
               </div>
             </div>
