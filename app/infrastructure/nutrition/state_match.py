@@ -403,6 +403,139 @@ def _tuna_canned_adjustment(n: str, ing: str, query_lower: str) -> tuple[float, 
     return max(score, -280.0), reasons
 
 
+def _shrimp_candidate_adjustment(n: str, query_lower: str, requested_state: str) -> tuple[float, list[str]]:
+    """
+    Prefer plain shrimp rows; aggressively avoid breaded/tempura/fast-food/dish/sauce.
+    This is used for shrimp/prawn-like queries (EN/RU) only.
+    """
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    rs = (requested_state or "unknown").lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if "shrimp" in nl:
+        add(70, "shrimp_word")
+    else:
+        add(-70, "missing_shrimp_word")
+    if "crustaceans" in nl:
+        add(40, "crustaceans")
+    if "cooked" in nl:
+        add(40, "cooked_word")
+    if "moist heat" in nl:
+        add(35, "moist_heat")
+    if "boiled" in nl or "steamed" in nl:
+        add(25, "boiled_or_steamed")
+    if "raw" in nl and rs == "raw":
+        add(15, "raw_aligned")
+
+    for bad in ("breaded", "battered", "tempura"):
+        if bad in nl:
+            add(-100, f"bad_{bad}")
+    for bad in ("fast food",):
+        if bad in nl:
+            add(-90, f"bad_{bad.replace(' ', '_')}")
+    if "fried" in nl and rs != "fried":
+        add(-90, "fried_mismatch")
+    for bad in ("sauce", "with sauce", "salad", "soup", "gumbo", "dish", "mixture"):
+        if bad in nl and bad not in query_lower:
+            add(-80, f"bad_{bad.replace(' ', '_')}")
+    if "canned" in nl and rs != "canned":
+        add(-70, "canned_mismatch")
+    if "dried" in nl or re.search(r"\bdry\b", nl):
+        add(-70, "dried_or_dry")
+
+    return max(score, -360.0), reasons
+
+
+def _corn_candidate_adjustment(n: str, query_lower: str, requested_state: str) -> tuple[float, list[str]]:
+    """Prefer plain sweet/whole-kernel corn; avoid starch/flour/cereal/snacks/popcorn/dry rows."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    rs = (requested_state or "unknown").lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    wants_plain = not any(w in query_lower for w in ("flour", "meal", "cereal", "starch", "popcorn", "chips"))
+
+    if wants_plain:
+        if "corn, sweet" in nl or "sweet corn" in nl:
+            add(60, "sweet_corn")
+        if "whole kernel" in nl:
+            add(20, "whole_kernel")
+        if "cooked" in nl or "boiled" in nl or "microwaved" in nl or "steamed" in nl:
+            add(35, "cooked_like")
+        if "canned" in nl and rs == "canned":
+            add(30, "canned_aligned")
+
+        for bad in ("cornmeal", "flour", "starch", "cereal", "snacks", "chips"):
+            if bad in nl and bad not in query_lower:
+                add(-100, f"bad_{bad}")
+        if "popcorn" in nl and "popcorn" not in query_lower:
+            add(-90, "bad_popcorn")
+        if "dry" in nl and rs != "dry":
+            add(-80, "dry_mismatch")
+        if "raw" in nl and rs != "raw":
+            add(-80, "raw_mismatch")
+        if "babyfood" in nl and "baby" not in query_lower and "babyfood" not in query_lower:
+            add(-80, "babyfood")
+        for bad in ("bread", "tortilla"):
+            if bad in nl and bad not in query_lower:
+                add(-70, f"bad_{bad}")
+
+    return max(score, -360.0), reasons
+
+
+def _beer_candidate_adjustment(n: str, query_lower: str) -> tuple[float, list[str]]:
+    """Prefer alcoholic beverage beer rows over food/dry/mix/yeast/snack rows."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    ql = query_lower.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    wants_light = any(x in ql for x in ("light", "легкое", "лёгкое"))
+    wants_strong = any(x in ql for x in ("strong", "крепкое", "high alcohol"))
+
+    if "alcoholic beverage" in nl or "alcoholic beverages" in nl:
+        add(80, "alcoholic_beverage")
+    if "beer" in nl:
+        add(70, "beer_word")
+    else:
+        add(-120, "not_beer")
+
+    if "regular" in nl:
+        add(40, "regular")
+    if "all" in nl:
+        add(15, "all")
+
+    if "light" in nl:
+        add(25 if wants_light else -8, "light_adjust")
+    if "higher alcohol" in nl:
+        add(25 if wants_strong else -8, "higher_alcohol_adjust")
+
+    for bad in ("bread", "batter", "cheese", "soup", "sauce", "snack", "yeast", "malt powder", "dry", "mix", "cereal"):
+        if bad in nl and bad not in ql:
+            add(-100, f"bad_{bad.replace(' ', '_')}")
+    for bad in ("beef", "beet", "babyfood"):
+        if bad in nl and bad not in ql:
+            add(-80, f"bad_{bad}")
+
+    return max(score, -380.0), reasons
+
+
 def _egg_whole_boiled_adjustment(n: str, ing: str) -> tuple[float, list[str]]:
     """Prefer whole hard-boiled eggs when user asks for boiled eggs."""
     reasons: list[str] = []
@@ -481,6 +614,9 @@ def state_score(
     is_legume_like: bool = False,
     is_poultry_breast_query: bool = False,
     is_tuna_like: bool = False,
+    seafood_like_q: bool = False,
+    corn_like_q: bool = False,
+    beer_q: bool = False,
     tea_drink_q: bool = False,
     cottage_cheese_q: bool = False,
     banana_fruit_q: bool = False,
@@ -654,6 +790,21 @@ def state_score(
         tu, tr = _tuna_canned_adjustment(n, ing, query_lower)
         score += tu
         reasons.extend(tr)
+
+    if seafood_like_q:
+        sh, shr = _shrimp_candidate_adjustment(n, query_lower, rs)
+        score += sh
+        reasons.extend(shr)
+
+    if corn_like_q:
+        co, cor = _corn_candidate_adjustment(n, query_lower, rs)
+        score += co
+        reasons.extend(cor)
+
+    if beer_q:
+        be, ber = _beer_candidate_adjustment(n, query_lower)
+        score += be
+        reasons.extend(ber)
 
     if is_legume_like and rs in ("cooked", "boiled"):
         le, lr = _legume_cooked_boiled_extra(n, query_lower)

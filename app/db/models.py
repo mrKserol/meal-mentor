@@ -153,7 +153,7 @@ class MealItemNutrition(Base):
     protein_g = Column(Integer, nullable=True)
     fat_g = Column(Integer, nullable=True)
     carbs_g = Column(Integer, nullable=True)
-    fiber_g = Column(Integer, nullable=True)
+    fiber_g = Column(Float, nullable=True)
     sugar_g = Column(Integer, nullable=True)
     saturated_fat_g = Column(Float, nullable=True)
     sodium_mg = Column(Integer, nullable=True)

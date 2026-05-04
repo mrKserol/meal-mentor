@@ -302,6 +302,49 @@ def is_tuna_like_ingredient(ni: NormalizedIngredient) -> bool:
     return False
 
 
+def is_seafood_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True for seafood-like queries (shrimp/prawn in EN/RU)."""
+    if ni.alias_category == "seafood":
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if re.search(r"\b(shrimp|shrimps|prawn|prawns)\b", blob):
+        return True
+    if re.search(r"\b(креветк[аеи]|креветка|креветки)\b", blob):
+        return True
+    return False
+
+
+def is_corn_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True for plain corn / sweet corn queries (not flour/starch/popcorn/snacks)."""
+    if ni.alias_category == "vegetable" and "corn" in ni.canonical_query.lower():
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if "corn" not in blob and "кукуруз" not in blob:
+        return False
+    bad = ("cornmeal", "flour", "starch", "cereal", "snacks", "chips", "popcorn", "tortilla", "bread")
+    if any(b in blob for b in bad):
+        return False
+    if any(x in blob for x in ("corn", "sweet corn", "кукуруз")):
+        return True
+    return False
+
+
+def is_beer_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """
+    True for beer/alcoholic-beverage queries (beer/lager/ale, пиво),
+    but excludes food derivatives like beer bread/batter/cheese.
+    """
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if ni.alias_category == "alcoholic_beverage":
+        pass
+    elif not any(x in blob for x in ("beer", "lager", "ale", "пиво", "alcoholic beverage")):
+        return False
+    bad = ("beer bread", "beer batter", "beer cheese")
+    if any(x in blob for x in bad):
+        return False
+    return True
+
+
 def is_poultry_breast_query(ni: NormalizedIngredient) -> bool:
     blob = f"{ni.input_name} {ni.canonical_query}".lower()
     if "wing" in blob or "thigh" in blob or "drumstick" in blob:

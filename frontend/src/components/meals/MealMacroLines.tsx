@@ -1,4 +1,4 @@
-import { formatIntRu } from "../../utils/recentMeals";
+import { formatIntRu, formatMacroGramsRu } from "../../utils/recentMeals";
 
 type Props = {
   proteinG: number;
@@ -38,7 +38,7 @@ export function MealMacroInline({
 }) {
   const base = `Б: ${formatIntRu(proteinG)} г · Ж: ${formatIntRu(fatG)} г · У: ${formatIntRu(carbsG)} г`;
   const fib =
-    fiberG !== undefined && fiberG !== null ? ` · Клетчатка: ${formatIntRu(fiberG)} г` : "";
+    fiberG !== undefined && fiberG !== null ? ` · Клетчатка: ${formatMacroGramsRu(fiberG)} г` : "";
   return (
     <span className={`text-slate-600 ${className}`.trim()}>
       {base}

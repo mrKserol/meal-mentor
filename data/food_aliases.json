@@ -5744,6 +5744,211 @@
       "default_state": "cooked",
       "category": "seafood"
     },
+    "креветка": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "cooked",
+      "category": "seafood"
+    },
+    "вареные креветки": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "cooked",
+      "category": "seafood"
+    },
+    "варёные креветки": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "cooked",
+      "category": "seafood"
+    },
+    "отварные креветки": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "cooked",
+      "category": "seafood"
+    },
+    "жареные креветки": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "fried",
+      "category": "seafood"
+    },
+    "shrimp": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "cooked",
+      "category": "seafood"
+    },
+    "shrimps": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "cooked",
+      "category": "seafood"
+    },
+    "cooked shrimp": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "cooked",
+      "category": "seafood"
+    },
+    "boiled shrimp": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "boiled",
+      "category": "seafood"
+    },
+    "grilled shrimp": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "grilled",
+      "category": "seafood"
+    },
+    "corn": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "sweet corn": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "cooked corn": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "canned corn": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "canned",
+      "category": "vegetable"
+    },
+    "кукуруза": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "сладкая кукуруза": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "вареная кукуруза": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "варёная кукуруза": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "консервированная кукуруза": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "canned",
+      "category": "vegetable"
+    },
+    "peas": {
+      "canonical": "Peas, drained solids, no salt added, canned, green",
+      "default_state": "cooked",
+      "category": "legume"
+    },
+    "green peas": {
+      "canonical": "Peas, drained solids, no salt added, canned, green",
+      "default_state": "cooked",
+      "category": "legume"
+    },
+    "green beans": {
+      "canonical": "Beans, drained solids, no salt added, canned, yellow, snap",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "carrot": {
+      "canonical": "Carrots, drained solids, regular pack, canned",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "carrots": {
+      "canonical": "Carrots, drained solids, regular pack, canned",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "pasta": {
+      "canonical": "Pasta, cooked, plain, fresh-refrigerated",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "spaghetti": {
+      "canonical": "Pasta, cooked, plain, fresh-refrigerated",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "peanut butter": {
+      "canonical": "Peanut butter, with salt, smooth style",
+      "default_state": "unknown",
+      "category": "fat"
+    },
+    "beer": {
+      "canonical": "Alcoholic beverage, all, regular, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "regular beer": {
+      "canonical": "Alcoholic beverage, all, regular, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "lager": {
+      "canonical": "Alcoholic beverage, all, regular, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "пиво": {
+      "canonical": "Alcoholic beverage, all, regular, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "обычное пиво": {
+      "canonical": "Alcoholic beverage, all, regular, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "светлое пиво": {
+      "canonical": "Alcoholic beverage, all, regular, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "лагер": {
+      "canonical": "Alcoholic beverage, all, regular, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "light beer": {
+      "canonical": "Alcoholic beverage, light, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "light lager": {
+      "canonical": "Alcoholic beverage, light, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "легкое пиво": {
+      "canonical": "Alcoholic beverage, light, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "лёгкое пиво": {
+      "canonical": "Alcoholic beverage, light, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "strong beer": {
+      "canonical": "Alcoholic beverages, higher alcohol, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "high alcohol beer": {
+      "canonical": "Alcoholic beverages, higher alcohol, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "крепкое пиво": {
+      "canonical": "Alcoholic beverages, higher alcohol, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
     "крупа гречневая": {
       "canonical": "Buckwheat groats, dry, roasted",
       "default_state": "dry",

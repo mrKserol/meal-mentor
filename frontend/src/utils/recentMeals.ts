@@ -56,3 +56,11 @@ export function mapTodayMealsToHistory(snapshot: DiarySnapshot | null): MealHist
 export function formatIntRu(n: number): string {
   return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(n);
 }
+
+/** Grams with ru-RU grouping; fractional part up to `maxFrac` (e.g. fiber 10,3). */
+export function formatMacroGramsRu(n: number, maxFrac = 2): string {
+  return new Intl.NumberFormat("ru-RU", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: maxFrac,
+  }).format(n);
+}

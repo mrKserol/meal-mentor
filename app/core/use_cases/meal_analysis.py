@@ -40,7 +40,9 @@ def _scaled_row_to_nutrition_dict(row: dict[str, Any]) -> dict[str, Any]:
         out["fat_g"] = int(row["fats"])
     if "carbohydrates" in row and row["carbohydrates"] is not None:
         out["carbs_g"] = int(row["carbohydrates"])
-    int_micro = ("fiber_g", "sugar_g", "sodium_mg")
+    if "fiber_g" in row and row["fiber_g"] is not None:
+        out["fiber_g"] = round(float(row["fiber_g"]), 2)
+    int_micro = ("sugar_g", "sodium_mg")
     for k in int_micro:
         if k in row and row[k] is not None:
             out[k] = int(round(float(row[k])))

@@ -91,8 +91,9 @@ def _rolling_30_days_utc_naive(user: User) -> tuple[datetime, datetime, date, da
     return start_utc, end_utc, first, today, tz
 
 
-def _sum_meal_nutrition(meal: Meal) -> dict[str, int]:
-    c = p = f = cb = fib = 0
+def _sum_meal_nutrition(meal: Meal) -> dict[str, int | float]:
+    c = p = f = cb = 0
+    fib = 0.0
     for item in meal.items:
         n = item.nutrition
         if n is None:
@@ -101,8 +102,8 @@ def _sum_meal_nutrition(meal: Meal) -> dict[str, int]:
         p += n.protein_g or 0
         f += n.fat_g or 0
         cb += n.carbs_g or 0
-        fib += n.fiber_g or 0
-    return {"calories": c, "protein_g": p, "fat_g": f, "carbs_g": cb, "fiber_g": fib}
+        fib += float(n.fiber_g or 0)
+    return {"calories": c, "protein_g": p, "fat_g": f, "carbs_g": cb, "fiber_g": round(fib, 2)}
 
 
 def _absolute_public_url(web_path: str | None) -> str | None:

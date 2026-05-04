@@ -34,6 +34,11 @@ Rules:
 * Do NOT include non-food items
 * For salads, Greek salad, or vegetable salads: do NOT use one vague ingredient name "mixed vegetables".
   List separate components in English (e.g. cucumber, tomato, bell pepper, red onion, feta cheese, olives; add olive oil only if clearly described as dressing or separate amount).
+* For cooked vegetable mixes (e.g. frozen mix, stir-fry mix) with visible components: do NOT use one vague ingredient name like "mixed vegetables".
+  Split into separate visible ingredients (e.g. corn, peas, green beans, carrot) and set state to "cooked" (or "canned" if it is clearly canned).
+* For alcoholic drinks, use specific beverage names in English: beer, wine, vodka, whiskey, cocktail.
+  For beer in a glass, use exactly "beer" with grams estimated from ml (1 ml ≈ 1 g), state "unknown".
+  Do NOT infer snacks or food from an alcoholic drink unless they are clearly described as separate items.
 * For drinks with milk (e.g. milk tea, latte, tea or coffee with milk): do NOT use a single ingredient name like "milk tea".
   Split into separate English ingredients: tea or coffee (liquid part) and milk (estimate milk grams separately).
   The brewed tea or coffee portion is very low in calories; do not assume sugar unless it is visible or explicitly mentioned.

@@ -14,12 +14,15 @@ from app.core.config import (
 )
 from app.infrastructure.nutrition.food_aliases import FoodAliasIndex
 from app.infrastructure.nutrition.ingredient_input import (
+    is_beer_like_ingredient,
     NormalizedIngredient,
     is_banana_fruit_like,
     is_cottage_cheese_like,
+    is_corn_like_ingredient,
     is_grain_like_ingredient,
     is_legume_like_ingredient,
     is_poultry_breast_query,
+    is_seafood_like_ingredient,
     is_seed_kernel_query,
     is_tea_drink_query,
     is_tuna_like_ingredient,
@@ -237,6 +240,9 @@ class NutritionService:
         legume = is_legume_like_ingredient(ni)
         poultry_breast = is_poultry_breast_query(ni)
         tuna_like = is_tuna_like_ingredient(ni)
+        seafood_like = is_seafood_like_ingredient(ni)
+        corn_like = is_corn_like_ingredient(ni)
+        beer_q = is_beer_like_ingredient(ni)
         tea_drink = is_tea_drink_query(ni)
         cottage = is_cottage_cheese_like(ni)
         banana_f = is_banana_fruit_like(ni)
@@ -254,6 +260,9 @@ class NutritionService:
                 is_legume_like=legume,
                 is_poultry_breast_query=poultry_breast,
                 is_tuna_like=tuna_like,
+                seafood_like_q=seafood_like,
+                corn_like_q=corn_like,
+                beer_q=beer_q,
                 tea_drink_q=tea_drink,
                 cottage_cheese_q=cottage,
                 banana_fruit_q=banana_f,

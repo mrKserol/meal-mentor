@@ -60,7 +60,7 @@ def get_report(
             "proteins": round(total_proteins / days, 0),
             "fats": round(total_fats / days, 0),
             "carbohydrates": round(total_carbs / days, 0),
-            "fiber_g": round(total_fiber_g / days, 0),
+            "fiber_g": round(total_fiber_g / days, 1),
         }
         if days > 0
         else {}

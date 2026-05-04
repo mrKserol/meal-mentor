@@ -276,5 +276,89 @@
         "chicken leg with skin": ["nuggets", "fast food", "breaded", "canned"]
       }
     }
+  },
+  {
+    "name": "shrimp with cooked vegetable mix",
+    "description": "Shrimp with cooked vegetable mix (corn/peas/green beans/carrot) regression",
+    "ingredients": {
+      "shrimp": {"grams": 100, "state": "cooked"},
+      "corn": {"grams": 30, "state": "cooked"},
+      "peas": {"grams": 30, "state": "cooked"},
+      "green beans": {"grams": 50, "state": "cooked"},
+      "carrot": {"grams": 50, "state": "cooked"}
+    },
+    "expected": {
+      "calories_min": 160,
+      "calories_max": 320,
+      "protein_min": 18,
+      "required_contains_any": {
+        "shrimp": ["shrimp"],
+        "corn": ["corn"]
+      },
+      "forbidden_match_contains": {
+        "shrimp": [
+          "breaded",
+          "battered",
+          "tempura",
+          "fast food",
+          "sauce",
+          "salad",
+          "soup",
+          "gumbo",
+          "mixture",
+          "dried"
+        ],
+        "corn": [
+          "cornmeal",
+          "flour",
+          "starch",
+          "cereal",
+          "snacks",
+          "chips",
+          "popcorn",
+          "dry",
+          "babyfood",
+          "bread",
+          "tortilla"
+        ]
+      },
+      "min_scaled_proteins": {
+        "shrimp": 18
+      }
+    }
+  },
+  {
+    "name": "regular beer glass",
+    "description": "Пиво в бокале 500 мл",
+    "ingredients": {
+      "beer": {"grams": 500, "state": "unknown"}
+    },
+    "expected": {
+      "calories_min": 150,
+      "calories_max": 350,
+      "protein_max": 5,
+      "fat_max": 2,
+      "carbohydrates_max": 30,
+      "required_contains_any": {
+        "beer": ["beer"]
+      },
+      "forbidden_match_contains": {
+        "beer": [
+          "bread",
+          "batter",
+          "cheese",
+          "soup",
+          "sauce",
+          "snack",
+          "yeast",
+          "dry",
+          "mix",
+          "cereal",
+          "babyfood",
+          "beef",
+          "beet"
+        ]
+      }
+    }
   }
 ]

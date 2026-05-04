@@ -332,6 +332,88 @@ def test_feta_and_olives_aliases(nutrition_svc: NutritionService) -> None:
     assert "olive" in _match(ol)
 
 
+def test_shrimp_plain_cooked_not_breaded_or_sauce(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"shrimp": {"grams": 100, "state": "cooked"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "shrimp" in m
+    for bad in ("breaded", "battered", "tempura", "fast food", "sauce", "salad", "soup", "gumbo", "mixture", "dried"):
+        assert bad not in m
+    cal = int(data.get("calories") or 0)
+    assert 70 <= cal <= 130, f"shrimp 100g calories {cal}"
+    assert float(data.get("proteins", 0) or 0) >= 18.0
+    assert float(data.get("carbohydrates", 0) or 0) <= 5.0
+
+
+def test_corn_cooked_not_dry_or_flour(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"corn": {"grams": 30, "state": "cooked"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "corn" in m
+    for bad in ("cornmeal", "flour", "starch", "cereal", "snacks", "chips", "popcorn", "dry", "babyfood", "bread", "tortilla"):
+        assert bad not in m
+    cal = int(data.get("calories") or 0)
+    assert 15 <= cal <= 45, f"corn 30g calories {cal}"
+
+
+def test_shrimp_with_cooked_vegetable_mix_regression(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    ing = {
+        "shrimp": {"grams": 100, "state": "cooked"},
+        "corn": {"grams": 30, "state": "cooked"},
+        "peas": {"grams": 30, "state": "cooked"},
+        "green beans": {"grams": 50, "state": "cooked"},
+        "carrot": {"grams": 50, "state": "cooked"},
+    }
+    full = nutrition_svc.aggregate_nutrition_full(ing)
+    assert full is not None
+    total_cal = int(round(float(full.get("calories", 0) or 0)))
+    total_p = float(full.get("proteins", 0) or 0)
+    assert 160 <= total_cal <= 320, f"shrimp+veg total calories {total_cal}"
+    assert total_p >= 18.0, f"shrimp+veg proteins {total_p}"
+
+
+def test_beer_regular_not_food_or_mix(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"beer": {"grams": 500, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "beer" in m
+    if "alcoholic beverage" in m or "alcoholic beverages" in m:
+        assert True
+    for bad in ("bread", "batter", "cheese", "soup", "sauce", "snack", "yeast", "dry", "mix", "cereal", "babyfood", "beef", "beet"):
+        assert bad not in m
+    cal = int(data.get("calories") or 0)
+    p = float(data.get("proteins", 0) or 0)
+    f = float(data.get("fats", 0) or 0)
+    cb = float(data.get("carbohydrates", 0) or 0)
+    assert 150 <= cal <= 350, f"beer 500g calories {cal}"
+    assert p <= 5.0, f"beer 500g protein {p}"
+    assert f <= 2.0, f"beer 500g fat {f}"
+    assert cb <= 30.0, f"beer 500g carbs {cb}"
+
+
+def test_light_beer(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    reg = nutrition_svc.search({"beer": {"grams": 500, "state": "unknown"}})
+    lig = nutrition_svc.search({"light beer": {"grams": 500, "state": "unknown"}})
+    dr = list(reg[0].values())[0]
+    dl = list(lig[0].values())[0]
+    assert dr and dl
+    assert "beer" in (dl.get("match") or "").lower()
+    assert int(dl.get("calories") or 0) <= int(dr.get("calories") or 0)
+
+
 def load_fixture_cases() -> list[dict[str, Any]]:
     raw = json.loads(_FIXTURE_CASES_PATH.read_text(encoding="utf-8"))
     if not isinstance(raw, list):
@@ -497,6 +579,18 @@ def assert_aggregate_macros(
         )
 
 
+def assert_max_aggregate_macros(
+    aggregate_full: dict[str, Any],
+    spec: dict[str, Any],
+    *,
+    case_name: str,
+) -> None:
+    for key, maximum in spec.items():
+        val = float(aggregate_full.get(key, 0) or 0)
+        mx = float(maximum)
+        assert val <= mx, f"{case_name}: aggregate {key}={val} > {mx}"
+
+
 def _run_nutrition_case(nutrition_svc: NutritionService, case: dict[str, Any]) -> None:
     if not nutrition_svc.aliases.is_loaded:
         pytest.skip("food_aliases.json not loaded")
@@ -538,6 +632,15 @@ def _run_nutrition_case(nutrition_svc: NutritionService, case: dict[str, Any]) -
     macros = expected.get("aggregate_macros")
     if isinstance(macros, dict) and macros:
         assert_aggregate_macros(full, macros, case_name=name)
+    max_macros: dict[str, Any] = {}
+    if "protein_max" in expected:
+        max_macros["proteins"] = expected["protein_max"]
+    if "fat_max" in expected:
+        max_macros["fats"] = expected["fat_max"]
+    if "carbohydrates_max" in expected:
+        max_macros["carbohydrates"] = expected["carbohydrates_max"]
+    if max_macros:
+        assert_max_aggregate_macros(full, max_macros, case_name=name)
     assert_min_scaled_proteins(
         flat, expected.get("min_scaled_proteins") or {}, case_name=name
     )
