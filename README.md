@@ -112,6 +112,24 @@ alembic upgrade head
 
 Ревизия `001_normalize` и последующие — см. историю в `alembic/`. На пустой БД часто достаточно `init_db()` при старте приложения.
 
+## Тесты nutrition matching
+
+В проекте есть **регрессионные и smoke-тесты** для подбора строк из `data/nutrition.csv` (через `NutritionService`, алиасы `data/food_aliases.json`, RapidFuzz и state-reranking). Они **не ходят в сеть**, не вызывают OpenAI, Telegram и API — только локальный CSV и JSON.
+
+Зачем: ловить типичные ошибки матчинга, когда готовая еда попадает на сухой/сырой/порошковый или нерелевантный продукт (и наоборот), из-за чего **КБЖУ уезжают** (например, варёная гречка → сухая, `milk tea` → сухая смесь, варёное яйцо → почти нулевые калории, финики → «сырой» низкокалорийный ряд).
+
+Фикстуры с «золотыми» сценариями (набор ингредиентов + ожидаемые диапазоны калорий и ограничения на выбранную строку `match`):
+
+- `tests/fixtures/nutrition_matching_cases.json`
+
+Запуск всех тестов matching:
+
+```bash
+pytest tests/test_nutrition_matching.py
+```
+
+Когда добавлять новые кейсы: после исправления бага в matching или алиасах добавьте объект в массив в `nutrition_matching_cases.json` (валидный JSON, без комментариев): `name`, `description`, `ingredients`, `expected` с полями вроде `calories_min` / `calories_max`, `required_matches`, `allowed_matches`, `required_contains_any`, `forbidden_match_contains`, `expected_states`. Логику матчинга в тестах не дублируйте — только ожидания на результат.
+
 ## API: веб-пользователь (Bearer)
 
 Префикс веб-роутера пользователя: **`/users`** (теги в OpenAPI: users-web).

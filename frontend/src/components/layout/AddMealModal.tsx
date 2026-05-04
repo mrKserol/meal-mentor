@@ -18,11 +18,12 @@ import {
   formatRecognitionQuestion,
   needsUserDescription,
   parseAnalyzeResponse,
+  type IngredientEntry,
   type MealNutrition,
 } from "../../utils/mealFlow";
 
 type MealData = {
-  ingredients: Record<string, string | number>;
+  ingredients: Record<string, IngredientEntry>;
   confidence: number | null;
   nutrition: MealNutrition | null;
   source_type: string;

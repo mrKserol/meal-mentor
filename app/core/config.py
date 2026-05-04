@@ -64,6 +64,19 @@ else:
         _fallback = REPO_ROOT / _fallback
     NUTRITION_CSV_PATH = str(_fallback) if _fallback.exists() else None
 
+_default_aliases = DATA_DIR / "food_aliases.json"
+_aliases_env = os.getenv("FOOD_ALIASES_PATH")
+_aliases_candidate = Path(_aliases_env) if _aliases_env else _default_aliases
+if not _aliases_candidate.is_absolute():
+    _aliases_candidate = REPO_ROOT / _aliases_candidate
+if _aliases_candidate.exists():
+    FOOD_ALIASES_PATH = str(_aliases_candidate)
+else:
+    _afb = _default_aliases
+    if not _afb.is_absolute():
+        _afb = REPO_ROOT / _afb
+    FOOD_ALIASES_PATH = str(_afb) if _afb.exists() else None
+
 # If true, sentence-transformers may download from huggingface.co on first semantic search.
 # Default false: production (Railway) often times out on HF; fuzzy matching needs no download.
 NUTRITION_ENABLE_SEMANTIC = os.getenv("NUTRITION_ENABLE_SEMANTIC", "false").lower() in (

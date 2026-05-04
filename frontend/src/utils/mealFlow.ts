@@ -8,16 +8,28 @@ export type MealNutrition = {
   carbohydrates: number;
 };
 
+/** Legacy: number; structured: { grams, state? } */
+export type IngredientEntry = number | string | { grams: number; state?: string };
+
 export type MealAnalyzePayload = {
   status: string;
-  ingredients: Record<string, string | number>;
+  ingredients: Record<string, IngredientEntry>;
   confidence: number | null;
   nutrition: MealNutrition | null;
   prediction: string | null;
   error?: string;
 };
 
-export function needsUserDescription(ingredients: Record<string, string | number>, confidence: number | null): boolean {
+export function ingredientGramsLabel(v: IngredientEntry): string {
+  if (v != null && typeof v === "object" && !Array.isArray(v) && "grams" in v) {
+    const g = (v as { grams: unknown }).grams;
+    return g != null && g !== "" ? String(g) : "";
+  }
+  if (typeof v === "number" || typeof v === "string") return String(v);
+  return "";
+}
+
+export function needsUserDescription(ingredients: Record<string, IngredientEntry>, confidence: number | null): boolean {
   if (!ingredients || Object.keys(ingredients).length === 0) return true;
   if (confidence != null && confidence < LOW_CONFIDENCE_THRESHOLD) return true;
   return false;
@@ -26,8 +38,8 @@ export function needsUserDescription(ingredients: Record<string, string | number
 export function parseAnalyzeResponse(raw: Record<string, unknown>): MealAnalyzePayload {
   const status = String(raw.status ?? "error");
   const ing = raw.ingredients;
-  const ingredients: Record<string, string | number> =
-    ing && typeof ing === "object" && !Array.isArray(ing) ? (ing as Record<string, string | number>) : {};
+  const ingredients: Record<string, IngredientEntry> =
+    ing && typeof ing === "object" && !Array.isArray(ing) ? (ing as Record<string, IngredientEntry>) : {};
   const confidence = typeof raw.confidence === "number" ? raw.confidence : null;
   const predRaw = raw.prediction;
   const prediction =
@@ -55,7 +67,7 @@ export function parseAnalyzeResponse(raw: Record<string, unknown>): MealAnalyzeP
 
 export function formatRecognitionQuestion(
   prediction: string | null | undefined,
-  ingredients: Record<string, string | number>,
+  ingredients: Record<string, IngredientEntry>,
 ): string {
   const p = typeof prediction === "string" && prediction.trim() ? prediction.trim() : "";
   if (p) {
@@ -65,7 +77,7 @@ export function formatRecognitionQuestion(
   if (keys.length === 0) {
     return "Я не смог выделить блюдо. Опиши текстом или попробуй другое фото.";
   }
-  const parts = keys.map((name) => `${name} (${ingredients[name]} г)`);
+  const parts = keys.map((name) => `${name} (${ingredientGramsLabel(ingredients[name])} г)`);
   let tail: string;
   if (parts.length === 1) tail = parts[0];
   else if (parts.length === 2) tail = `${parts[0]} и ${parts[1]}`;
@@ -74,14 +86,14 @@ export function formatRecognitionQuestion(
 }
 
 export function formatMealAnalyzedDetail(
-  ingredients: Record<string, string | number>,
+  ingredients: Record<string, IngredientEntry>,
   nutrition: MealNutrition | null,
 ): string {
   const lines: string[] = ["Состав и вес (г):"];
   const keys = Object.keys(ingredients);
   if (keys.length) {
     for (const name of keys) {
-      lines.push(`• ${name}: ${ingredients[name]} г`);
+      lines.push(`• ${name}: ${ingredientGramsLabel(ingredients[name])} г`);
     }
   } else {
     lines.push("—");

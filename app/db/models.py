@@ -123,6 +123,7 @@ class MealItem(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     meal_id = Column(ForeignKey("meals.id"), nullable=False, index=True)
     item_name = Column(String(255), nullable=False)
+    ingredient_state = Column(String(32), nullable=True)
     estimated_weight_g = Column(Integer, nullable=True)
     quantity = Column(Integer, nullable=True)
     confidence = Column(Integer, nullable=True)

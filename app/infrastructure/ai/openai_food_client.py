@@ -11,6 +11,7 @@ def _normalize_model_json(parsed: Any) -> tuple[dict[str, Any], float | None]:
     """
     Model returns either:
       {"ingredients": {"name": grams}, "confidence": 0.85}
+      {"ingredients": {"name": {"grams": n, "state": "cooked"}}, ...}
       {} (no food)
     Legacy:
       {"rice": 100, "chicken": 150}
@@ -30,7 +31,27 @@ def _normalize_model_json(parsed: Any) -> tuple[dict[str, Any], float | None]:
                 conf = float(conf)
             except (TypeError, ValueError):
                 conf = None
-        return ing, conf
+        cleaned: dict[str, Any] = {}
+        for k, v in ing.items():
+            if not isinstance(k, str) or not k.strip():
+                continue
+            key = k.strip()
+            if isinstance(v, dict):
+                g = v.get("grams")
+                st = v.get("state", "unknown")
+                try:
+                    gf = float(g)
+                except (TypeError, ValueError):
+                    continue
+                st_s = str(st).strip().lower() if isinstance(st, str) else "unknown"
+                cleaned[key] = {"grams": gf, "state": st_s}
+            else:
+                try:
+                    float(v)
+                except (TypeError, ValueError):
+                    continue
+                cleaned[key] = v
+        return cleaned, conf
 
     # Legacy flat dict: only string keys mapping to numeric-like values
     meta = {"ingredients", "confidence"}

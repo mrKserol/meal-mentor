@@ -117,6 +117,7 @@ def create_meal(
         item = MealItem(
             meal_id=meal.id,
             item_name=name,
+            ingredient_state=spec.get("ingredient_state"),
             estimated_weight_g=spec.get("estimated_weight_g"),
             quantity=spec.get("quantity"),
             confidence=spec.get("confidence"),
@@ -246,6 +247,7 @@ def append_meal_item_rows(
         row = MealItem(
             meal_id=meal.id,
             item_name=name,
+            ingredient_state=spec.get("ingredient_state"),
             estimated_weight_g=spec.get("estimated_weight_g"),
             quantity=spec.get("quantity"),
             confidence=spec.get("confidence"),

@@ -36,7 +36,8 @@ def recalculate_meal_item_weight(
             nutrition=None,
         )
         return {"status": "ok" if ok else "error", "note": "nutrition csv unavailable"}
-    rows = svc.search({item.item_name: new_weight_g}, search_type="fuzzy")
+    state = getattr(item, "ingredient_state", None) or "unknown"
+    rows = svc.search({item.item_name: {"grams": new_weight_g, "state": state}}, search_type="fuzzy")
     row: dict[str, Any] = {}
     for block in rows:
         for _k, data in block.items():
