@@ -250,5 +250,31 @@
         "tea": ["brewed", "prepared with tap water", "prepared with distilled water", "green, tea", "herb, tea"]
       }
     }
+  },
+  {
+    "name": "spaghetti with chicken and salad",
+    "description": "Cooked spaghetti with boiled chicken leg with skin and fresh salad vegetables",
+    "ingredients": {
+      "spaghetti": {"grams": 100, "state": "cooked"},
+      "chicken leg with skin": {"grams": 150, "state": "boiled"},
+      "cucumber": {"grams": 50, "state": "raw"},
+      "tomato": {"grams": 50, "state": "raw"},
+      "red onion": {"grams": 20, "state": "raw"},
+      "lettuce": {"grams": 30, "state": "raw"},
+      "dill": {"grams": 5, "state": "raw"}
+    },
+    "expected": {
+      "calories_min": 450,
+      "calories_max": 750,
+      "protein_min": 30,
+      "required_contains_any": {
+        "spaghetti": ["spaghetti", "pasta", "cooked"],
+        "chicken leg with skin": ["chicken", "skin"]
+      },
+      "forbidden_match_contains": {
+        "spaghetti": ["dry", "uncooked"],
+        "chicken leg with skin": ["nuggets", "fast food", "breaded", "canned"]
+      }
+    }
   }
 ]

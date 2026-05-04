@@ -6669,6 +6669,56 @@
       "default_state": "cooked",
       "category": "poultry"
     },
+    "chicken meat with skin": {
+      "canonical": "Chicken, raw, meat and skin, broilers or fryers",
+      "default_state": "unknown",
+      "category": "poultry"
+    },
+    "chicken leg with skin": {
+      "canonical": "Chicken, raw, meat and skin, leg, broilers or fryers",
+      "default_state": "unknown",
+      "category": "poultry"
+    },
+    "chicken thigh with skin": {
+      "canonical": "Chicken, raw, meat and skin, thigh, broilers or fryers",
+      "default_state": "unknown",
+      "category": "poultry"
+    },
+    "chicken drumstick with skin": {
+      "canonical": "Chicken, raw, meat and skin, drumstick, broilers or fryers",
+      "default_state": "unknown",
+      "category": "poultry"
+    },
+    "boiled chicken leg": {
+      "canonical": "Chicken, stewed, cooked, meat and skin, stewing",
+      "default_state": "boiled",
+      "category": "poultry"
+    },
+    "boiled chicken thigh": {
+      "canonical": "Chicken, stewed, cooked, meat and skin, stewing",
+      "default_state": "boiled",
+      "category": "poultry"
+    },
+    "курица с кожей": {
+      "canonical": "Chicken, raw, meat and skin, broilers or fryers",
+      "default_state": "unknown",
+      "category": "poultry"
+    },
+    "куриная ножка": {
+      "canonical": "Chicken, raw, meat and skin, leg, broilers or fryers",
+      "default_state": "unknown",
+      "category": "poultry"
+    },
+    "куриное бедро": {
+      "canonical": "Chicken, raw, meat and skin, thigh, broilers or fryers",
+      "default_state": "unknown",
+      "category": "poultry"
+    },
+    "куриная голень": {
+      "canonical": "Chicken, raw, meat and skin, drumstick, broilers or fryers",
+      "default_state": "unknown",
+      "category": "poultry"
+    },
     "feta cheese": {
       "canonical": "Cheese, feta",
       "default_state": "unknown",

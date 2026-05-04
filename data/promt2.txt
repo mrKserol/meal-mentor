@@ -37,6 +37,14 @@ Rules:
 * For drinks with milk (e.g. milk tea, latte, tea or coffee with milk): do NOT use a single ingredient name like "milk tea".
   Split into separate English ingredients: tea or coffee (liquid part) and milk (estimate milk grams separately).
   The brewed tea or coffee portion is very low in calories; do not assume sugar unless it is visible or explicitly mentioned.
+* For chicken and poultry, be specific when visible or described:
+  use "chicken breast" only if it is clearly breast/fillet.
+  use "chicken thigh", "chicken leg", "chicken drumstick" or "chicken wing" when visible.
+  add "with skin" if skin is visible.
+  use "meat only" only if skin and bone are not present.
+  if cut is unclear, use "chicken meat with skin" instead of generic "chicken".
+* If the chicken piece contains visible bone, estimate only edible meat grams.
+  Do not include bone weight in grams.
 
 STATE RULES:
 
