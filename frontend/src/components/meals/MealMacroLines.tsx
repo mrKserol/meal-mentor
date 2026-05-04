@@ -34,7 +34,7 @@ export function MealMacroInline({
   className?: string;
 }) {
   return (
-    <span className={`text-sm text-slate-600 ${className}`}>
+    <span className={`text-slate-600 ${className}`.trim()}>
       Б: {formatIntRu(proteinG)} г · Ж: {formatIntRu(fatG)} г · У: {formatIntRu(carbsG)} г
     </span>
   );

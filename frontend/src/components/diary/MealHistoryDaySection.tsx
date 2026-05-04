@@ -222,7 +222,7 @@ function MealDayDetailModal({
           </p>
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <p className="text-sm font-semibold text-slate-900">{formatIntRu(meal.calories)} kcal</p>
-            <MealMacroInline proteinG={totM.p} fatG={totM.f} carbsG={totM.c} className="font-normal" />
+            <MealMacroInline proteinG={totM.p} fatG={totM.f} carbsG={totM.c} className="text-sm font-normal" />
           </div>
           {meal.items.length > 0 ? (
             <ul className="divide-y divide-slate-100 rounded-lg border border-slate-100 text-sm">
@@ -235,13 +235,11 @@ function MealDayDetailModal({
                         {it.item_name || "—"}
                         {it.estimated_weight_g != null ? ` · ${it.estimated_weight_g} г` : ""}
                       </span>
-                      <MealMacroLines
+                      <MealMacroInline
                         proteinG={im.p}
                         fatG={im.f}
                         carbsG={im.c}
-                        size="normal"
-                        align="left"
-                        className="mt-1 text-slate-500"
+                        className="mt-1 block text-xs text-slate-500"
                       />
                     </div>
                     <div className="shrink-0 text-right text-slate-500">
