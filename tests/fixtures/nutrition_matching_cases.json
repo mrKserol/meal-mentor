@@ -1,0 +1,230 @@
+[
+  {
+    "name": "golden breakfast",
+    "description": "Гречка с варёными яйцами, орехами, финиками и кофе с молоком",
+    "ingredients": {
+      "buckwheat": {"grams": 150, "state": "cooked"},
+      "boiled eggs": {"grams": 120, "state": "boiled"},
+      "walnuts": {"grams": 30, "state": "raw"},
+      "dates": {"grams": 20, "state": "dry"},
+      "coffee": {"grams": 200, "state": "unknown"},
+      "milk": {"grams": 50, "state": "unknown"}
+    },
+    "expected": {
+      "calories_min": 560,
+      "calories_max": 700,
+      "required_matches": {
+        "buckwheat": "Buckwheat groats, cooked, roasted",
+        "boiled eggs": "Egg, hard-boiled, cooked, whole"
+      },
+      "forbidden_match_contains": {
+        "coffee": ["powder", "dry mix", "milkshake mix", "protein powder"]
+      }
+    }
+  },
+  {
+    "name": "boiled potato with canned tuna",
+    "description": "Boiled potato, canned tuna, raw onion",
+    "ingredients": {
+      "potato": {"grams": 150, "state": "boiled"},
+      "canned tuna": {"grams": 100, "state": "canned"},
+      "onion": {"grams": 30, "state": "raw"}
+    },
+    "expected": {
+      "calories_min": 200,
+      "calories_max": 380,
+      "allowed_matches": {
+        "potato": [
+          "Potatoes, without salt, flesh, cooked without skin, boiled",
+          "Potatoes, without salt, flesh, cooked in skin, boiled"
+        ]
+      },
+      "forbidden_match_contains": {
+        "potato": [
+          "chips",
+          "sticks",
+          "flour",
+          "granules",
+          "flakes",
+          "dehydrated",
+          "dry mix",
+          "french fried",
+          "hash brown"
+        ],
+        "canned tuna": ["powder", "dry", "babyfood"]
+      }
+    }
+  },
+  {
+    "name": "fried eggs with white beans and cheese",
+    "description": "Fried eggs, cooked white beans, generic cheese",
+    "ingredients": {
+      "fried eggs": {"grams": 100, "state": "fried"},
+      "white beans": {"grams": 80, "state": "cooked"},
+      "cheese": {"grams": 30, "state": "unknown"}
+    },
+    "expected": {
+      "calories_min": 300,
+      "calories_max": 550,
+      "required_matches": {
+        "fried eggs": "Egg, fried, cooked, whole"
+      },
+      "forbidden_match_contains": {
+        "white beans": ["raw", "dry", "uncooked"]
+      },
+      "required_match_contains_any": {
+        "white beans": ["boiled", "cooked", "canned"]
+      }
+    }
+  },
+  {
+    "name": "buckwheat chicken greek salad",
+    "description": "Buckwheat, fried chicken breast, salad vegetables, feta, olives",
+    "ingredients": {
+      "buckwheat": {"grams": 150, "state": "cooked"},
+      "chicken breast": {"grams": 100, "state": "fried"},
+      "cucumber": {"grams": 40, "state": "raw"},
+      "tomato": {"grams": 40, "state": "raw"},
+      "bell pepper": {"grams": 20, "state": "raw"},
+      "red onion": {"grams": 10, "state": "raw"},
+      "feta cheese": {"grams": 50, "state": "raw"},
+      "olives": {"grams": 30, "state": "canned"}
+    },
+    "expected": {
+      "calories_min": 470,
+      "calories_max": 650,
+      "required_matches": {
+        "buckwheat": "Buckwheat groats, cooked, roasted",
+        "feta cheese": "Cheese, feta"
+      },
+      "required_contains_any": {
+        "chicken breast": ["breast"]
+      },
+      "forbidden_match_contains": {
+        "chicken breast": [
+          "skin",
+          "breaded",
+          "nuggets",
+          "fast food",
+          "wing",
+          "thigh",
+          "dark meat",
+          "patty"
+        ],
+        "olives": ["oil, olive", "olive oil"]
+      }
+    }
+  },
+  {
+    "name": "milk tea safe beverage",
+    "description": "Single-ingredient milk tea must stay low-calorie, not powder mix",
+    "ingredients": {
+      "milk tea": {"grams": 200, "state": "unknown"}
+    },
+    "expected": {
+      "calories_min": 0,
+      "calories_max": 50,
+      "forbidden_match_contains": {
+        "milk tea": [
+          "powder",
+          "dry mix",
+          "instant powder",
+          "milkshake mix",
+          "protein powder",
+          "cereal",
+          "dessert"
+        ]
+      }
+    }
+  },
+  {
+    "name": "coffee with milk",
+    "description": "Brewed coffee and fluid milk",
+    "ingredients": {
+      "coffee": {"grams": 200, "state": "unknown"},
+      "milk": {"grams": 50, "state": "unknown"}
+    },
+    "expected": {
+      "calories_min": 10,
+      "calories_max": 60,
+      "forbidden_match_contains": {
+        "coffee": ["powder", "dry mix", "milkshake mix", "protein powder"]
+      }
+    }
+  },
+  {
+    "name": "cooked buckwheat only",
+    "description": "Cooked buckwheat must not match dry flour or pancake rows",
+    "ingredients": {
+      "buckwheat": {"grams": 150, "state": "cooked"}
+    },
+    "expected": {
+      "calories_min": 120,
+      "calories_max": 180,
+      "required_matches": {
+        "buckwheat": "Buckwheat groats, cooked, roasted"
+      },
+      "forbidden_match_contains": {
+        "buckwheat": ["dry", "flour", "pancakes", "dry mix"]
+      }
+    }
+  },
+  {
+    "name": "dry buckwheat only",
+    "description": "Dry buckwheat groats",
+    "ingredients": {
+      "buckwheat": {"grams": 100, "state": "dry"}
+    },
+    "expected": {
+      "calories_min": 300,
+      "calories_max": 380,
+      "allowed_matches": {
+        "buckwheat": ["Buckwheat groats, dry, roasted"]
+      },
+      "forbidden_match_contains": {
+        "buckwheat": ["cooked"]
+      }
+    }
+  },
+  {
+    "name": "boiled eggs only",
+    "description": "Whole hard-boiled egg nutrition",
+    "ingredients": {
+      "boiled egg": {"grams": 120, "state": "boiled"}
+    },
+    "expected": {
+      "calories_min": 150,
+      "calories_max": 230,
+      "required_matches": {
+        "boiled egg": "Egg, hard-boiled, cooked, whole"
+      },
+      "forbidden_match_contains": {
+        "boiled egg": [
+          "white only",
+          "yolk only",
+          "dried",
+          "powder",
+          "substitute",
+          "babyfood"
+        ]
+      }
+    }
+  },
+  {
+    "name": "dates only",
+    "description": "Dates with LLM raw state coerced to dry medjool",
+    "ingredients": {
+      "dates": {"grams": 20, "state": "raw"}
+    },
+    "expected": {
+      "calories_min": 45,
+      "calories_max": 80,
+      "required_contains_any": {
+        "dates": ["medjool", "deglet"]
+      },
+      "expected_states": {
+        "dates": "dry"
+      }
+    }
+  }
+]

@@ -6709,6 +6709,41 @@
       "default_state": "canned",
       "category": "vegetable"
     },
+    "milk": {
+      "canonical": "Milk, with added vitamin D, 3.25% milkfat, whole",
+      "default_state": "unknown",
+      "category": "dairy"
+    },
+    "молоко": {
+      "canonical": "Milk, with added vitamin D, 3.25% milkfat, whole",
+      "default_state": "unknown",
+      "category": "dairy"
+    },
+    "walnuts": {
+      "canonical": "Nuts, english, walnuts",
+      "default_state": "raw",
+      "category": "nut"
+    },
+    "walnut": {
+      "canonical": "Nuts, english, walnuts",
+      "default_state": "raw",
+      "category": "nut"
+    },
+    "canned tuna": {
+      "canonical": "Fish, drained solids, canned in water, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "bell pepper": {
+      "canonical": "Peppers, raw, red, sweet",
+      "default_state": "raw",
+      "category": "vegetable"
+    },
+    "red onion": {
+      "canonical": "Onions, raw",
+      "default_state": "raw",
+      "category": "vegetable"
+    },
     "milk tea": {
       "canonical": "Beverages, prepared with tap water, brewed, black, tea",
       "default_state": "unknown",
