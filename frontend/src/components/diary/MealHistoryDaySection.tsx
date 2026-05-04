@@ -2,7 +2,8 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 import { Apple, ChevronLeft, ChevronRight, Coffee, Salad, X } from "lucide-react";
 
 import { deleteMyMeal, getMyMealsForDay } from "../../api/diaryApi";
-import type { WebMealDayRow } from "../../types/mealsDay";
+import { MealMacroInline, MealMacroLines } from "../meals/MealMacroLines";
+import type { WebMealDayItemLine, WebMealDayRow } from "../../types/mealsDay";
 import { formatIntRu } from "../../utils/recentMeals";
 
 const DELETE_PANEL_PX = 96;
@@ -153,6 +154,22 @@ function SwipeMealRow({
   );
 }
 
+function mealTotalsMacros(m: WebMealDayRow): { p: number; f: number; c: number } {
+  return {
+    p: m.protein_g ?? 0,
+    f: m.fat_g ?? 0,
+    c: m.carbs_g ?? 0,
+  };
+}
+
+function itemLineMacros(it: WebMealDayItemLine): { p: number; f: number; c: number } {
+  return {
+    p: it.protein_g ?? 0,
+    f: it.fat_g ?? 0,
+    c: it.carbs_g ?? 0,
+  };
+}
+
 function MealDayDetailModal({
   meal,
   onClose,
@@ -162,6 +179,7 @@ function MealDayDetailModal({
 }) {
   const large = meal.meal_photo_large_url || meal.meal_photo_thumb_url;
   const pred = predictionHeading(meal);
+  const totM = mealTotalsMacros(meal);
 
   return (
     <div
@@ -202,20 +220,38 @@ function MealDayDetailModal({
           <p className="text-sm leading-relaxed text-slate-800">
             <span className="font-medium text-slate-900">Состав:</span> {meal.composition}
           </p>
-          <p className="text-sm font-semibold text-slate-900">{formatIntRu(meal.calories)} kcal</p>
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <p className="text-sm font-semibold text-slate-900">{formatIntRu(meal.calories)} kcal</p>
+            <MealMacroInline proteinG={totM.p} fatG={totM.f} carbsG={totM.c} className="font-normal" />
+          </div>
           {meal.items.length > 0 ? (
             <ul className="divide-y divide-slate-100 rounded-lg border border-slate-100 text-sm">
-              {meal.items.map((it) => (
-                <li key={it.id} className="flex flex-wrap items-baseline justify-between gap-2 px-3 py-2">
-                  <span className="text-slate-800">
-                    {it.item_name || "—"}
-                    {it.estimated_weight_g != null ? ` · ${it.estimated_weight_g} г` : ""}
-                  </span>
-                  <span className="shrink-0 text-slate-500">
-                    {it.calories != null ? `${formatIntRu(it.calories)} kcal` : ""}
-                  </span>
-                </li>
-              ))}
+              {meal.items.map((it) => {
+                const im = itemLineMacros(it);
+                return (
+                  <li key={it.id} className="flex flex-wrap items-start justify-between gap-2 px-3 py-2">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-slate-800">
+                        {it.item_name || "—"}
+                        {it.estimated_weight_g != null ? ` · ${it.estimated_weight_g} г` : ""}
+                      </span>
+                      <MealMacroLines
+                        proteinG={im.p}
+                        fatG={im.f}
+                        carbsG={im.c}
+                        size="normal"
+                        align="left"
+                        className="mt-1 text-slate-500"
+                      />
+                    </div>
+                    <div className="shrink-0 text-right text-slate-500">
+                      {it.calories != null ? (
+                        <span className="block whitespace-nowrap">{formatIntRu(it.calories)} kcal</span>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           ) : null}
         </div>
@@ -227,12 +263,14 @@ function MealDayDetailModal({
 function MealDayRowContent({ meal }: { meal: WebMealDayRow }) {
   const thumb = meal.meal_photo_thumb_url;
   const pred = predictionHeading(meal);
+  const tm = mealTotalsMacros(meal);
 
   return (
     <div className="flex w-full items-start gap-3 p-4 text-left transition hover:bg-slate-50 md:p-5">
-      <div className="flex w-14 shrink-0 flex-col items-end pt-0.5">
+      <div className="flex w-[4.5rem] shrink-0 flex-col items-end pt-0.5 sm:w-16">
         <span className="text-base font-bold leading-none text-slate-900">{formatIntRu(meal.calories)}</span>
         <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">kcal</span>
+        <MealMacroLines proteinG={tm.p} fatG={tm.f} carbsG={tm.c} className="mt-1" />
       </div>
       {thumb ? (
         <img src={thumb} alt="" className="h-16 w-16 shrink-0 rounded-xl object-cover" loading="lazy" />

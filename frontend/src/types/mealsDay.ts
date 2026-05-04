@@ -17,6 +17,9 @@ export interface WebMealDayRow {
   meal_type_label: string;
   composition: string;
   calories: number;
+  protein_g?: number;
+  fat_g?: number;
+  carbs_g?: number;
   meal_photo_thumb: string | null;
   meal_photo_large: string | null;
   meal_photo_thumb_url: string | null;

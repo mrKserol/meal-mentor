@@ -153,6 +153,9 @@ class WebMealDayRow(BaseModel):
     meal_type_label: str
     composition: str
     calories: int
+    protein_g: int = 0
+    fat_g: int = 0
+    carbs_g: int = 0
     meal_photo_thumb: str | None = None
     meal_photo_large: str | None = None
     meal_photo_thumb_url: str | None = None

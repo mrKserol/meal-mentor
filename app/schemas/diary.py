@@ -10,6 +10,9 @@ class DiaryRecentMeal(BaseModel):
     meal_type_label: str
     time_local: str
     calories: int
+    protein_g: int = 0
+    fat_g: int = 0
+    carbs_g: int = 0
     recorded_at: datetime
     prediction: str | None = None
     user_text: str | None = None

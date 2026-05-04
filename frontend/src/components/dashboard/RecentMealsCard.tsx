@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Apple, ChevronRight, Coffee, Salad } from "lucide-react";
 
+import { MealMacroLines } from "../meals/MealMacroLines";
 import type { MealHistoryItem } from "../../utils/recentMeals";
 import { formatIntRu } from "../../utils/recentMeals";
 
@@ -28,7 +29,7 @@ export function RecentMealsCard({ items }: RecentMealsCardProps) {
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="flex items-center justify-between border-b border-slate-100 p-6">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">Приемы пищи сегодня</h2>
+          <h2 className="text-xl font-semibold text-slate-900">Приёмы пищи за сегодня</h2>
         </div>
         <Link
           to="/diary"
@@ -53,9 +54,15 @@ export function RecentMealsCard({ items }: RecentMealsCardProps) {
         ) : (
           items.map((meal) => (
             <div key={meal.id} className="flex items-start gap-3 p-4 transition hover:bg-slate-50 md:p-5">
-              <div className="flex w-14 shrink-0 flex-col items-end pt-0.5">
+              <div className="flex w-[4.5rem] shrink-0 flex-col items-end pt-0.5 sm:w-16">
                 <span className="text-base font-bold leading-none text-slate-900">{formatIntRu(meal.calories)}</span>
                 <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">kcal</span>
+                <MealMacroLines
+                  proteinG={meal.protein_g}
+                  fatG={meal.fat_g}
+                  carbsG={meal.carbs_g}
+                  className="mt-1"
+                />
               </div>
               {meal.thumbUrl ? (
                 <img

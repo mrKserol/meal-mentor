@@ -5,6 +5,9 @@ export type MealHistoryItem = {
   mealType: string;
   time: string;
   calories: number;
+  protein_g: number;
+  fat_g: number;
+  carbs_g: number;
   icon: "breakfast" | "lunch" | "snack";
   thumbUrl?: string | null;
   predictionLine: string;
@@ -40,6 +43,9 @@ export function mapTodayMealsToHistory(snapshot: DiarySnapshot | null): MealHist
       mealType: m.meal_type_label,
       time: m.time_local,
       calories: m.calories,
+      protein_g: m.protein_g ?? 0,
+      fat_g: m.fat_g ?? 0,
+      carbs_g: m.carbs_g ?? 0,
       icon: iconFromMealType(m.meal_type),
       thumbUrl: mealThumbSrcForRecent(m) ?? null,
       predictionLine,
