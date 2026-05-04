@@ -437,6 +437,10 @@ def _run_nutrition_case(nutrition_svc: NutritionService, case: dict[str, Any]) -
         assert_min_aggregate_proteins(
             full, float(expected["min_aggregate_proteins"]), case_name=name
         )
+    if "protein_min" in expected:
+        assert_min_aggregate_proteins(
+            full, float(expected["protein_min"]), case_name=name
+        )
     assert_min_scaled_proteins(
         flat, expected.get("min_scaled_proteins") or {}, case_name=name
     )

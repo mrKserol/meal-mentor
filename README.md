@@ -131,7 +131,7 @@ pytest tests/test_nutrition_matching.py
 
 Подробные **INFO**-логи по каждому ингредиенту (топ кандидатов, `final`/`text`/`state_adj`, причины, выбранная строка): переменная **`NUTRITION_DEBUG_MATCHING`** — см. таблицу выше и `nutrition_debug_matching()` в `app/core/config.py`.
 
-Когда добавлять новые кейсы: после исправления бага в matching или алиасах добавьте объект в массив в `nutrition_matching_cases.json` (валидный JSON, без комментариев): `name`, `description`, `ingredients`, `expected` с полями вроде `calories_min` / `calories_max`, `required_matches`, `allowed_matches`, `required_contains_any`, `forbidden_match_contains`, `expected_states`. Логику матчинга в тестах не дублируйте — только ожидания на результат.
+Когда добавлять новые кейсы: после исправления бага в matching или алиасах добавьте объект в массив в `nutrition_matching_cases.json` (валидный JSON, без комментариев): `name`, `description`, `ingredients`, `expected` с полями вроде `calories_min` / `calories_max`, `protein_min` (минимум суммарного белка по блюду), `min_aggregate_proteins` (то же назначение, альтернативное имя), `required_matches`, `allowed_matches`, `required_contains_any`, `forbidden_match_contains`, `expected_states`. Логику матчинга в тестах не дублируйте — только ожидания на результат.
 
 ## API: веб-пользователь (Bearer)
 

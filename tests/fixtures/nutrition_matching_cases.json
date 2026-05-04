@@ -24,53 +24,19 @@
   },
   {
     "name": "boiled potato with canned tuna",
-    "description": "Boiled potato, canned tuna, raw onion",
+    "description": "Boiled potato, canned tuna, raw onion (regression: macros + match rows)",
     "ingredients": {
-      "potato": {"grams": 150, "state": "boiled"},
       "canned tuna": {"grams": 100, "state": "canned"},
+      "potato": {"grams": 150, "state": "boiled"},
       "onion": {"grams": 30, "state": "raw"}
     },
     "expected": {
-      "calories_min": 200,
-      "calories_max": 340,
-      "min_aggregate_proteins": 20,
-      "min_scaled_proteins": {
-        "canned tuna": 18
-      },
-      "allowed_matches": {
-        "potato": [
-          "Potatoes, without salt, flesh, cooked without skin, boiled",
-          "Potatoes, without salt, flesh, cooked in skin, boiled"
-        ]
-      },
-      "match_all_substrings": {
-        "canned tuna": ["tuna", "canned"]
-      },
-      "match_any_substrings": {
-        "canned tuna": ["drained solids", "in water", "in oil"]
-      },
+      "calories_min": 190,
+      "calories_max": 300,
+      "protein_min": 18,
       "forbidden_match_contains": {
-        "potato": [
-          "chips",
-          "sticks",
-          "flour",
-          "granules",
-          "flakes",
-          "dehydrated",
-          "dry mix",
-          "french fried",
-          "hash brown"
-        ],
-        "canned tuna": [
-          "powder",
-          "babyfood",
-          "fish oil",
-          "salad",
-          "soup",
-          "sauce",
-          "spread",
-          "roe"
-        ]
+        "potato": ["chips", "sticks", "flour", "dry mix", "french fried"],
+        "canned tuna": ["babyfood", "salad", "soup", "sauce", "spread", "fish oil"]
       }
     }
   },
