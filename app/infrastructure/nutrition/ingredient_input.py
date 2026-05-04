@@ -144,6 +144,9 @@ def parse_ingredients_dict(
                 alias_category = alt.category or alias_category
                 alias_hit = True
 
+        if is_dates_like_name(input_name) and state == "raw":
+            state = "dry"
+
         out.append(
             NormalizedIngredient(
                 input_name=input_name,
@@ -168,6 +171,69 @@ def is_legume_like_ingredient(ni: NormalizedIngredient) -> bool:
     if re.search(r"\b(beans?|peas?|lentils?|chickpeas?|garbanzos?|фасоль|фасоли)\b", blob):
         return True
     return "legume" in blob
+
+
+_BEVERAGE_HINTS_EN = (
+    "tea",
+    "coffee",
+    "latte",
+    "cappuccino",
+    "milk tea",
+    "cocoa",
+    "juice",
+    "drink",
+    "beverage",
+    "smoothie",
+    "espresso",
+    "americano",
+    "macchiato",
+    "mocha",
+)
+_BEVERAGE_HINTS_RU = ("чай", "кофе", "сок", "напиток", "смузи", "латте", "капучино")
+
+
+def is_beverage_like_query(name: str) -> bool:
+    """True for typical drinks (used to avoid matching dry mixes / powders)."""
+    q = " ".join(name.strip().lower().split())
+    if not q:
+        return False
+    for h in _BEVERAGE_HINTS_EN:
+        if h in q:
+            return True
+    for h in _BEVERAGE_HINTS_RU:
+        if h in q:
+            return True
+    return False
+
+
+_POWDER_EXPLICIT = (
+    "powder",
+    "dry mix",
+    "instant powder",
+    "сухой",
+    "сухая",
+    "порошок",
+    "смесь",
+    "растворимый",
+)
+
+
+def query_implies_beverage_powder_or_dry_mix(name: str) -> bool:
+    """User explicitly asked for powder / dry mix (do not penalize those rows)."""
+    q = name.strip().lower()
+    return any(x in q for x in _POWDER_EXPLICIT)
+
+
+def is_dates_like_name(name: str) -> bool:
+    n = name.strip().lower()
+    return bool(re.search(r"\bdate?s?\b", n)) or "финик" in n
+
+
+def is_egg_like_name(name: str) -> bool:
+    n = name.strip().lower()
+    if "egg" in n or "яйц" in n:
+        return True
+    return False
 
 
 def is_poultry_breast_query(ni: NormalizedIngredient) -> bool:

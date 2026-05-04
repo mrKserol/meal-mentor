@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -130,7 +131,55 @@ def test_prompt_files_salad_rule_and_no_mixed_veg_example() -> None:
     for blob in (p1, p2):
         assert "do NOT use one vague ingredient name" in blob
         assert "mixed vegetables" in blob.lower()
+        assert "milk tea" in blob.lower() and "Split into separate" in blob
     assert '"mixed vegetables":' not in p2
+
+
+def test_milk_tea_not_powder_low_calories(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"milk tea": {"grams": 200, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "powder" not in m and "dry mix" not in m
+    assert int(data.get("calories") or 0) < 50
+
+
+def test_milk_tea_debug_log(caplog: pytest.LogCaptureFixture, nutrition_svc: NutritionService) -> None:
+    caplog.set_level(logging.INFO)
+    nutrition_svc.search({"milk tea": {"grams": 200, "state": "unknown"}})
+    assert any("nutrition_milk_tea_debug" in r.message for r in caplog.records)
+
+
+def test_coffee_with_milk_not_powder(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"coffee with milk": {"grams": 250, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "powder" not in m
+    assert int(data.get("calories") or 0) < 30
+
+
+def test_boiled_egg_hard_boiled_row(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"boiled egg": {"grams": 120, "state": "boiled"}})
+    data = list(rows[0].values())[0]
+    assert data.get("match") == "Egg, hard-boiled, cooked, whole"
+    assert int(data.get("calories") or 0) >= 160
+
+
+def test_dates_medjool_raw_coerced_to_dry_calories(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"dates": {"grams": 20, "state": "raw"}})
+    data = list(rows[0].values())[0]
+    assert data.get("state") == "dry"
+    assert data.get("match") in ("Dates, medjool", "Dates, deglet noor")
+    assert int(data.get("calories") or 0) >= 45
 
 
 def test_feta_and_olives_aliases(nutrition_svc: NutritionService) -> None:

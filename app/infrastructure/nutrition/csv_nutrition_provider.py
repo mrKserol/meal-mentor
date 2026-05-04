@@ -234,6 +234,7 @@ class NutritionService:
                 ni.state,
                 display,
                 query=ni.canonical_query,
+                ingredient_input=ni.input_name,
                 is_grain_like=grain,
                 is_legume_like=legume,
                 is_poultry_breast_query=poultry_breast,
@@ -265,6 +266,24 @@ class NutritionService:
         if not raw:
             raw = self._candidate_search(ni.input_name, limit=20)
         ranked = self._rerank_candidates(ni, raw)
+        if ni.input_name.strip().lower() == "milk tea":
+            detail = [
+                f"{c.display_name!r} final={c.final_score:.1f} text={c.text_score:.1f} "
+                f"state_adj={c.state_score:.1f} reasons={c.reasons[:10]}"
+                for c in ranked[:15]
+            ]
+            logger.info(
+                "nutrition_milk_tea_debug ingredient=%r state=%r canonical_query=%r "
+                "grams=%s candidates=[%s] selected=%r",
+                ni.input_name,
+                ni.state,
+                ni.canonical_query,
+                ni.grams,
+                " | ".join(detail),
+                ranked[0].display_name
+                if ranked and ranked[0].final_score >= min_final_score
+                else None,
+            )
         top_debug = [
             f"{c.display_name[:72]} score={c.final_score:.0f}" for c in ranked[:8]
         ]

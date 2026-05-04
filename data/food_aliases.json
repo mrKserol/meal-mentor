@@ -6708,6 +6708,131 @@
       "canonical": "Olives, canned (small-extra large), ripe",
       "default_state": "canned",
       "category": "vegetable"
+    },
+    "milk tea": {
+      "canonical": "Beverages, prepared with tap water, brewed, black, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "чай с молоком": {
+      "canonical": "Beverages, prepared with tap water, brewed, black, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "молочный чай": {
+      "canonical": "Beverages, prepared with tap water, brewed, black, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "black tea": {
+      "canonical": "Beverages, prepared with tap water, brewed, black, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "чай": {
+      "canonical": "Beverages, prepared with tap water, brewed, black, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "coffee": {
+      "canonical": "Beverages, prepared with tap water, brewed, coffee",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "coffee with milk": {
+      "canonical": "Beverages, prepared with tap water, brewed, coffee",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "кофе": {
+      "canonical": "Beverages, prepared with tap water, brewed, coffee",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "кофе с молоком": {
+      "canonical": "Beverages, prepared with tap water, brewed, coffee",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "boiled egg": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "boiled",
+      "category": "egg"
+    },
+    "boiled eggs": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "boiled",
+      "category": "egg"
+    },
+    "hard boiled egg": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "boiled",
+      "category": "egg"
+    },
+    "hard-boiled egg": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "boiled",
+      "category": "egg"
+    },
+    "яйцо вареное": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "boiled",
+      "category": "egg"
+    },
+    "яйцо варёное": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "boiled",
+      "category": "egg"
+    },
+    "вареное яйцо": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "boiled",
+      "category": "egg"
+    },
+    "варёное яйцо": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "boiled",
+      "category": "egg"
+    },
+    "яйца вареные": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "boiled",
+      "category": "egg"
+    },
+    "яйца варёные": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "boiled",
+      "category": "egg"
+    },
+    "dates": {
+      "canonical": "Dates, medjool",
+      "default_state": "dry",
+      "category": "fruit"
+    },
+    "date": {
+      "canonical": "Dates, medjool",
+      "default_state": "dry",
+      "category": "fruit"
+    },
+    "финики": {
+      "canonical": "Dates, medjool",
+      "default_state": "dry",
+      "category": "fruit"
+    },
+    "финик": {
+      "canonical": "Dates, medjool",
+      "default_state": "dry",
+      "category": "fruit"
+    },
+    "сушеные финики": {
+      "canonical": "Dates, medjool",
+      "default_state": "dry",
+      "category": "fruit"
+    },
+    "сушёные финики": {
+      "canonical": "Dates, medjool",
+      "default_state": "dry",
+      "category": "fruit"
     }
   }
 }
