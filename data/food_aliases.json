@@ -6734,6 +6734,61 @@
       "default_state": "canned",
       "category": "fish"
     },
+    "tuna canned": {
+      "canonical": "Fish, drained solids, canned in water, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "tuna": {
+      "canonical": "Fish, drained solids, canned in water, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "тунец": {
+      "canonical": "Fish, drained solids, canned in water, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "консервированный тунец": {
+      "canonical": "Fish, drained solids, canned in water, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "тунец консервированный": {
+      "canonical": "Fish, drained solids, canned in water, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "тунец в собственном соку": {
+      "canonical": "Fish, drained solids, canned in water, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "тунец в воде": {
+      "canonical": "Fish, drained solids, canned in water, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "tuna in oil": {
+      "canonical": "Fish, drained solids, canned in oil, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "canned tuna in oil": {
+      "canonical": "Fish, drained solids, canned in oil, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "тунец в масле": {
+      "canonical": "Fish, drained solids, canned in oil, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "консервированный тунец в масле": {
+      "canonical": "Fish, drained solids, canned in oil, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
     "bell pepper": {
       "canonical": "Peppers, raw, red, sweet",
       "default_state": "raw",

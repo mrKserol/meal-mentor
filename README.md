@@ -68,6 +68,7 @@ meal-mentor/
 | `PROMPT_PATH`, `PROMPT2_PATH` | Промпты для фото и текста (по умолчанию `./data/promt.txt`, `promt2.txt`) |
 | `LOW_CONFIDENCE_THRESHOLD` | Порог уверенности 0–1; ниже — запрос текстового описания (по умолчанию `0.5`) |
 | `NUTRITION_CSV_PATH` | CSV нутриентов на 100 г (по умолчанию `./data/nutrition.csv`) |
+| `NUTRITION_DEBUG_MATCHING` | При `1` / `true` — подробные INFO-логи матчинга по каждому ингредиенту (кандидаты, scores, выбранная строка) |
 | `NUTRITION_ENABLE_SEMANTIC` | Семантический поиск (часто тяжёлый на Railway); по умолчанию выкл. |
 | `TELEGRAM_BOT_TOKEN`, `BASE_URL` | Для Telegram-бота |
 | `DATABASE_URL` | БД (по умолчанию SQLite `sqlite:///./meal_mentor.db`) |
@@ -127,6 +128,8 @@ alembic upgrade head
 ```bash
 pytest tests/test_nutrition_matching.py
 ```
+
+Подробные **INFO**-логи по каждому ингредиенту (топ кандидатов, `final`/`text`/`state_adj`, причины, выбранная строка): переменная **`NUTRITION_DEBUG_MATCHING`** — см. таблицу выше и `nutrition_debug_matching()` в `app/core/config.py`.
 
 Когда добавлять новые кейсы: после исправления бага в matching или алиасах добавьте объект в массив в `nutrition_matching_cases.json` (валидный JSON, без комментариев): `name`, `description`, `ingredients`, `expected` с полями вроде `calories_min` / `calories_max`, `required_matches`, `allowed_matches`, `required_contains_any`, `forbidden_match_contains`, `expected_states`. Логику матчинга в тестах не дублируйте — только ожидания на результат.
 

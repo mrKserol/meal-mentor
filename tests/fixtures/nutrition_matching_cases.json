@@ -32,12 +32,22 @@
     },
     "expected": {
       "calories_min": 200,
-      "calories_max": 380,
+      "calories_max": 340,
+      "min_aggregate_proteins": 20,
+      "min_scaled_proteins": {
+        "canned tuna": 18
+      },
       "allowed_matches": {
         "potato": [
           "Potatoes, without salt, flesh, cooked without skin, boiled",
           "Potatoes, without salt, flesh, cooked in skin, boiled"
         ]
+      },
+      "match_all_substrings": {
+        "canned tuna": ["tuna", "canned"]
+      },
+      "match_any_substrings": {
+        "canned tuna": ["drained solids", "in water", "in oil"]
       },
       "forbidden_match_contains": {
         "potato": [
@@ -51,7 +61,16 @@
           "french fried",
           "hash brown"
         ],
-        "canned tuna": ["powder", "dry", "babyfood"]
+        "canned tuna": [
+          "powder",
+          "babyfood",
+          "fish oil",
+          "salad",
+          "soup",
+          "sauce",
+          "spread",
+          "roe"
+        ]
       }
     }
   },
@@ -72,7 +91,7 @@
       "forbidden_match_contains": {
         "white beans": ["raw", "dry", "uncooked"]
       },
-      "required_match_contains_any": {
+      "required_contains_any": {
         "white beans": ["boiled", "cooked", "canned"]
       }
     }

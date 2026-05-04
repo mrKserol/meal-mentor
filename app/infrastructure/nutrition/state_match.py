@@ -150,6 +150,83 @@ def _beverage_candidate_adjustment(n: str) -> tuple[float, list[str]]:
     return max(score, -260.0), reasons
 
 
+def _tuna_canned_adjustment(n: str, ing: str, query_lower: str) -> tuple[float, list[str]]:
+    """Boost real canned tuna rows; penalize oil, salad, soups, non-tuna fish for canned queries."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    blob = f"{ing} {query_lower}".lower()
+    wants_oil = any(
+        x in blob
+        for x in (
+            " in oil",
+            "in oil",
+            "oil pack",
+            "масло",
+            "tuna in oil",
+            "canned tuna in oil",
+            "canned in oil",
+        )
+    )
+
+    if "tuna" in nl:
+        score += 60
+        reasons.append("+60:tuna_word")
+    if "canned" in nl:
+        score += 45
+        reasons.append("+45:tuna_canned")
+    if "drained solids" in nl:
+        score += 35
+        reasons.append("+35:tuna_drained_solids")
+    if "in water" in nl and not wants_oil:
+        score += 25
+        reasons.append("+25:tuna_in_water")
+    if "in oil" in nl and wants_oil:
+        score += 25
+        reasons.append("+25:tuna_in_oil")
+    if "light" in nl or "white" in nl:
+        score += 15
+        reasons.append("+15:tuna_light_or_white")
+
+    if "fish oil" in nl:
+        score -= 100
+        reasons.append("-100:tuna_fish_oil")
+    if "babyfood" in nl:
+        score -= 90
+        reasons.append("-90:tuna_babyfood")
+    if "salad" in nl and "salad" not in blob and "салат" not in blob:
+        score -= 80
+        reasons.append("-80:tuna_salad_mismatch")
+    for bad, tag in (
+        ("soup", "tuna_soup"),
+        ("sauce", "tuna_sauce"),
+        ("spread", "tuna_spread"),
+    ):
+        if bad in nl:
+            score -= 80
+            reasons.append(f"-80:{tag}")
+    if re.search(r"\braw\b", nl) or ", raw" in nl:
+        score -= 80
+        reasons.append("-80:tuna_raw_product")
+    if "smoked" in nl:
+        score -= 80
+        reasons.append("-80:tuna_smoked")
+    if re.search(r"\bfresh\b", nl):
+        score -= 60
+        reasons.append("-60:tuna_fresh")
+    if re.search(r"\bdry\b", nl) or "dry heat" in nl:
+        score -= 60
+        reasons.append("-60:tuna_dry")
+    if "roe" in nl:
+        score -= 60
+        reasons.append("-60:tuna_roe")
+    if "tuna" not in nl:
+        score -= 60
+        reasons.append("-60:not_tuna")
+
+    return max(score, -280.0), reasons
+
+
 def _egg_whole_boiled_adjustment(n: str, ing: str) -> tuple[float, list[str]]:
     """Prefer whole hard-boiled eggs when user asks for boiled eggs."""
     reasons: list[str] = []
@@ -227,6 +304,7 @@ def state_score(
     is_grain_like: bool,
     is_legume_like: bool = False,
     is_poultry_breast_query: bool = False,
+    is_tuna_like: bool = False,
 ) -> tuple[float, list[str]]:
     """
     Returns (score_adjustment, reason strings).
@@ -391,6 +469,11 @@ def state_score(
         eb, er = _egg_whole_boiled_adjustment(n, ing)
         score += eb
         reasons.extend(er)
+
+    if is_tuna_like and rs == "canned":
+        tu, tr = _tuna_canned_adjustment(n, ing, query_lower)
+        score += tu
+        reasons.extend(tr)
 
     if is_legume_like and rs in ("cooked", "boiled"):
         le, lr = _legume_cooked_boiled_extra(n, query_lower)

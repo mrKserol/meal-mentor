@@ -236,6 +236,18 @@ def is_egg_like_name(name: str) -> bool:
     return False
 
 
+def is_tuna_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True for canned/fresh tuna queries (not generic fish)."""
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if "тунец" in blob or "тунца" in blob or "тунцом" in blob:
+        return True
+    if "tuna" in blob:
+        return True
+    if ni.alias_category == "fish" and "tuna" in ni.canonical_query.lower():
+        return True
+    return False
+
+
 def is_poultry_breast_query(ni: NormalizedIngredient) -> bool:
     blob = f"{ni.input_name} {ni.canonical_query}".lower()
     if "wing" in blob or "thigh" in blob or "drumstick" in blob:

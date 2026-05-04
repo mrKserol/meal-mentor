@@ -85,6 +85,12 @@ NUTRITION_ENABLE_SEMANTIC = os.getenv("NUTRITION_ENABLE_SEMANTIC", "false").lowe
     "yes",
 )
 
+# Nutrition matching: INFO logs with top candidates per ingredient (see NutritionService).
+# Read at runtime via nutrition_debug_matching() so tests can toggle os.environ without reload.
+def nutrition_debug_matching() -> bool:
+    return os.getenv("NUTRITION_DEBUG_MATCHING", "0").lower() in ("1", "true", "yes")
+
+
 # Telegram
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_AUTH_MAX_AGE_SECONDS = int(os.getenv("TELEGRAM_AUTH_MAX_AGE_SECONDS", "86400"))

@@ -149,10 +149,71 @@ def test_milk_tea_not_powder_low_calories(nutrition_svc: NutritionService) -> No
     assert int(data.get("calories") or 0) < 50
 
 
-def test_milk_tea_debug_log(caplog: pytest.LogCaptureFixture, nutrition_svc: NutritionService) -> None:
+def test_nutrition_debug_log_when_env_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    nutrition_svc: NutritionService,
+) -> None:
+    monkeypatch.setenv("NUTRITION_DEBUG_MATCHING", "1")
     caplog.set_level(logging.INFO)
     nutrition_svc.search({"milk tea": {"grams": 200, "state": "unknown"}})
-    assert any("nutrition_milk_tea_debug" in r.message for r in caplog.records)
+    assert any("nutrition_match_debug" in r.message for r in caplog.records)
+
+
+def test_canned_tuna_100g_water_match_and_protein(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"canned tuna": {"grams": 100, "state": "canned"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "tuna" in m and "canned" in m
+    assert "drained solids" in m or "in water" in m or "in oil" in m
+    for bad in (
+        "fish oil",
+        "babyfood",
+        "salad",
+        "soup",
+        "sauce",
+        "spread",
+        "roe",
+    ):
+        assert bad not in m
+    assert "raw" not in m
+    cal = int(data.get("calories") or 0)
+    assert 80 <= cal <= 180, f"canned tuna (water) calories {cal} expected ~86"
+    assert float(data.get("proteins", 0) or 0) >= 18.0
+
+
+def test_tuna_in_oil_vs_water_calories_and_protein(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    w = nutrition_svc.search({"canned tuna": {"grams": 100, "state": "canned"}})
+    o = nutrition_svc.search({"тунец в масле": {"grams": 100, "state": "canned"}})
+    dw = list(w[0].values())[0]
+    do = list(o[0].values())[0]
+    assert dw and do
+    assert "oil" in (do.get("match") or "").lower()
+    assert int(do.get("calories") or 0) > int(dw.get("calories") or 0)
+    assert float(do.get("proteins", 0) or 0) >= 18.0
+
+
+def test_potato_tuna_onion_combo_macros(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    ing = {
+        "canned tuna": {"grams": 100, "state": "canned"},
+        "potato": {"grams": 150, "state": "boiled"},
+        "onion": {"grams": 30, "state": "raw"},
+    }
+    full = nutrition_svc.aggregate_nutrition_full(ing)
+    assert full is not None
+    total_cal = int(round(float(full.get("calories", 0) or 0)))
+    total_p = float(full.get("proteins", 0) or 0)
+    assert 200 <= total_cal <= 340, f"combo calories {total_cal}"
+    assert total_p >= 20.0, f"combo proteins {total_p}"
+    flat = flatten_search_results(nutrition_svc.search(ing))
+    assert float(flat["canned tuna"].get("proteins", 0) or 0) >= 18.0
 
 
 def test_coffee_with_milk_not_powder(nutrition_svc: NutritionService) -> None:
@@ -295,6 +356,53 @@ def assert_expected_states(
         assert got == want, f"{case_name}: {ing!r} state want {want!r}, got {got!r}"
 
 
+def assert_match_all_substrings(
+    flat: dict[str, dict[str, Any]],
+    spec: dict[str, list[str]],
+    *,
+    case_name: str,
+) -> None:
+    for ing, needles in spec.items():
+        m = str(flat.get(ing, {}).get("match") or "").lower()
+        for needle in needles:
+            assert needle.lower() in m, (
+                f"{case_name}: {ing!r} match must contain {needle!r}, got {m!r}"
+            )
+
+
+def assert_match_any_substrings(
+    flat: dict[str, dict[str, Any]],
+    spec: dict[str, list[str]],
+    *,
+    case_name: str,
+) -> None:
+    for ing, needles in spec.items():
+        m = str(flat.get(ing, {}).get("match") or "").lower()
+        assert any(n.lower() in m for n in needles), (
+            f"{case_name}: {ing!r} match must contain one of {needles!r}, got {m!r}"
+        )
+
+
+def assert_min_aggregate_proteins(
+    aggregate_full: dict[str, Any], minimum: float, *, case_name: str
+) -> None:
+    p = float(aggregate_full.get("proteins", 0) or 0)
+    assert p >= minimum, f"{case_name}: aggregate proteins {p} < {minimum}"
+
+
+def assert_min_scaled_proteins(
+    flat: dict[str, dict[str, Any]],
+    spec: dict[str, float],
+    *,
+    case_name: str,
+) -> None:
+    for ing, minimum in spec.items():
+        p = float(flat.get(ing, {}).get("proteins", 0) or 0)
+        assert p >= minimum, (
+            f"{case_name}: {ing!r} scaled proteins {p} < {minimum}"
+        )
+
+
 def _run_nutrition_case(nutrition_svc: NutritionService, case: dict[str, Any]) -> None:
     if not nutrition_svc.aliases.is_loaded:
         pytest.skip("food_aliases.json not loaded")
@@ -319,6 +427,19 @@ def _run_nutrition_case(nutrition_svc: NutritionService, case: dict[str, Any]) -
         flat, expected.get("forbidden_match_contains") or {}, case_name=name
     )
     assert_expected_states(flat, expected.get("expected_states") or {}, case_name=name)
+    assert_match_all_substrings(
+        flat, expected.get("match_all_substrings") or {}, case_name=name
+    )
+    assert_match_any_substrings(
+        flat, expected.get("match_any_substrings") or {}, case_name=name
+    )
+    if "min_aggregate_proteins" in expected:
+        assert_min_aggregate_proteins(
+            full, float(expected["min_aggregate_proteins"]), case_name=name
+        )
+    assert_min_scaled_proteins(
+        flat, expected.get("min_scaled_proteins") or {}, case_name=name
+    )
 
 
 @pytest.mark.parametrize("case", load_fixture_cases(), ids=lambda c: str(c.get("name")))

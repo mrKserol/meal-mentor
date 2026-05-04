@@ -6,13 +6,19 @@ from typing import Any
 
 import pandas as pd
 
-from app.core.config import FOOD_ALIASES_PATH, NUTRITION_CSV_PATH, NUTRITION_ENABLE_SEMANTIC
+from app.core.config import (
+    FOOD_ALIASES_PATH,
+    NUTRITION_CSV_PATH,
+    NUTRITION_ENABLE_SEMANTIC,
+    nutrition_debug_matching,
+)
 from app.infrastructure.nutrition.food_aliases import FoodAliasIndex
 from app.infrastructure.nutrition.ingredient_input import (
     NormalizedIngredient,
     is_grain_like_ingredient,
     is_legume_like_ingredient,
     is_poultry_breast_query,
+    is_tuna_like_ingredient,
     parse_ingredients_dict,
 )
 from app.infrastructure.nutrition.state_match import state_score
@@ -226,6 +232,7 @@ class NutritionService:
         grain = is_grain_like_ingredient(ni)
         legume = is_legume_like_ingredient(ni)
         poultry_breast = is_poultry_breast_query(ni)
+        tuna_like = is_tuna_like_ingredient(ni)
         out: list[NutritionCandidate] = []
         for name_key, text_score in raw_candidates:
             row = self._data.get(name_key) or {}
@@ -238,6 +245,7 @@ class NutritionService:
                 is_grain_like=grain,
                 is_legume_like=legume,
                 is_poultry_breast_query=poultry_breast,
+                is_tuna_like=tuna_like,
             )
             exact_bonus, exact_reasons = self._exact_row_bonus(ni.canonical_query, display)
             final = float(text_score) + float(st) + exact_bonus
@@ -266,14 +274,14 @@ class NutritionService:
         if not raw:
             raw = self._candidate_search(ni.input_name, limit=20)
         ranked = self._rerank_candidates(ni, raw)
-        if ni.input_name.strip().lower() == "milk tea":
+        if nutrition_debug_matching():
             detail = [
                 f"{c.display_name!r} final={c.final_score:.1f} text={c.text_score:.1f} "
                 f"state_adj={c.state_score:.1f} reasons={c.reasons[:10]}"
                 for c in ranked[:15]
             ]
             logger.info(
-                "nutrition_milk_tea_debug ingredient=%r state=%r canonical_query=%r "
+                "nutrition_match_debug ingredient=%r state=%r canonical_query=%r "
                 "grams=%s candidates=[%s] selected=%r",
                 ni.input_name,
                 ni.state,
