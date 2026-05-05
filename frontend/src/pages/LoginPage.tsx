@@ -75,10 +75,10 @@ export function LoginPage() {
 
       <main className="w-full max-w-[420px] z-10">
         <div className="flex flex-col items-center mb-xl">
-          <div className="w-20 h-20 mb-md bg-white rounded-xl shadow-[0_4px_12px_rgba(46,204,113,0.1)] flex items-center justify-center overflow-hidden border border-outline-variant/30">
+          <div className="w-32 h-32 mb-md bg-white rounded-2xl shadow-[0_8px_24px_rgba(46,204,113,0.18)] flex items-center justify-center overflow-hidden border border-outline-variant/30">
             <img
               alt="Robot Mentor Logo"
-              className="w-14 h-14 object-contain"
+              className="w-28 h-28 object-contain"
               src={mentorLoginLogo}
             />
           </div>
@@ -100,13 +100,8 @@ export function LoginPage() {
           </button>
 
           <div className="relative bg-secondary-container/30 p-md rounded-xl border border-secondary-container/50 flex gap-md items-start mt-lg">
-            <div className="shrink-0 text-primary-container">
-              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-                smart_toy
-              </span>
-            </div>
             <p className="font-body-md text-label-sm text-on-secondary-container">
-              © 2026 Meal Mentor. Разработка: Алмаз Садыков
+              © 2026 Meal Mentor. Разработка: Алмаз Садыков Telegram: @KritBong
             </p>
           </div>
         </div>
