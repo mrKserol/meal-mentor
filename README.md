@@ -115,9 +115,16 @@ alembic upgrade head
 
 ## Тесты nutrition matching
 
-В проекте есть **регрессионные и smoke-тесты** для подбора строк из `data/nutrition.csv` (через `NutritionService`, алиасы `data/food_aliases.json`, RapidFuzz и state-reranking). Они **не ходят в сеть**, не вызывают OpenAI, Telegram и API — только локальный CSV и JSON.
+В проекте есть **регрессионные и smoke-тесты** для подбора строк из `data/nutrition.csv` (через `NutritionService`, алиасы `data/food_aliases.json`, RapidFuzz, state-reranking и category-aware matching layer). Они **не ходят в сеть**, не вызывают OpenAI, Telegram и API — только локальный CSV и JSON.
 
-Зачем: ловить типичные ошибки матчинга, когда готовая еда попадает на сухой/сырой/порошковый или нерелевантный продукт (и наоборот), из-за чего **КБЖУ уезжают** (например, варёная гречка → сухая, `milk tea` → сухая смесь, варёное яйцо → почти нулевые калории, финики → «сырой» низкокалорийный ряд).
+Зачем: ловить типичные ошибки матчинга, когда готовая еда попадает на сухой/сырой/порошковый или нерелевантный продукт (и наоборот), из-за чего **КБЖУ уезжают** (например, варёная гречка → сухая, `milk tea` → сухая смесь, варёное яйцо → почти нулевые калории, финики → «сырой» низкокалорийный ряд, `beef rice beans salad` → mismatch между plain beef и beef dish row).
+
+Матчинг теперь учитывает:
+- aliases;
+- ingredient state;
+- ingredient category;
+- forbidden terms / category penalties;
+- regression fixtures.
 
 Фикстуры с «золотыми» сценариями (набор ингредиентов + ожидаемые диапазоны калорий и ограничения на выбранную строку `match`):
 
@@ -139,6 +146,8 @@ pytest tests/test_nutrition_matching.py
 3. закрепите регрессию fixture-кейсом;
 4. прогоните `pytest tests/test_nutrition_matching.py`.
 Пример: раньше `"cooked grains"` мог матчиться в высокобелковую/высокожировую строку; теперь это покрыто fixture и безопасно сводится к cooked oats/oat groats.
+
+Новые реальные ошибки matching нужно превращать в fixture case. Это дешевле и надёжнее, чем потом ловить регрессию вручную.
 
 ## API: веб-пользователь (Bearer)
 

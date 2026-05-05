@@ -6137,52 +6137,57 @@
     "beef": {
       "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
       "default_state": "cooked",
-      "category": "meat"
+      "category": "beef"
     },
     "cooked beef": {
       "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
       "default_state": "cooked",
-      "category": "meat"
+      "category": "beef"
     },
     "beef meat": {
       "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
       "default_state": "cooked",
-      "category": "meat"
+      "category": "beef"
     },
     "говядина": {
       "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
       "default_state": "cooked",
-      "category": "meat"
+      "category": "beef"
     },
     "вареная говядина": {
       "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
       "default_state": "cooked",
-      "category": "meat"
+      "category": "beef"
     },
     "варёная говядина": {
       "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
       "default_state": "cooked",
-      "category": "meat"
+      "category": "beef"
     },
     "тушеная говядина": {
       "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
       "default_state": "cooked",
-      "category": "meat"
+      "category": "beef"
     },
     "тушёная говядина": {
       "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
       "default_state": "cooked",
-      "category": "meat"
+      "category": "beef"
     },
     "жареная говядина": {
       "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
       "default_state": "cooked",
-      "category": "meat"
+      "category": "beef"
     },
     "запеченная говядина": {
       "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
       "default_state": "cooked",
-      "category": "meat"
+      "category": "beef"
+    },
+    "kidney beans": {
+      "canonical": "Beans, without salt, boiled, cooked, mature seeds, red, kidney",
+      "default_state": "cooked",
+      "category": "legume"
     },
     "крупа гречневая": {
       "canonical": "Buckwheat groats, dry, roasted",

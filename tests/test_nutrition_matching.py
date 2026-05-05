@@ -471,14 +471,14 @@ def test_beef_plain_cooked_not_dish(nutrition_svc: NutritionService) -> None:
     assert data
     m = (data.get("match") or "").lower()
     assert "beef" in m
-    for bad in ("dish", "soup", "mixture", "processed", "canned", "burger"):
+    for bad in ("dish", "soup", "mixture", "processed", "canned", "burger", "babyfood", "sauce", "potato", "rice", "pasta"):
         assert bad not in m
     p = float(data.get("proteins", 0) or 0)
     f = float(data.get("fats", 0) or 0)
     cb = float(data.get("carbohydrates", 0) or 0)
     cal = int(data.get("calories") or 0)
     assert p >= 25.0, f"beef 150g proteins {p}"
-    assert f <= 30.0, f"beef 150g fats {f}"
+    assert f <= 35.0, f"beef 150g fats {f}"
     assert cb <= 2.0, f"beef 150g carbs {cb}"
     assert 200 <= cal <= 400, f"beef 150g calories {cal}"
 

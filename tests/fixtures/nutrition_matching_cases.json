@@ -425,26 +425,33 @@
   },
   {
     "name": "beef rice beans salad",
-    "description": "Cooked beef with rice, beans and salad vegetables",
+    "description": "Cooked beef with rice, kidney beans and vegetable salad",
     "ingredients": {
       "beef": {"grams": 150, "state": "cooked"},
-      "rice": {"grams": 150, "state": "cooked"},
-      "white beans": {"grams": 80, "state": "cooked"},
-      "cucumber": {"grams": 60, "state": "raw"},
-      "tomato": {"grams": 60, "state": "raw"}
+      "rice": {"grams": 100, "state": "cooked"},
+      "kidney beans": {"grams": 80, "state": "cooked"},
+      "tomato": {"grams": 30, "state": "raw"},
+      "cucumber": {"grams": 30, "state": "raw"},
+      "parsley": {"grams": 10, "state": "raw"},
+      "dill": {"grams": 5, "state": "raw"}
     },
     "expected": {
       "calories_min": 500,
-      "calories_max": 800,
-      "protein_min": 25,
+      "calories_max": 850,
+      "protein_min": 35,
       "fat_min": 10,
-      "fat_max": 40,
-      "carbohydrates_min": 30,
+      "fat_max": 45,
+      "carbohydrates_min": 35,
+      "carbohydrates_max": 80,
       "required_contains_any": {
-        "beef": ["beef"]
+        "beef": ["beef"],
+        "rice": ["rice"],
+        "kidney beans": ["bean"]
       },
       "forbidden_match_contains": {
-        "beef": ["dish", "soup", "mixture", "processed", "canned", "burger"]
+        "beef": ["dish", "soup", "mixture", "processed", "canned", "burger", "babyfood", "sauce", "potato", "rice", "pasta"],
+        "rice": ["dry", "uncooked", "flour", "crackers"],
+        "kidney beans": ["raw", "dry", "uncooked"]
       }
     }
   }

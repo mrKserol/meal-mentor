@@ -699,6 +699,140 @@ def _grain_cooked_extra(n: str) -> tuple[float, list[str]]:
     return score, reasons
 
 
+def _category_common_adjustment(
+    candidate_name: str,
+    *,
+    query: str,
+    ingredient_input: str,
+    categories: set[str] | frozenset[str],
+    requested_state: str,
+) -> tuple[float, list[str]]:
+    """
+    Safe generic layer on top of state-aware scoring.
+    Keeps existing specialized helpers intact, but adds broad category penalties/bonuses.
+    """
+    reasons: list[str] = []
+    score = 0.0
+    nl = candidate_name.lower()
+    ql = query.lower()
+    il = ingredient_input.lower()
+    rs = (requested_state or "unknown").lower()
+    cats = set(categories)
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    def q_has(*words: str) -> bool:
+        blob = f"{ql} {il}"
+        return any(w in blob for w in words)
+
+    # Meat / beef
+    if "meat" in cats or "beef" in cats:
+        if "meat only" in nl:
+            add(40, "cat_meat_only")
+        if rs in ("cooked", "boiled", "fried", "baked", "grilled", "roasted") and any(
+            x in nl for x in ("cooked", "stewed", "roasted", "grilled", "fried", "braised")
+        ):
+            add(35, "cat_meat_state_aligned")
+        if "beef" in cats and "beef" in nl:
+            add(30, "cat_beef_word")
+        for bad in ("dish", "mixture", "soup", "sauce"):
+            if bad in nl and not q_has(bad):
+                add(-90, f"cat_meat_bad_{bad}")
+        for bad in ("babyfood", "fast food", "processed"):
+            if bad in nl and not q_has(bad):
+                add(-80, f"cat_meat_bad_{bad.replace(' ', '_')}")
+        if "canned" in nl and rs != "canned":
+            add(-80, "cat_meat_canned")
+        if "burger" in nl and not q_has("burger"):
+            add(-80, "cat_meat_burger")
+        if "ground" in nl and not q_has("ground", "minced", "farsh", "фарш"):
+            add(-70, "cat_meat_ground")
+        if any(x in nl for x in ("breaded", "battered")):
+            add(-70, "cat_meat_breaded")
+        if "beef" in cats and not q_has("rice", "pasta", "potato", "карто", "рис", "макарон"):
+            for bad in ("rice", "pasta", "potato"):
+                if bad in nl:
+                    add(-70, f"cat_meat_with_{bad}")
+
+    # Poultry
+    if "poultry" in cats:
+        if any(x in nl for x in ("chicken", "turkey")):
+            add(25, "cat_poultry_plain")
+        for bad in ("nuggets", "breaded", "fast food", "patty", "sausage", "spread"):
+            if bad in nl and not q_has(bad):
+                add(-80, f"cat_poultry_bad_{bad.replace(' ', '_')}")
+        if "canned" in nl and rs != "canned":
+            add(-80, "cat_poultry_canned")
+
+    # Seafood / fish
+    if any(x in cats for x in ("seafood", "fish", "shrimp", "tuna")):
+        if any(x in nl for x in ("fish", "seafood", "shrimp", "tuna", "crustaceans")):
+            add(20, "cat_seafood_plain")
+        for bad in ("breaded", "battered", "tempura", "sauce", "salad", "soup", "mixture", "fast food"):
+            if bad in nl and not q_has(bad):
+                add(-70, f"cat_seafood_bad_{bad.replace(' ', '_')}")
+
+    # Grains
+    if "grain" in cats:
+        if rs == "cooked" and any(x in nl for x in ("cooked", "boiled", "with water")):
+            add(20, "cat_grain_cooked")
+        if rs == "cooked":
+            for bad in ("dry", "uncooked", "unprepared", "flour", "dry mix"):
+                if bad in nl and not q_has(bad):
+                    add(-60, f"cat_grain_bad_{bad.replace(' ', '_')}")
+
+    # Legumes
+    if "legume" in cats and rs in ("cooked", "boiled"):
+        if any(x in nl for x in ("cooked", "boiled", "canned")):
+            add(20, "cat_legume_prepared")
+        for bad in ("raw", "dry", "unprepared"):
+            if bad in nl and not q_has(bad):
+                add(-60, f"cat_legume_bad_{bad}")
+
+    # Vegetables
+    if "vegetable" in cats:
+        if rs in ("raw", "cooked", "boiled", "canned"):
+            if rs == "raw" and "raw" in nl:
+                add(15, "cat_veg_raw")
+            if rs in ("cooked", "boiled") and any(x in nl for x in ("cooked", "boiled", "steamed")):
+                add(15, "cat_veg_cooked")
+            if rs == "canned" and "canned" in nl:
+                add(15, "cat_veg_canned")
+        for bad in ("snacks", "chips", "flour", "bread", "soup", "sauce", "babyfood"):
+            if bad in nl and not q_has(bad):
+                add(-60, f"cat_veg_bad_{bad}")
+
+    # Dairy / cheese / cottage cheese
+    if "dairy" in cats or "cheese" in cats or "cottage_cheese" in cats:
+        if "cottage_cheese" not in cats:
+            for bad in ("dessert", "cheesecake"):
+                if bad in nl and not q_has(bad):
+                    add(-60, f"cat_dairy_bad_{bad}")
+            if "processed" in nl and not q_has("processed"):
+                add(-50, "cat_dairy_processed")
+
+    # Seed / nut
+    if "seed" in cats or "nut" in cats:
+        if any(x in nl for x in ("seed", "seeds", "kernel", "kernels", "nut", "nuts")):
+            add(20, "cat_seed_nut_plain")
+        for bad in ("oil", "flour", "meal", "butter", "beverage", "soup", "babyfood"):
+            if bad in nl and not q_has(bad):
+                add(-70, f"cat_seed_nut_bad_{bad}")
+
+    # Beverages
+    if "beverage" in cats or "tea" in cats or "coffee" in cats:
+        if any(x in nl for x in ("brewed", "prepared with tap water", "prepared with distilled water")):
+            add(20, "cat_beverage_brewed")
+        for bad in ("powder", "dry mix", "milkshake mix", "protein powder", "cereal", "dessert"):
+            if bad in nl and not q_has(bad):
+                add(-70, f"cat_beverage_bad_{bad.replace(' ', '_')}")
+
+    return score, reasons
+
+
 def state_score(
     requested_state: str,
     candidate_name: str,
@@ -706,6 +840,7 @@ def state_score(
     query: str,
     ingredient_input: str = "",
     candidate_carbs_per100: float = 0.0,
+    categories: tuple[str, ...] = (),
     is_grain_like: bool,
     is_legume_like: bool = False,
     is_poultry_breast_query: bool = False,
@@ -749,6 +884,16 @@ def state_score(
     has_grilled = "grilled" in n
     has_roasted = "roasted" in n
     has_canned = any(x in n for x in canned_markers)
+
+    common, common_reasons = _category_common_adjustment(
+        candidate_name,
+        query=query,
+        ingredient_input=ingredient_input,
+        categories=frozenset(categories),
+        requested_state=rs,
+    )
+    score += common
+    reasons.extend(common_reasons)
 
     if rs != "unknown":
         if rs == "cooked":

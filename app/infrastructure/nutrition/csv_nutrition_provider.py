@@ -261,6 +261,7 @@ class NutritionService:
                 query=ni.canonical_query,
                 ingredient_input=ni.input_name,
                 candidate_carbs_per100=float(row.get("carbohydrates") or 0),
+                categories=ni.categories,
                 is_grain_like=grain,
                 is_legume_like=legume,
                 is_poultry_breast_query=poultry_breast,
