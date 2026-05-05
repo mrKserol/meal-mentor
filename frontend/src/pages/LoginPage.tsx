@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 
 import { InstallPwaHint } from "../components/InstallPwaHint";
 import { useAuth } from "../hooks/useAuth";
+import mentorLoginLogo from "../assets/meal-mentor-login-logo.png";
 
 export function LoginPage() {
   const { isAuthenticated } = useAuth();
@@ -78,12 +79,12 @@ export function LoginPage() {
             <img
               alt="Robot Mentor Logo"
               className="w-14 h-14 object-contain"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8WOAfIdFkP6JxE4-yLUCwNZUClMHp-ubhR60BO0RGHc8p1_eKq12LLwtcLdcdauu-cmAUKG76zKxoUh4KQUMxAwBVSGirpO84klfMnw0TeSQR1z_Zjb1UlNOSlCqT5XqdXJeq1oX-4Y0OL4qd5tnLTBzX4-oQkXbOioHSjEGbQZoRNpLkccddEF1kDEvf0_Deu-d8aSmkNV4aVqXsdx00D8BzdSIJcCwYgYrENsXrL0zkIHB8LWEQBRIR15rA9zI60TrH69WZgogn"
+              src={mentorLoginLogo}
             />
           </div>
           <h1 className="font-h1 text-h1 text-on-surface mb-xs">Вход в Meal Mentor</h1>
           <p className="font-body-md text-on-surface-variant text-center px-lg">
-            Войдите через Telegram — ваш персональный ИИ-диетолог
+            Войдите через Telegram — ваш персональный AI-нутрициолог
           </p>
         </div>
 
@@ -104,8 +105,8 @@ export function LoginPage() {
                 smart_toy
               </span>
             </div>
-            <p className="font-body-md text-label-sm text-on-secondary-container italic">
-              «Привет! Давай продолжим путь к твоему идеальному рациону сегодня.»
+            <p className="font-body-md text-label-sm text-on-secondary-container">
+              © 2026 Meal Mentor. Разработка: Алмаз Садыков
             </p>
           </div>
         </div>
