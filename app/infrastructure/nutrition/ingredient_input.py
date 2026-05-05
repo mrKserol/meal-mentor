@@ -395,6 +395,11 @@ def is_generic_grain_query(ni: NormalizedIngredient) -> bool:
     return any(g in blob for g in generic)
 
 
+def is_beef_like_ingredient(ni: NormalizedIngredient) -> bool:
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    return "beef" in blob or "говядин" in blob
+
+
 def is_poultry_breast_query(ni: NormalizedIngredient) -> bool:
     blob = f"{ni.input_name} {ni.canonical_query}".lower()
     if "wing" in blob or "thigh" in blob or "drumstick" in blob:

@@ -422,5 +422,30 @@
         "tea": ["powder", "dry mix", "instant", "milkshake mix", "protein powder"]
       }
     }
+  },
+  {
+    "name": "beef rice beans salad",
+    "description": "Cooked beef with rice, beans and salad vegetables",
+    "ingredients": {
+      "beef": {"grams": 150, "state": "cooked"},
+      "rice": {"grams": 150, "state": "cooked"},
+      "white beans": {"grams": 80, "state": "cooked"},
+      "cucumber": {"grams": 60, "state": "raw"},
+      "tomato": {"grams": 60, "state": "raw"}
+    },
+    "expected": {
+      "calories_min": 500,
+      "calories_max": 800,
+      "protein_min": 25,
+      "fat_min": 10,
+      "fat_max": 40,
+      "carbohydrates_min": 30,
+      "required_contains_any": {
+        "beef": ["beef"]
+      },
+      "forbidden_match_contains": {
+        "beef": ["dish", "soup", "mixture", "processed", "canned", "burger"]
+      }
+    }
   }
 ]

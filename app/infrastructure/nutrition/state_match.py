@@ -589,6 +589,48 @@ def _generic_grain_candidate_adjustment(
     return max(score, -420.0), reasons
 
 
+def _beef_candidate_adjustment(
+    n: str,
+    query_lower: str,
+    candidate_carbs_per100: float = 0.0,
+) -> tuple[float, list[str]]:
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if "beef" in nl:
+        add(80, "beef_word")
+    if "meat only" in nl:
+        add(50, "meat_only")
+    if "cooked" in nl:
+        add(40, "cooked")
+    if "stewed" in nl or "roasted" in nl or "braised" in nl:
+        add(30, "stewed_or_roasted")
+
+    for bad in ("dish", "mixture", "with sauce", "soup"):
+        if bad in nl and bad not in query_lower:
+            add(-120, f"beef_bad_{bad.replace(' ', '_')}")
+    if "stew" in nl and "vegetable" in nl:
+        add(-120, "beef_stew_with_vegetables")
+
+    for bad in ("processed", "canned", "babyfood", "fast food", "burger", "mixed"):
+        if bad in nl and bad not in query_lower:
+            add(-100, f"beef_bad_{bad.replace(' ', '_')}")
+    if "ground" in nl and "ground" not in query_lower:
+        add(-100, "beef_ground_mismatch")
+    if "carbs" in nl:
+        add(-100, "beef_bad_carbs_keyword")
+    if (candidate_carbs_per100 or 0) > 0:
+        add(-100, "beef_positive_carbs")
+
+    return max(score, -420.0), reasons
+
+
 def _egg_whole_boiled_adjustment(n: str, ing: str) -> tuple[float, list[str]]:
     """Prefer whole hard-boiled eggs when user asks for boiled eggs."""
     reasons: list[str] = []
@@ -663,6 +705,7 @@ def state_score(
     *,
     query: str,
     ingredient_input: str = "",
+    candidate_carbs_per100: float = 0.0,
     is_grain_like: bool,
     is_legume_like: bool = False,
     is_poultry_breast_query: bool = False,
@@ -671,6 +714,7 @@ def state_score(
     corn_like_q: bool = False,
     beer_q: bool = False,
     generic_grain_query: bool = False,
+    beef_q: bool = False,
     tea_drink_q: bool = False,
     cottage_cheese_q: bool = False,
     banana_fruit_q: bool = False,
@@ -864,6 +908,11 @@ def state_score(
         gg, ggr = _generic_grain_candidate_adjustment(n, query_lower, rs)
         score += gg
         reasons.extend(ggr)
+
+    if beef_q:
+        bf, bfr = _beef_candidate_adjustment(n, query_lower, candidate_carbs_per100)
+        score += bf
+        reasons.extend(bfr)
 
     if is_legume_like and rs in ("cooked", "boiled"):
         le, lr = _legume_cooked_boiled_extra(n, query_lower)

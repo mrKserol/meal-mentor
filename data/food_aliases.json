@@ -6134,6 +6134,56 @@
       "default_state": "cooked",
       "category": "grain_generic_fallback"
     },
+    "beef": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "meat"
+    },
+    "cooked beef": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "meat"
+    },
+    "beef meat": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "meat"
+    },
+    "говядина": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "meat"
+    },
+    "вареная говядина": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "meat"
+    },
+    "варёная говядина": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "meat"
+    },
+    "тушеная говядина": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "meat"
+    },
+    "тушёная говядина": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "meat"
+    },
+    "жареная говядина": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "meat"
+    },
+    "запеченная говядина": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "meat"
+    },
     "крупа гречневая": {
       "canonical": "Buckwheat groats, dry, roasted",
       "default_state": "dry",

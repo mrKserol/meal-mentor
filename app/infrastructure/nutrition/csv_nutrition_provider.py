@@ -15,6 +15,7 @@ from app.core.config import (
 from app.infrastructure.nutrition.food_aliases import FoodAliasIndex
 from app.infrastructure.nutrition.ingredient_input import (
     is_beer_like_ingredient,
+    is_beef_like_ingredient,
     is_generic_grain_query,
     NormalizedIngredient,
     is_banana_fruit_like,
@@ -245,6 +246,7 @@ class NutritionService:
         corn_like = is_corn_like_ingredient(ni)
         beer_q = is_beer_like_ingredient(ni)
         generic_grain_q = is_generic_grain_query(ni)
+        beef_q = is_beef_like_ingredient(ni)
         tea_drink = is_tea_drink_query(ni)
         cottage = is_cottage_cheese_like(ni)
         banana_f = is_banana_fruit_like(ni)
@@ -258,6 +260,7 @@ class NutritionService:
                 display,
                 query=ni.canonical_query,
                 ingredient_input=ni.input_name,
+                candidate_carbs_per100=float(row.get("carbohydrates") or 0),
                 is_grain_like=grain,
                 is_legume_like=legume,
                 is_poultry_breast_query=poultry_breast,
@@ -266,6 +269,7 @@ class NutritionService:
                 corn_like_q=corn_like,
                 beer_q=beer_q,
                 generic_grain_query=generic_grain_q,
+                beef_q=beef_q,
                 tea_drink_q=tea_drink,
                 cottage_cheese_q=cottage,
                 banana_fruit_q=banana_f,
