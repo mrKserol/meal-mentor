@@ -5949,6 +5949,191 @@
       "default_state": "unknown",
       "category": "alcoholic_beverage"
     },
+    "oat groats": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "cooked oat groats": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "oats": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "cooked oats": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "whole oats": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "whole grain oats": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "овес": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "овёс": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "овсяные зерна": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "овсяные зёрна": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "цельный овес": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "цельный овёс": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "вареный овес": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "варёный овёс": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "отварной овес": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "отварной овёс": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "oatmeal": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "cooked oatmeal": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "овсянка": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "овсяная каша": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "каша овсяная": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "dry oats": {
+      "canonical": "Oats",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "oats dry": {
+      "canonical": "Oats",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "oat flakes": {
+      "canonical": "Oats",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "rolled oats": {
+      "canonical": "Oats",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "овсяные хлопья": {
+      "canonical": "Oats",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "сухая овсянка": {
+      "canonical": "Oats",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "сухие овсяные хлопья": {
+      "canonical": "Oats",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "cooked grains": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
+    "grains cooked": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
+    "cooked cereal grains": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
+    "вареные злаки": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
+    "варёные злаки": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
+    "вареные зерна": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
+    "варёные зёрна": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
+    "злаки вареные": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
+    "злаки варёные": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
     "крупа гречневая": {
       "canonical": "Buckwheat groats, dry, roasted",
       "default_state": "dry",

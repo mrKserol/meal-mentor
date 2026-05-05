@@ -360,5 +360,67 @@
         ]
       }
     }
+  },
+  {
+    "name": "oat groats breakfast grains fallback",
+    "description": "Generic cooked grains from LLM should safely map to cooked oats/oat groats, not high-protein/high-fat mix",
+    "ingredients": {
+      "cooked grains": {"grams": 150, "state": "cooked"}
+    },
+    "expected": {
+      "calories_min": 100,
+      "calories_max": 250,
+      "protein_max": 10,
+      "fat_max": 6,
+      "carbohydrates_min": 15,
+      "required_contains_any": {
+        "cooked grains": ["oat", "oats", "oatmeal"]
+      },
+      "forbidden_match_contains": {
+        "cooked grains": [
+          "protein",
+          "seed",
+          "snack",
+          "bar",
+          "granola",
+          "muesli",
+          "meal replacement",
+          "babyfood",
+          "ready-to-eat",
+          "dry",
+          "uncooked",
+          "unprepared"
+        ]
+      }
+    }
+  },
+  {
+    "name": "breakfast eggs nuts dates oat groats tea",
+    "description": "Breakfast with oat groats should map to cooked oats and keep tea beverage rows",
+    "ingredients": {
+      "boiled egg": {"grams": 100, "state": "boiled"},
+      "almonds": {"grams": 30, "state": "raw"},
+      "dates": {"grams": 40, "state": "dry"},
+      "chocolate truffle": {"grams": 20, "state": "unknown"},
+      "oat groats": {"grams": 150, "state": "cooked"},
+      "tea": {"grams": 200, "state": "unknown"},
+      "milk": {"grams": 50, "state": "unknown"}
+    },
+    "expected": {
+      "calories_min": 500,
+      "calories_max": 850,
+      "protein_min": 20,
+      "protein_max": 40,
+      "fat_min": 12,
+      "fat_max": 45,
+      "carbohydrates_min": 60,
+      "carbohydrates_max": 110,
+      "required_contains_any": {
+        "oat groats": ["oat", "oats", "oatmeal"]
+      },
+      "forbidden_match_contains": {
+        "tea": ["powder", "dry mix", "instant", "milkshake mix", "protein powder"]
+      }
+    }
   }
 ]

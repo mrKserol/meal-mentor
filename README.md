@@ -133,6 +133,13 @@ pytest tests/test_nutrition_matching.py
 
 Когда добавлять новые кейсы: после исправления бага в matching или алиасах добавьте объект в массив в `nutrition_matching_cases.json` (валидный JSON, без комментариев): `name`, `description`, `ingredients`, `expected` с полями вроде `calories_min` / `calories_max`, `protein_min` (минимум суммарного белка по блюду), `min_aggregate_proteins` (то же назначение, альтернативное имя), `aggregate_macros` (диапазоны суммарных `proteins` / `fats` / `carbohydrates`: массив `[min, max]` на ключ), `required_matches`, `allowed_matches`, `required_contains_any`, `forbidden_match_contains`, `expected_states`. Логику матчинга в тестах не дублируйте — только ожидания на результат.
 
+Примечание по generic ingredients: формулировки вроде `"cooked grains"`, `"mixed vegetables"`, `"meat"`, `"fish"` опасны для CSV matching и часто дают нерелевантную строку. Если generic ингредиент сломал match:
+1. усилите промпты, чтобы LLM возвращал конкретный ингредиент;
+2. добавьте alias/fallback только если действительно нужно;
+3. закрепите регрессию fixture-кейсом;
+4. прогоните `pytest tests/test_nutrition_matching.py`.
+Пример: раньше `"cooked grains"` мог матчиться в высокобелковую/высокожировую строку; теперь это покрыто fixture и безопасно сводится к cooked oats/oat groats.
+
 ## API: веб-пользователь (Bearer)
 
 Префикс веб-роутера пользователя: **`/users`** (теги в OpenAPI: users-web).

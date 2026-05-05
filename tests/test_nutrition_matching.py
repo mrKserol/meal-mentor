@@ -414,6 +414,55 @@ def test_light_beer(nutrition_svc: NutritionService) -> None:
     assert int(dl.get("calories") or 0) <= int(dr.get("calories") or 0)
 
 
+def test_cooked_grains_fallback_to_oats_not_mix(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"cooked grains": {"grams": 150, "state": "cooked"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert any(x in m for x in ("oat", "oats", "oatmeal"))
+    cal = int(data.get("calories") or 0)
+    p = float(data.get("proteins", 0) or 0)
+    f = float(data.get("fats", 0) or 0)
+    cb = float(data.get("carbohydrates", 0) or 0)
+    assert 100 <= cal <= 250, f"cooked grains 150g calories {cal}"
+    assert p <= 10.0, f"cooked grains 150g proteins {p}"
+    assert f <= 6.0, f"cooked grains 150g fats {f}"
+    assert cb >= 15.0, f"cooked grains 150g carbs {cb}"
+    for bad in ("protein", "seed", "snack", "bar", "granola", "muesli", "meal replacement", "babyfood", "ready-to-eat", "dry", "uncooked", "unprepared"):
+        assert bad not in m
+
+
+def test_oat_groats_cooked(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"oat groats": {"grams": 150, "state": "cooked"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "oat" in m
+    cal = int(data.get("calories") or 0)
+    p = float(data.get("proteins", 0) or 0)
+    f = float(data.get("fats", 0) or 0)
+    assert 100 <= cal <= 250, f"oat groats 150g calories {cal}"
+    assert p <= 10.0, f"oat groats 150g proteins {p}"
+    assert f <= 6.0, f"oat groats 150g fats {f}"
+
+
+def test_dry_oats_not_cooked(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"dry oats": {"grams": 100, "state": "dry"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "oat" in m
+    cal = int(data.get("calories") or 0)
+    assert 300 <= cal <= 450, f"dry oats 100g calories {cal}"
+    assert "cooked with water" not in m
+
+
 def load_fixture_cases() -> list[dict[str, Any]]:
     raw = json.loads(_FIXTURE_CASES_PATH.read_text(encoding="utf-8"))
     if not isinstance(raw, list):
@@ -591,6 +640,18 @@ def assert_max_aggregate_macros(
         assert val <= mx, f"{case_name}: aggregate {key}={val} > {mx}"
 
 
+def assert_min_aggregate_macros(
+    aggregate_full: dict[str, Any],
+    spec: dict[str, Any],
+    *,
+    case_name: str,
+) -> None:
+    for key, minimum in spec.items():
+        val = float(aggregate_full.get(key, 0) or 0)
+        mn = float(minimum)
+        assert val >= mn, f"{case_name}: aggregate {key}={val} < {mn}"
+
+
 def _run_nutrition_case(nutrition_svc: NutritionService, case: dict[str, Any]) -> None:
     if not nutrition_svc.aliases.is_loaded:
         pytest.skip("food_aliases.json not loaded")
@@ -629,6 +690,15 @@ def _run_nutrition_case(nutrition_svc: NutritionService, case: dict[str, Any]) -
         assert_min_aggregate_proteins(
             full, float(expected["protein_min"]), case_name=name
         )
+    min_macros: dict[str, Any] = {}
+    if "protein_min" in expected:
+        min_macros["proteins"] = expected["protein_min"]
+    if "fat_min" in expected:
+        min_macros["fats"] = expected["fat_min"]
+    if "carbohydrates_min" in expected:
+        min_macros["carbohydrates"] = expected["carbohydrates_min"]
+    if min_macros:
+        assert_min_aggregate_macros(full, min_macros, case_name=name)
     macros = expected.get("aggregate_macros")
     if isinstance(macros, dict) and macros:
         assert_aggregate_macros(full, macros, case_name=name)

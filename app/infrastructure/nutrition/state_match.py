@@ -536,6 +536,59 @@ def _beer_candidate_adjustment(n: str, query_lower: str) -> tuple[float, list[st
     return max(score, -380.0), reasons
 
 
+def _generic_grain_candidate_adjustment(
+    n: str,
+    query_lower: str,
+    requested_state: str,
+) -> tuple[float, list[str]]:
+    """Keep vague grain queries on plain cooked oats/cereal-with-water rows."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    rs = (requested_state or "unknown").lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if "oats" in nl or "oat" in nl:
+        add(50, "generic_grain_oats")
+    if "cooked" in nl:
+        add(40, "generic_grain_cooked")
+    if "with water" in nl:
+        add(30, "generic_grain_with_water")
+    if "without salt" in nl:
+        add(20, "generic_grain_without_salt")
+    if "cereal" in nl and ("cooked" in nl or "with water" in nl or "oat" in nl):
+        add(15, "generic_grain_cereal_cooked_oat")
+
+    for bad in ("protein", "seed", "nut", "snack", "bar", "granola", "muesli"):
+        if bad in nl and bad not in query_lower:
+            add(-120, f"generic_bad_{bad}")
+    if "mix" in nl and "cooked with water" not in nl and "with water" not in nl and "mix" not in query_lower:
+        add(-100, "generic_bad_mix")
+    for bad in ("meal replacement", "babyfood", "breakfast bar"):
+        if bad in nl and bad not in query_lower:
+            add(-100, f"generic_bad_{bad.replace(' ', '_')}")
+    if rs == "cooked":
+        for bad in ("dry", "uncooked", "unprepared"):
+            if bad in nl and bad not in query_lower:
+                add(-90, f"generic_bad_{bad}")
+    if "flour" in nl and "flour" not in query_lower:
+        add(-80, "generic_bad_flour")
+    if "bran" in nl and "bran" not in query_lower:
+        add(-80, "generic_bad_bran")
+    if "cereal, ready-to-eat" in nl:
+        add(-80, "generic_bad_ready_to_eat")
+    if "sugars" in nl:
+        add(-80, "generic_bad_sugars")
+    if "with milk" in nl and "milk" not in query_lower and "молок" not in query_lower:
+        add(-80, "generic_bad_with_milk")
+
+    return max(score, -420.0), reasons
+
+
 def _egg_whole_boiled_adjustment(n: str, ing: str) -> tuple[float, list[str]]:
     """Prefer whole hard-boiled eggs when user asks for boiled eggs."""
     reasons: list[str] = []
@@ -617,6 +670,7 @@ def state_score(
     seafood_like_q: bool = False,
     corn_like_q: bool = False,
     beer_q: bool = False,
+    generic_grain_query: bool = False,
     tea_drink_q: bool = False,
     cottage_cheese_q: bool = False,
     banana_fruit_q: bool = False,
@@ -805,6 +859,11 @@ def state_score(
         be, ber = _beer_candidate_adjustment(n, query_lower)
         score += be
         reasons.extend(ber)
+
+    if generic_grain_query:
+        gg, ggr = _generic_grain_candidate_adjustment(n, query_lower, rs)
+        score += gg
+        reasons.extend(ggr)
 
     if is_legume_like and rs in ("cooked", "boiled"):
         le, lr = _legume_cooked_boiled_extra(n, query_lower)

@@ -345,6 +345,56 @@ def is_beer_like_ingredient(ni: NormalizedIngredient) -> bool:
     return True
 
 
+def is_generic_grain_query(ni: NormalizedIngredient) -> bool:
+    """Detect vague grain queries ('cooked grains') but ignore specific grain names."""
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    specific = (
+        "buckwheat",
+        "rice",
+        "oat",
+        "oats",
+        "oat groats",
+        "oatmeal",
+        "barley",
+        "quinoa",
+        "bulgur",
+        "couscous",
+        "pasta",
+        "spaghetti",
+        "macaroni",
+        "millet",
+        "греч",
+        "рис",
+        "овес",
+        "овёс",
+        "овсян",
+        "перлов",
+        "киноа",
+        "булгур",
+        "кускус",
+        "макарон",
+        "пшено",
+    )
+    if any(s in blob for s in specific):
+        return False
+    generic = (
+        "grains",
+        "cooked grains",
+        "mixed grains",
+        "cereals",
+        "cereal grains",
+        "grain mix",
+        "злаки",
+        "зерна",
+        "зёрна",
+        "крупа",
+        "смесь круп",
+        "вареные злаки",
+        "варёные злаки",
+    )
+    return any(g in blob for g in generic)
+
+
 def is_poultry_breast_query(ni: NormalizedIngredient) -> bool:
     blob = f"{ni.input_name} {ni.canonical_query}".lower()
     if "wing" in blob or "thigh" in blob or "drumstick" in blob:
