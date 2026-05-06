@@ -110,6 +110,10 @@ def _rolling_30_days_utc_naive(user: User) -> tuple[datetime, datetime, date, da
 def _sum_meal_nutrition(meal: Meal) -> dict[str, int | float]:
     c = p = f = cb = 0
     fib = 0.0
+    sugar = 0.0
+    sodium_mg = 0.0
+    sat_fat = 0.0
+    water = 0.0
     for item in meal.items:
         n = item.nutrition
         if n is None:
@@ -119,7 +123,21 @@ def _sum_meal_nutrition(meal: Meal) -> dict[str, int | float]:
         f += n.fat_g or 0
         cb += n.carbs_g or 0
         fib += float(n.fiber_g or 0)
-    return {"calories": c, "protein_g": p, "fat_g": f, "carbs_g": cb, "fiber_g": round(fib, 2)}
+        sugar += float(n.sugar_g or 0)
+        sodium_mg += float(n.sodium_mg or 0)
+        sat_fat += float(n.saturated_fat_g or 0)
+        water += float(n.water_g or 0)
+    return {
+        "calories": c,
+        "protein_g": p,
+        "fat_g": f,
+        "carbs_g": cb,
+        "fiber_g": round(fib, 2),
+        "sugar_g": round(sugar, 2),
+        "sodium_mg": round(sodium_mg, 2),
+        "saturated_fat_g": round(sat_fat, 2),
+        "water_g": round(water, 2),
+    }
 
 
 def _absolute_public_url(web_path: str | None) -> str | None:
@@ -319,6 +337,10 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
                 fat_g=tot["fat_g"],
                 carbs_g=tot["carbs_g"],
                 fiber_g=tot["fiber_g"],
+                sugar_g=tot["sugar_g"],
+                sodium_mg=tot["sodium_mg"],
+                saturated_fat_g=tot["saturated_fat_g"],
+                water_g=tot["water_g"],
                 recorded_at=recorded,
                 prediction=meal.prediction,
                 user_text=meal.user_text,

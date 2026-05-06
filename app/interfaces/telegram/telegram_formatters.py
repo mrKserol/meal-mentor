@@ -109,6 +109,16 @@ def format_recognition_question(prediction: str | None, ingredients: dict[str, A
 
 def format_meal_analyzed_detail(ingredients: dict[str, Any], nutrition: dict[str, Any] | None) -> str:
     """Full block: list + BJU + save prompt."""
+    def _num(v: Any, frac: int = 1) -> str:
+        try:
+            n = float(v or 0)
+        except (TypeError, ValueError):
+            n = 0.0
+        if frac <= 0:
+            return str(int(round(n)))
+        out = f"{n:.{frac}f}"
+        return out.rstrip("0").rstrip(".")
+
     lines: list[str] = ["Состав и вес (г):"]
     if ingredients:
         for name, weight in ingredients.items():
@@ -117,15 +127,24 @@ def format_meal_analyzed_detail(ingredients: dict[str, Any], nutrition: dict[str
         lines.append("—")
     if nutrition:
         lines.append("")
-        lines.append("БЖУ (оценка):")
+        lines.append("Пищевая ценность:")
+        sodium_mg = float(nutrition.get("sodium_mg", 0) or 0)
+        salt_g = sodium_mg / 1000.0
         lines.append(
             f"Калории: {nutrition.get('calories', 0)} ккал | "
-            f"Б: {nutrition.get('proteins', 0)} г | "
-            f"Ж: {nutrition.get('fats', 0)} г | "
-            f"У: {nutrition.get('carbohydrates', 0)} г"
+            f"Б: {_num(nutrition.get('proteins', 0), 0)} г | "
+            f"Ж: {_num(nutrition.get('fats', 0), 0)} г | "
+            f"У: {_num(nutrition.get('carbohydrates', 0), 0)} г | "
+            f"Клетчатка: {_num(nutrition.get('fiber_g', 0), 1)} г"
+        )
+        lines.append(
+            f"Сахар: {_num(nutrition.get('sugar_g', 0), 1)} г | "
+            f"Соль: {_num(salt_g, 2)} г | "
+            f"Насыщенные жиры: {_num(nutrition.get('saturated_fat_g', 0), 1)} г | "
+            f"Вода: {_num(nutrition.get('water_g', 0), 1)} г"
         )
     lines.append("")
-    lines.append("Записать приём пищи в дневник?")
+    lines.append("Записать прием пищи в дневник?")
     return "\n".join(lines)
 
 

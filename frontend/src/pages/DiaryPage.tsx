@@ -120,10 +120,8 @@ const ANALYSIS_GROUPS: { title: string; items: Array<{ key: string; label: strin
       { key: "cholesterol_mg", label: "Холестерин", unit: "mg" },
       { key: "water_g", label: "Вода", unit: "g" },
       { key: "alcohol_g", label: "Алкоголь", unit: "g" },
-      { key: "ash_g", label: "Зола", unit: "g" },
       { key: "caffeine_mg", label: "Кофеин", unit: "mg" },
       { key: "theobromine_mg", label: "Теобромин", unit: "mg" },
-      { key: "serving_size_g", label: "Размер порции", unit: "g" },
     ],
   },
 ];

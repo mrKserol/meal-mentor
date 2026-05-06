@@ -3,7 +3,7 @@ import { Apple, ChevronRight, Coffee, Salad } from "lucide-react";
 
 import { MealMacroInline } from "../meals/MealMacroLines";
 import type { MealHistoryItem } from "../../utils/recentMeals";
-import { formatIntRu } from "../../utils/recentMeals";
+import { formatIntRu, formatMacroGramsRu } from "../../utils/recentMeals";
 
 function getMealIcon(icon: MealHistoryItem["icon"]) {
   if (icon === "breakfast") return Coffee;
@@ -79,6 +79,10 @@ export function RecentMealsCard({ items }: RecentMealsCardProps) {
                     fiberG={meal.fiber_g}
                     className="inline-block max-w-full text-left sm:text-right"
                   />
+                </p>
+                <p className="mt-1 text-left text-xs leading-snug text-slate-500 sm:text-right">
+                  Сахар: {formatMacroGramsRu(meal.sugar_g)} г · Соль: {formatMacroGramsRu(meal.sodium_mg / 1000, 2)} г ·
+                  {" "}Насыщенные жиры: {formatMacroGramsRu(meal.saturated_fat_g)} г · Вода: {formatMacroGramsRu(meal.water_g)} г
                 </p>
               </div>
             </div>

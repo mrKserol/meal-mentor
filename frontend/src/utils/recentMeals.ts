@@ -9,6 +9,10 @@ export type MealHistoryItem = {
   fat_g: number;
   carbs_g: number;
   fiber_g: number;
+  sugar_g: number;
+  sodium_mg: number;
+  saturated_fat_g: number;
+  water_g: number;
   icon: "breakfast" | "lunch" | "snack";
   thumbUrl?: string | null;
   predictionLine: string;
@@ -46,6 +50,10 @@ export function mapTodayMealsToHistory(snapshot: DiarySnapshot | null): MealHist
       fat_g: m.fat_g ?? 0,
       carbs_g: m.carbs_g ?? 0,
       fiber_g: m.fiber_g ?? 0,
+      sugar_g: m.sugar_g ?? 0,
+      sodium_mg: m.sodium_mg ?? 0,
+      saturated_fat_g: m.saturated_fat_g ?? 0,
+      water_g: m.water_g ?? 0,
       icon: iconFromMealType(m.meal_type),
       thumbUrl: mealThumbSrcForRecent(m) ?? null,
       predictionLine,

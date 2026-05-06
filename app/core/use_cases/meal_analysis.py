@@ -207,8 +207,10 @@ def _meal_result_from_vision_dict(out: dict[str, Any]) -> MealAnalysisResult:
     prediction = pred.strip() if isinstance(pred, str) and pred.strip() else None
     nutrition_svc = _get_nutrition()
     nutrition = None
+    nutrition_full: dict[str, float] | None = None
     if nutrition_svc.is_available and ingredients:
         agg = nutrition_svc.aggregate_nutrition(ingredients)
+        nutrition_full = nutrition_svc.aggregate_nutrition_full(ingredients)
         if agg is not None:
             nutrition = MacroTotals(**agg)
     return MealAnalysisResult(
@@ -216,6 +218,7 @@ def _meal_result_from_vision_dict(out: dict[str, Any]) -> MealAnalysisResult:
         ingredients=ingredients,
         confidence=conf,
         nutrition=nutrition,
+        nutrition_full=nutrition_full,
         prediction=prediction,
         error="",
     )

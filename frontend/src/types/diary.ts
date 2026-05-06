@@ -9,6 +9,10 @@ export interface DiaryRecentMeal {
   fat_g?: number;
   carbs_g?: number;
   fiber_g?: number;
+  sugar_g?: number;
+  sodium_mg?: number;
+  saturated_fat_g?: number;
+  water_g?: number;
   recorded_at: string;
   prediction?: string | null;
   user_text?: string | null;

@@ -14,6 +14,10 @@ class DiaryRecentMeal(BaseModel):
     fat_g: int = 0
     carbs_g: int = 0
     fiber_g: float = 0.0
+    sugar_g: float = 0.0
+    sodium_mg: float = 0.0
+    saturated_fat_g: float = 0.0
+    water_g: float = 0.0
     recorded_at: datetime
     prediction: str | None = None
     user_text: str | None = None
