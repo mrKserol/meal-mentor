@@ -127,8 +127,6 @@ export function DiaryPage() {
   const [weightError, setWeightError] = useState<string | null>(null);
   const [weightModalOpen, setWeightModalOpen] = useState(false);
   const [newWeightKg, setNewWeightKg] = useState("");
-  const [newWaistCm, setNewWaistCm] = useState("");
-  const [newBodyFatPercent, setNewBodyFatPercent] = useState("");
   const [newWeightNotes, setNewWeightNotes] = useState("");
   const [weightSaving, setWeightSaving] = useState(false);
   const [weightSaveError, setWeightSaveError] = useState<string | null>(null);
@@ -250,16 +248,6 @@ export function DiaryPage() {
       setWeightSaveError("Введите корректный вес.");
       return;
     }
-    const waist = newWaistCm.trim() ? Number(newWaistCm.replace(",", ".")) : undefined;
-    if (waist != null && (!Number.isFinite(waist) || waist <= 0)) {
-      setWeightSaveError("Введите корректный обхват талии.");
-      return;
-    }
-    const bodyFat = newBodyFatPercent.trim() ? Number(newBodyFatPercent.replace(",", ".")) : undefined;
-    if (bodyFat != null && (!Number.isFinite(bodyFat) || bodyFat < 0 || bodyFat > 80)) {
-      setWeightSaveError("Введите корректный процент жира.");
-      return;
-    }
     const token = getAccessToken() ?? localStorage.getItem(MEAL_MENTOR_ACCESS_TOKEN_KEY);
     if (!token) {
       navigate("/login", { replace: true });
@@ -270,14 +258,10 @@ export function DiaryPage() {
     try {
       await addMyWeightMeasurement(token, {
         weight_kg: weight,
-        ...(waist != null ? { waist_cm: waist } : {}),
-        ...(bodyFat != null ? { body_fat_percent: bodyFat } : {}),
         ...(newWeightNotes.trim() ? { notes: newWeightNotes.trim() } : {}),
       });
       setWeightModalOpen(false);
       setNewWeightKg("");
-      setNewWaistCm("");
-      setNewBodyFatPercent("");
       setNewWeightNotes("");
       await Promise.all([loadDiary(), loadWeightMeasurements()]);
     } catch (e) {
@@ -296,8 +280,6 @@ export function DiaryPage() {
     loadDiary,
     loadWeightMeasurements,
     navigate,
-    newBodyFatPercent,
-    newWaistCm,
     newWeightKg,
     newWeightNotes,
   ]);
@@ -554,34 +536,6 @@ export function DiaryPage() {
                       className="h-12 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-base outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100"
                     />
                   </label>
-
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <label className="flex flex-col gap-1">
-                      <span className="text-sm font-medium text-slate-600">Талия, см</span>
-                      <input
-                        type="number"
-                        min={1}
-                        step="0.1"
-                        inputMode="decimal"
-                        value={newWaistCm}
-                        onChange={(e) => setNewWaistCm(e.target.value)}
-                        className="h-12 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-base outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1">
-                      <span className="text-sm font-medium text-slate-600">Жир, %</span>
-                      <input
-                        type="number"
-                        min={0}
-                        max={80}
-                        step="0.1"
-                        inputMode="decimal"
-                        value={newBodyFatPercent}
-                        onChange={(e) => setNewBodyFatPercent(e.target.value)}
-                        className="h-12 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-base outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100"
-                      />
-                    </label>
-                  </div>
 
                   <label className="flex flex-col gap-1">
                     <span className="text-sm font-medium text-slate-600">Заметка</span>
