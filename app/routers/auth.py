@@ -22,6 +22,7 @@ from app.schemas.auth import (
     TelegramAuthResponse,
 )
 from app.services.nutrition_targets import create_or_update_active_nutrition_target
+from app.services.weight_measurements import record_weight_measurement
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -43,9 +44,12 @@ def register(payload: AuthRegisterRequest, db: Session = Depends(get_db)):
         email=payload.email,
         password=payload.password,
     )
-    create_or_update_active_nutrition_target(db, user)
-    db.commit()
-    db.refresh(user)
+    if user.weight_kg is not None:
+        record_weight_measurement(db, user, weight_kg=float(user.weight_kg))
+    else:
+        create_or_update_active_nutrition_target(db, user)
+        db.commit()
+        db.refresh(user)
     _, tokens = login_user(db, email=user.email, password=payload.password)
     return tokens
 

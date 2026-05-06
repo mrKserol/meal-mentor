@@ -70,3 +70,26 @@ export interface DiarySnapshot {
   today: DiaryTodayTotals;
   weight: DiaryWeightCard;
 }
+
+export type WeightMeasurementPeriod = "1m" | "3m" | "6m" | "1y" | "all";
+
+export interface WeightMeasurementPoint {
+  id: number;
+  measured_at: string;
+  weight_kg: number;
+  waist_cm?: number | null;
+  body_fat_percent?: number | null;
+  notes?: string | null;
+}
+
+export interface WeightMeasurementsResponse {
+  period: WeightMeasurementPeriod;
+  items: WeightMeasurementPoint[];
+}
+
+export interface CreateWeightMeasurementPayload {
+  weight_kg: number;
+  waist_cm?: number;
+  body_fat_percent?: number;
+  notes?: string;
+}

@@ -117,7 +117,35 @@ def get_active_nutrition_target(db: Session, *, user_id: int) -> NutritionTarget
     )
 
 
-def create_or_update_active_nutrition_target(db: Session, user: User) -> NutritionTarget | None:
+def _target_matches(
+    row: NutritionTarget,
+    *,
+    bmr_kcal: int,
+    tdee_kcal: int,
+    target_calories: int,
+    macros: dict[str, int],
+    user: User,
+) -> bool:
+    return (
+        row.bmr_kcal == bmr_kcal
+        and row.tdee_kcal == tdee_kcal
+        and row.target_calories == target_calories
+        and row.target_protein_g == macros["protein_g"]
+        and row.target_fat_g == macros["fat_g"]
+        and row.target_carbs_g == macros["carbs_g"]
+        and row.goal == user.goal
+        and row.activity_level == user.activity_level
+        and row.weight_kg == user.weight_kg
+        and row.target_weight_kg == user.target_weight_kg
+    )
+
+
+def create_or_update_active_nutrition_target(
+    db: Session,
+    user: User,
+    *,
+    force_new: bool = False,
+) -> NutritionTarget | None:
     if not is_profile_completed(user):
         return None
 
@@ -144,7 +172,21 @@ def create_or_update_active_nutrition_target(db: Session, user: User) -> Nutriti
     now = datetime.utcnow()
     existing = get_active_nutrition_target(db, user_id=user.id)
 
-    row = existing if existing is not None else NutritionTarget(user_id=user.id)
+    if existing is not None:
+        if _target_matches(
+            existing,
+            bmr_kcal=bmr,
+            tdee_kcal=tdee,
+            target_calories=target_cal,
+            macros=macros,
+            user=user,
+        ) and not force_new:
+            return existing
+        existing.is_active = False
+        existing.updated_at = now
+        db.add(existing)
+
+    row = NutritionTarget(user_id=user.id)
 
     row.bmr_kcal = bmr
     row.tdee_kcal = tdee
@@ -158,10 +200,8 @@ def create_or_update_active_nutrition_target(db: Session, user: User) -> Nutriti
     row.weight_kg = user.weight_kg
     row.target_weight_kg = user.target_weight_kg
     row.is_active = True
+    row.created_at = now
     row.updated_at = now
-    if existing is None:
-        row.created_at = now
 
     db.add(row)
     return row
-

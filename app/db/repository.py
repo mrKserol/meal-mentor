@@ -337,6 +337,7 @@ def create_user_measurement(
     waist_cm: Optional[float] = None,
     body_fat_percent: Optional[float] = None,
     notes: Optional[str] = None,
+    commit: bool = True,
 ) -> UserMeasurement:
     row = UserMeasurement(
         user_id=user_id,
@@ -353,8 +354,9 @@ def create_user_measurement(
         if u:
             u.weight_kg = weight_kg
             u.updated_at = datetime.utcnow()
-    db.commit()
-    db.refresh(row)
+    if commit:
+        db.commit()
+        db.refresh(row)
     return row
 
 

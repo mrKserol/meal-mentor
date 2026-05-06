@@ -1,5 +1,11 @@
 import { authClient } from "./authApi";
-import type { DiarySnapshot } from "../types/diary";
+import type {
+  CreateWeightMeasurementPayload,
+  DiarySnapshot,
+  WeightMeasurementPeriod,
+  WeightMeasurementPoint,
+  WeightMeasurementsResponse,
+} from "../types/diary";
 import type { WebMealsDayResponse } from "../types/mealsDay";
 
 export async function getMyDiary(accessToken: string): Promise<DiarySnapshot> {
@@ -21,4 +27,25 @@ export async function deleteMyMeal(accessToken: string, mealId: number): Promise
   await authClient.delete(`/users/me/meals/${mealId}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+}
+
+export async function getMyWeightMeasurements(
+  accessToken: string,
+  period: WeightMeasurementPeriod,
+): Promise<WeightMeasurementsResponse> {
+  const { data } = await authClient.get<WeightMeasurementsResponse>("/users/me/measurements", {
+    params: { period },
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  return data;
+}
+
+export async function addMyWeightMeasurement(
+  accessToken: string,
+  payload: CreateWeightMeasurementPayload,
+): Promise<WeightMeasurementPoint> {
+  const { data } = await authClient.post<WeightMeasurementPoint>("/users/me/measurements", payload, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  return data;
 }

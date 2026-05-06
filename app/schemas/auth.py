@@ -105,6 +105,37 @@ class MyNutritionTargetResponse(BaseModel):
     nutrition_target: NutritionTargetResponse | None = None
 
 
+class WeightMeasurementCreateRequest(BaseModel):
+    weight_kg: float = Field(gt=0, le=500)
+    waist_cm: float | None = Field(default=None, gt=0, le=300)
+    body_fat_percent: float | None = Field(default=None, ge=0, le=80)
+    notes: str | None = Field(default=None, max_length=1000)
+
+
+class WeightMeasurementResponse(BaseModel):
+    id: int
+    measured_at: datetime
+    weight_kg: float
+    waist_cm: float | None = None
+    body_fat_percent: float | None = None
+    notes: str | None = None
+    nutrition_target: NutritionTargetResponse | None = None
+
+
+class WeightMeasurementPoint(BaseModel):
+    id: int
+    measured_at: datetime
+    weight_kg: float
+    waist_cm: float | None = None
+    body_fat_percent: float | None = None
+    notes: str | None = None
+
+
+class WeightMeasurementsResponse(BaseModel):
+    period: str
+    items: list[WeightMeasurementPoint]
+
+
 class TelegramAuthResponse(AuthTokenPair):
     user: UserMeResponse
     is_new_user: bool
