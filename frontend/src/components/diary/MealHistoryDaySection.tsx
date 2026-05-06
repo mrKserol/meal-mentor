@@ -511,7 +511,7 @@ export function MealHistoryDaySection({ accessToken, nutritionTarget, onMealsCha
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white">
                 <Target className="h-4 w-4 text-green-600" aria-hidden />
               </div>
-              <h3 className="text-sm font-semibold text-slate-900">Дневные цели</h3>
+              <h3 className="text-sm font-semibold text-slate-900">Дневные нормы</h3>
             </div>
 
             {dayGoals.length === 0 ? (

@@ -23,7 +23,8 @@ function chartDayLabel(d: ChartDay): string {
   if ("weekday_short" in d && typeof d.weekday_short === "string" && d.weekday_short.length > 0) {
     return d.weekday_short;
   }
-  return (d as DiaryPeriodDay).label;
+  const dayOfMonth = Number(d.date.slice(8, 10));
+  return Number.isFinite(dayOfMonth) && dayOfMonth > 0 ? String(dayOfMonth) : (d as DiaryPeriodDay).label;
 }
 
 function formatFixedRu(n: number, frac = 1): string {
@@ -122,14 +123,8 @@ export function DiaryPage() {
   const deltaWeek = snapshot?.weight.delta_week_kg ?? null;
 
   const activeStats = statsPeriod === "week" ? snapshot?.week : snapshot?.month;
-  const periodLength = statsPeriod === "week" ? 7 : (snapshot?.month.days.length ?? 0);
   const chartDays: ChartDay[] = (activeStats?.days ?? []) as ChartDay[];
   const isMonth = statsPeriod === "month";
-  const showAvgHint =
-    Boolean(activeStats) &&
-    periodLength > 0 &&
-    activeStats!.days_with_data > 0 &&
-    activeStats!.days_with_data < periodLength;
 
   return (
     <AppShell
@@ -217,21 +212,6 @@ export function DiaryPage() {
                   </div>
                 ))}
               </div>
-
-              {showAvgHint ? (
-                <p className="mt-2 text-center text-xs text-slate-400">
-                  Средние посчитаны за {activeStats!.days_with_data}{" "}
-                  {activeStats!.days_with_data === 1
-                    ? "день"
-                    : activeStats!.days_with_data >= 2 && activeStats!.days_with_data <= 4
-                      ? "дня"
-                      : "дней"}{" "}
-                  с записями,{" "}
-                  {statsPeriod === "week"
-                    ? "а не за все 7 дней интервала"
-                    : "а не за все 30 дней интервала"}
-                </p>
-              ) : null}
 
               <div className="mt-6 grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 text-center md:grid-cols-4">
                 <div>
