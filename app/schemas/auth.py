@@ -64,6 +64,7 @@ class NutritionTargetResponse(BaseModel):
     bmr_kcal: int
     tdee_kcal: int
     target_calories: int
+    target_fiber_g: float
     target_protein_g: int
     target_fat_g: int
     target_carbs_g: int

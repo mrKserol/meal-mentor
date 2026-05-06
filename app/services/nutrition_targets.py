@@ -110,6 +110,11 @@ def calculate_macros(target_calories: int, weight_kg: float, goal: str | None) -
     return {"protein_g": protein_g, "fat_g": fat_g, "carbs_g": carbs_g}
 
 
+def calculate_target_fiber_g(target_calories: int) -> float:
+    """Fiber norm: 14 g per each 1000 kcal, rounded to 0.1 g."""
+    return round((float(target_calories) / 1000.0) * 14.0, 1)
+
+
 def get_active_nutrition_target(db: Session, *, user_id: int) -> NutritionTarget | None:
     return (
         db.query(NutritionTarget)
@@ -150,6 +155,7 @@ def _target_matches(
         row.bmr_kcal == bmr_kcal
         and row.tdee_kcal == tdee_kcal
         and row.target_calories == target_calories
+        and round(float(row.target_fiber_g or 0.0), 1) == calculate_target_fiber_g(target_calories)
         and row.target_protein_g == macros["protein_g"]
         and row.target_fat_g == macros["fat_g"]
         and row.target_carbs_g == macros["carbs_g"]
@@ -187,6 +193,7 @@ def create_or_update_active_nutrition_target(
     )
     tdee = calculate_tdee(bmr, user.activity_level)
     target_cal = calculate_target_calories(tdee, user.goal)
+    target_fiber_g = calculate_target_fiber_g(target_cal)
     macros = calculate_macros(target_cal, weight_kg, user.goal)
 
     now = datetime.utcnow()
@@ -211,6 +218,7 @@ def create_or_update_active_nutrition_target(
     row.bmr_kcal = bmr
     row.tdee_kcal = tdee
     row.target_calories = target_cal
+    row.target_fiber_g = target_fiber_g
     row.target_protein_g = macros["protein_g"]
     row.target_fat_g = macros["fat_g"]
     row.target_carbs_g = macros["carbs_g"]

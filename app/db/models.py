@@ -64,6 +64,7 @@ class NutritionTarget(Base):
     bmr_kcal = Column(Integer, nullable=False)
     tdee_kcal = Column(Integer, nullable=False)
     target_calories = Column(Integer, nullable=False)
+    target_fiber_g = Column(Float, nullable=False, default=0.0)
     target_protein_g = Column(Integer, nullable=False)
     target_fat_g = Column(Integer, nullable=False)
     target_carbs_g = Column(Integer, nullable=False)
