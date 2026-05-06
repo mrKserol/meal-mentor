@@ -17,9 +17,9 @@ export function HeroBanner({ greetingName, subtitleLine }: HeroBannerProps) {
         <img
           src="/meal-mentor-mascot.png"
           alt="Meal Mentor — маскот приложения"
-          className="h-20 w-auto object-contain drop-shadow-xl sm:h-24 md:h-28"
-          width={112}
-          height={112}
+          className="h-[7.5rem] w-auto object-contain drop-shadow-xl sm:h-24 md:h-28"
+          width={168}
+          height={168}
           loading="lazy"
           decoding="async"
         />
