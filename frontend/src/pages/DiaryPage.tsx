@@ -26,6 +26,119 @@ import type { NutritionTarget } from "../types/auth";
 const MEAL_MENTOR_ACCESS_TOKEN_KEY = "meal_mentor_access_token";
 
 type ChartDay = DiaryWeekDay | DiaryPeriodDay;
+type NutrientStatsBlock = {
+  avg_calories: number;
+  avg_protein_g: number;
+  avg_fat_g: number;
+  avg_carbs_g: number;
+  avg_fiber_g: number;
+  avg_sugar_g: number;
+  avg_salt_g: number;
+  avg_saturated_fat_g: number;
+  detailed_avg: Record<string, number>;
+};
+
+const ANALYSIS_GROUPS: { title: string; items: Array<{ key: string; label: string; unit: string }> }[] = [
+  {
+    title: "Витамины",
+    items: [
+      { key: "vitamin_a_mcg", label: "Витамин А", unit: "mcg" },
+      { key: "vitamin_a_rae_mcg", label: "Витамин А RAE", unit: "mcg" },
+      { key: "vitamin_c_mg", label: "Витамин С", unit: "mg" },
+      { key: "vitamin_d_mcg", label: "Витамин D", unit: "mcg" },
+      { key: "vitamin_e_mg", label: "Витамин Е", unit: "mg" },
+      { key: "vitamin_k_mcg", label: "Витамин K", unit: "mcg" },
+      { key: "vitamin_b6_mg", label: "Витамин B6", unit: "mg" },
+      { key: "vitamin_b12_mcg", label: "Витамин B12", unit: "mcg" },
+      { key: "thiamin_mg", label: "Тиамин (витамин B1)", unit: "mg" },
+      { key: "riboflavin_mg", label: "Рибофлавин (витамин B2)", unit: "mg" },
+      { key: "niacin_mg", label: "Ниацин (витамин B3)", unit: "mg" },
+      { key: "folate_mcg", label: "Фолат (витамин B9)", unit: "mcg" },
+      { key: "folic_acid_mcg", label: "Фолиевая кислота", unit: "mcg" },
+      { key: "pantothenic_acid_mg", label: "Пантотеновая кислота (витамин B5)", unit: "mg" },
+      { key: "tocopherol_alpha_mg", label: "Токоферол альфа", unit: "mg" },
+      { key: "carotene_alpha_mcg", label: "Каротин альфа", unit: "mcg" },
+      { key: "carotene_beta_mcg", label: "Каротин бета", unit: "mcg" },
+      { key: "cryptoxanthin_beta_mcg", label: "Криптоксантин бета", unit: "mcg" },
+      { key: "lutein_zeaxanthin_mcg", label: "Лютеин и зеаксантин", unit: "mcg" },
+      { key: "lycopene_mcg", label: "Ликопин", unit: "mcg" },
+      { key: "choline_mg", label: "Холин", unit: "mg" },
+    ],
+  },
+  {
+    title: "Минералы",
+    items: [
+      { key: "calcium_mg", label: "Кальций", unit: "mg" },
+      { key: "magnesium_mg", label: "Магний", unit: "mg" },
+      { key: "potassium_mg", label: "Калий", unit: "mg" },
+      { key: "phosphorus_mg", label: "Фосфор", unit: "mg" },
+      { key: "iron_mg", label: "Железо", unit: "mg" },
+      { key: "zinc_mg", label: "Цинк", unit: "mg" },
+      { key: "selenium_mcg", label: "Селен", unit: "mcg" },
+      { key: "copper_mg", label: "Медь", unit: "mg" },
+      { key: "manganese_mg", label: "Марганец", unit: "mg" },
+      { key: "sodium_mg", label: "Натрий", unit: "mg" },
+    ],
+  },
+  {
+    title: "Аминокислоты",
+    items: [
+      { key: "alanine_g", label: "Аланин", unit: "g" },
+      { key: "arginine_g", label: "Аргинин", unit: "g" },
+      { key: "aspartic_acid_g", label: "Аспарагиновая кислота", unit: "g" },
+      { key: "cystine_g", label: "Цистин", unit: "g" },
+      { key: "glutamic_acid_g", label: "Глутаминовая кислота", unit: "g" },
+      { key: "glycine_g", label: "Глицин", unit: "g" },
+      { key: "histidine_g", label: "Гистидин", unit: "g" },
+      { key: "hydroxyproline_g", label: "Гидроксипролин", unit: "g" },
+      { key: "isoleucine_g", label: "Изолейцин", unit: "g" },
+      { key: "leucine_g", label: "Лейцин", unit: "g" },
+      { key: "lysine_g", label: "Лизин", unit: "g" },
+      { key: "methionine_g", label: "Метионин", unit: "g" },
+      { key: "phenylalanine_g", label: "Фенилаланин", unit: "g" },
+      { key: "proline_g", label: "Пролин", unit: "g" },
+      { key: "serine_g", label: "Серин", unit: "g" },
+      { key: "threonine_g", label: "Треонин", unit: "g" },
+      { key: "tryptophan_g", label: "Триптофан", unit: "g" },
+      { key: "tyrosine_g", label: "Тирозин", unit: "g" },
+      { key: "valine_g", label: "Валин", unit: "g" },
+    ],
+  },
+  {
+    title: "Жиры",
+    items: [
+      { key: "total_fat_g", label: "Жиры всего", unit: "g" },
+      { key: "saturated_fatty_acids_g", label: "Насыщенные жирные кислоты", unit: "g" },
+      { key: "monounsaturated_fatty_acids_g", label: "Мононенасыщенные жирные кислоты", unit: "g" },
+      { key: "polyunsaturated_fatty_acids_g", label: "Полиненасыщенные жирные кислоты", unit: "g" },
+      { key: "fatty_acids_total_trans_g", label: "Трансжиры", unit: "g" },
+    ],
+  },
+  {
+    title: "Сахара",
+    items: [
+      { key: "sugar_g", label: "Сахар", unit: "g" },
+      { key: "fructose_g", label: "Фруктоза", unit: "g" },
+      { key: "glucose_g", label: "Глюкоза", unit: "g" },
+      { key: "lactose_g", label: "Лактоза", unit: "g" },
+      { key: "galactose_g", label: "Галактоза", unit: "g" },
+      { key: "maltose_g", label: "Мальтоза", unit: "g" },
+      { key: "sucrose_g", label: "Сахароза", unit: "g" },
+    ],
+  },
+  {
+    title: "Дополнительно",
+    items: [
+      { key: "cholesterol_mg", label: "Холестерин", unit: "mg" },
+      { key: "water_g", label: "Вода", unit: "g" },
+      { key: "alcohol_g", label: "Алкоголь", unit: "g" },
+      { key: "ash_g", label: "Зола", unit: "g" },
+      { key: "caffeine_mg", label: "Кофеин", unit: "mg" },
+      { key: "theobromine_mg", label: "Теобромин", unit: "mg" },
+      { key: "serving_size_g", label: "Размер порции", unit: "g" },
+    ],
+  },
+];
 
 const WEIGHT_PERIOD_OPTIONS: { value: WeightMeasurementPeriod; label: string }[] = [
   { value: "1m", label: "1 м" },
@@ -126,6 +239,7 @@ export function DiaryPage() {
   const [weightPhase, setWeightPhase] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [weightError, setWeightError] = useState<string | null>(null);
   const [weightModalOpen, setWeightModalOpen] = useState(false);
+  const [analysisOpen, setAnalysisOpen] = useState(false);
   const [newWeightKg, setNewWeightKg] = useState("");
   const [newWeightNotes, setNewWeightNotes] = useState("");
   const [weightSaving, setWeightSaving] = useState(false);
@@ -219,7 +333,7 @@ export function DiaryPage() {
 
   const weightKg = snapshot?.weight.weight_kg ?? user?.weight_kg ?? null;
 
-  const activeStats = statsPeriod === "week" ? snapshot?.week : snapshot?.month;
+  const activeStats: NutrientStatsBlock | null = (statsPeriod === "week" ? snapshot?.week : snapshot?.month) ?? null;
   const chartDays: ChartDay[] = (activeStats?.days ?? []) as ChartDay[];
   const isMonth = statsPeriod === "month";
 
@@ -400,7 +514,7 @@ export function DiaryPage() {
                 </div>
               </div>
 
-              <div className="mt-6 grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 text-center md:grid-cols-5">
+              <div className="mt-6 grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 text-center md:grid-cols-4 xl:grid-cols-8">
                 <div>
                   <p className="text-xl font-bold text-green-700">{formatFixedRu(activeStats?.avg_calories ?? 0, 0)}</p>
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Средние ккал</p>
@@ -425,6 +539,29 @@ export function DiaryPage() {
                   </p>
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Клетчатка</p>
                 </div>
+                <div>
+                  <p className="text-xl font-bold text-rose-700">{formatFixedRu(activeStats?.avg_sugar_g ?? 0, 1)} г</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Сахар</p>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-cyan-700">{formatFixedRu(activeStats?.avg_salt_g ?? 0, 2)} г</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Соль</p>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-amber-700">
+                    {formatFixedRu(activeStats?.avg_saturated_fat_g ?? 0, 1)} г
+                  </p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Насыщенные жиры</p>
+                </div>
+              </div>
+              <div className="mt-5 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setAnalysisOpen(true)}
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
+                >
+                  Подробный анализ
+                </button>
               </div>
             </div>
 
@@ -503,6 +640,48 @@ export function DiaryPage() {
               </button>
             </div>
           </section>
+
+          {analysisOpen ? (
+            <div
+              className="fixed inset-0 z-[110] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="analysis-modal-title"
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget) setAnalysisOpen(false);
+              }}
+            >
+              <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 id="analysis-modal-title" className="text-xl font-semibold text-slate-900">
+                    Подробный анализ (средние значения)
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setAnalysisOpen(false)}
+                    className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                    aria-label="Закрыть"
+                  >
+                    <X className="h-5 w-5" aria-hidden />
+                  </button>
+                </div>
+                <div className="space-y-5">
+                  {ANALYSIS_GROUPS.map((group) => (
+                    <section key={group.title} className="rounded-xl border border-slate-200 p-4">
+                      <h3 className="mb-2 text-base font-semibold text-slate-900">{group.title}</h3>
+                      <div className="space-y-1">
+                        {group.items.map((item) => (
+                          <p key={item.key} className="text-sm text-slate-700">
+                            {item.label} - {formatFixedRu(activeStats?.detailed_avg?.[item.key] ?? 0, 3)} {item.unit}
+                          </p>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           {weightModalOpen ? (
             <div

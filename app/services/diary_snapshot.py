@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.config import BASE_URL
 from app.db.models import Meal, MealItem, User
+from app.db.nutrition_columns import MEAL_ITEM_NUTRITION_KEYS
 from app.services.meal_serialization import meal_composition_line
 from app.db.repository import list_user_measurements
 from app.schemas.diary import (
@@ -32,6 +33,21 @@ _MEAL_TYPE_RU: dict[str, str] = {
     "dinner": "Ужин",
     "snack": "Перекус",
 }
+
+_PRIMARY_DAILY_KEYS = frozenset({"calories", "protein_g", "fat_g", "carbs_g", "fiber_g"})
+
+
+def _init_detailed_sums() -> dict[str, float]:
+    return {k: 0.0 for k in MEAL_ITEM_NUTRITION_KEYS if k not in _PRIMARY_DAILY_KEYS}
+
+
+def _accumulate_detailed_meal_nutrients(meal: Meal, totals: dict[str, float]) -> None:
+    for item in meal.items:
+        n = item.nutrition
+        if n is None:
+            continue
+        for key in totals.keys():
+            totals[key] += float(getattr(n, key, 0.0) or 0.0)
 
 
 def _resolve_tz(user: User) -> zoneinfo.ZoneInfo:
@@ -162,6 +178,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
     by_day_cal: dict[date, int] = defaultdict(int)
     week_p = week_f = week_cb = 0
     week_fiber = 0.0
+    week_details = _init_detailed_sums()
 
     for meal in meals_week:
         local = _utc_naive_to_local(_meal_naive_dt(meal), tz)
@@ -174,6 +191,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         week_f += t["fat_g"]
         week_cb += t["carbs_g"]
         week_fiber += float(t["fiber_g"])
+        _accumulate_detailed_meal_nutrients(meal, week_details)
 
     days_with_data = sum(1 for i in range(7) if by_day_cal.get(week_first + timedelta(days=i), 0) > 0)
     div = max(1, days_with_data)
@@ -190,6 +208,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         day_label = _WEEKDAY_RU[dd.weekday()]
         week_days.append(DiaryWeekDay(date=dd, weekday_short=day_label, calories=cal, bar_percent=pct))
 
+    week_detailed_avg = {k: round(v / div, 3) for k, v in week_details.items()}
     week_block = DiaryWeekBlock(
         days=week_days,
         avg_calories=round(sum(by_day_cal.values()) / div, 1),
@@ -197,6 +216,10 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         avg_fat_g=round(week_f / div, 1),
         avg_carbs_g=round(week_cb / div, 1),
         avg_fiber_g=round(week_fiber / div, 1),
+        avg_sugar_g=round(week_detailed_avg.get("sugar_g", 0.0), 1),
+        avg_salt_g=round((week_detailed_avg.get("sodium_mg", 0.0) / 1000.0), 2),
+        avg_saturated_fat_g=round(week_detailed_avg.get("saturated_fat_g", 0.0), 1),
+        detailed_avg=week_detailed_avg,
         days_with_data=days_with_data,
     )
 
@@ -210,6 +233,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
     month_by_cal: dict[date, int] = defaultdict(int)
     month_p = month_f = month_cb = 0
     month_fiber = 0.0
+    month_details = _init_detailed_sums()
     for meal in meals_month:
         local = _utc_naive_to_local(_meal_naive_dt(meal), tz_m)
         d = local.date()
@@ -221,6 +245,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         month_f += t["fat_g"]
         month_cb += t["carbs_g"]
         month_fiber += float(t["fiber_g"])
+        _accumulate_detailed_meal_nutrients(meal, month_details)
 
     month_span = 30
     month_days_with = sum(
@@ -242,6 +267,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         period_days.append(
             DiaryPeriodDay(date=dd, label=f"{dd.day}.{dd.month}", calories=cal, bar_percent=pct),
         )
+    month_detailed_avg = {k: round(v / month_div, 3) for k, v in month_details.items()}
     month_block = DiaryPeriodBlock(
         days=period_days,
         avg_calories=round(sum(month_by_cal.values()) / month_div, 1),
@@ -249,6 +275,10 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         avg_fat_g=round(month_f / month_div, 1),
         avg_carbs_g=round(month_cb / month_div, 1),
         avg_fiber_g=round(month_fiber / month_div, 1),
+        avg_sugar_g=round(month_detailed_avg.get("sugar_g", 0.0), 1),
+        avg_salt_g=round((month_detailed_avg.get("sodium_mg", 0.0) / 1000.0), 2),
+        avg_saturated_fat_g=round(month_detailed_avg.get("saturated_fat_g", 0.0), 1),
+        detailed_avg=month_detailed_avg,
         days_with_data=month_days_with,
     )
 
