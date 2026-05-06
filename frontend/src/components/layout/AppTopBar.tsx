@@ -41,6 +41,14 @@ export function AppTopBar({ title = "Meal Mentor", avatarFallback, onLogout }: A
   return (
     <header className="fixed left-0 right-0 top-0 z-50 flex w-full items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-3 shadow-sm backdrop-blur-md sm:px-6">
       <div className="flex min-w-0 items-center gap-3">
+        <img
+          src="/icons/smallicon.png"
+          alt=""
+          className="h-8 w-8 shrink-0 object-contain"
+          width={32}
+          height={32}
+          aria-hidden
+        />
         <h1 className="truncate text-lg font-bold tracking-tight text-green-600 sm:text-xl">{title}</h1>
       </div>
 

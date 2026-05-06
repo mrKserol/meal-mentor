@@ -151,8 +151,8 @@ export function DiaryPage() {
             </div>
           </section>
 
-          <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:col-span-2">
+          <section>
+            <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-6 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50">
@@ -235,8 +235,18 @@ export function DiaryPage() {
               </div>
             </div>
 
-            <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-3 flex items-center justify-between">
+          </section>
+
+          {webDiaryToken ? (
+            <MealHistoryDaySection
+              accessToken={webDiaryToken}
+              nutritionTarget={nutritionTarget}
+              onMealsChanged={() => void loadDiary()}
+            />
+          ) : null}
+
+          <section className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-slate-900">Текущий вес</h2>
                 <p className="mt-1 text-3xl font-bold text-green-700">
@@ -252,9 +262,9 @@ export function DiaryPage() {
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-green-50">
                 <Scale className="h-5 w-5 text-green-600" aria-hidden />
               </div>
-              </div>
+            </div>
 
-              <div className="flex flex-1 items-center justify-center py-4">
+            <div className="flex flex-1 items-center justify-center py-4">
               <svg className="h-28 w-full" viewBox="0 0 100 40" aria-hidden>
                 <path
                   d="M0 35 Q 20 30, 40 32 T 80 15 T 100 10"
@@ -265,18 +275,13 @@ export function DiaryPage() {
                 />
                 <circle cx="100" cy="10" fill="#15803d" r="2.5" />
               </svg>
-              </div>
+            </div>
 
-              <div className="space-y-2">
+            <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500">Прогресс за неделю</span>
                 {deltaWeek != null ? (
-                  <span
-                    className={[
-                      "font-bold",
-                      deltaWeek <= 0 ? "text-green-700" : "text-amber-700",
-                    ].join(" ")}
-                  >
+                  <span className={["font-bold", deltaWeek <= 0 ? "text-green-700" : "text-amber-700"].join(" ")}>
                     {deltaWeek > 0 ? "+" : ""}
                     {formatFixedRu(deltaWeek, 2)} кг
                   </span>
@@ -295,17 +300,8 @@ export function DiaryPage() {
                   }}
                 />
               </div>
-              </div>
             </div>
           </section>
-
-          {webDiaryToken ? (
-            <MealHistoryDaySection
-              accessToken={webDiaryToken}
-              nutritionTarget={nutritionTarget}
-              onMealsChanged={() => void loadDiary()}
-            />
-          ) : null}
         </div>
       )}
     </AppShell>
