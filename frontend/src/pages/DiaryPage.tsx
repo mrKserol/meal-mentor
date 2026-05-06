@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
@@ -34,6 +34,7 @@ function formatFixedRu(n: number, frac = 1): string {
 export function DiaryPage() {
   const navigate = useNavigate();
   const { user, validateSession, logout, getAccessToken } = useAuth();
+  const statsChartScrollRef = useRef<HTMLDivElement | null>(null);
   const [snapshot, setSnapshot] = useState<DiarySnapshot | null>(null);
   const [nutritionTarget, setNutritionTarget] = useState<NutritionTarget | null>(null);
   const [diaryPhase, setDiaryPhase] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -126,6 +127,19 @@ export function DiaryPage() {
   const chartDays: ChartDay[] = (activeStats?.days ?? []) as ChartDay[];
   const isMonth = statsPeriod === "month";
 
+  useEffect(() => {
+    if (!isMonth) return;
+
+    const scrollToLatestDays = () => {
+      const el = statsChartScrollRef.current;
+      if (!el) return;
+      el.scrollLeft = el.scrollWidth - el.clientWidth;
+    };
+
+    const frame = window.requestAnimationFrame(scrollToLatestDays);
+    return () => window.cancelAnimationFrame(frame);
+  }, [chartDays.length, isMonth]);
+
   return (
     <AppShell
       activeNav="diary"
@@ -189,7 +203,7 @@ export function DiaryPage() {
                 </div>
               </div>
 
-              <div className="-mx-2 min-w-0 overflow-x-auto overscroll-x-contain px-2">
+              <div ref={statsChartScrollRef} className="-mx-2 min-w-0 overflow-x-auto overscroll-x-contain px-2">
                 <div
                   className={[
                     "flex h-48 items-end",
