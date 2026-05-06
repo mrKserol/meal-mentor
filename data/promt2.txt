@@ -52,6 +52,13 @@ Rules:
   Do NOT use "cornmeal" alone unless it is clearly dry uncooked cornmeal.
 * For drinks with milk (e.g. milk tea, latte, tea or coffee with milk): do NOT use a single ingredient name like "milk tea".
   Split into separate English ingredients: tea or coffee (liquid part) and milk (estimate milk grams separately).
+  Keep the total weight of split liquid components close to the visible/mentioned drink volume.
+  Example for ~200 g drink: coffee 150 g + milk 50 g.
+  Example for very milky drink (~200 g): coffee 100 g + milk 100 g.
+  Do NOT output coffee 150 g + milk 150 g for a 200 g drink.
+  The sum of liquid components should approximately equal the total drink weight.
+  If drink volume is unknown, estimate total drink weight first, then split between coffee/tea and milk.
+  Default assumptions: coffee with a small amount of milk = 75% coffee / 25% milk; very milky coffee (latte-like) = 50% coffee / 50% milk; tea with milk = 75% tea / 25% milk.
   The brewed tea or coffee portion is very low in calories; do not assume sugar unless it is visible or explicitly mentioned.
 * For chicken and poultry, be specific when visible or described:
   use "chicken breast" only if it is clearly breast/fillet.
