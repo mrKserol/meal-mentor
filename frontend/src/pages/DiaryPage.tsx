@@ -26,18 +26,6 @@ import type { NutritionTarget } from "../types/auth";
 const MEAL_MENTOR_ACCESS_TOKEN_KEY = "meal_mentor_access_token";
 
 type ChartDay = DiaryWeekDay | DiaryPeriodDay;
-type NutrientStatsBlock = {
-  avg_calories: number;
-  avg_protein_g: number;
-  avg_fat_g: number;
-  avg_carbs_g: number;
-  avg_fiber_g: number;
-  avg_sugar_g: number;
-  avg_salt_g: number;
-  avg_saturated_fat_g: number;
-  detailed_avg: Record<string, number>;
-};
-
 const ANALYSIS_GROUPS: { title: string; items: Array<{ key: string; label: string; unit: string }> }[] = [
   {
     title: "Витамины",
@@ -333,7 +321,7 @@ export function DiaryPage() {
 
   const weightKg = snapshot?.weight.weight_kg ?? user?.weight_kg ?? null;
 
-  const activeStats: NutrientStatsBlock | null = (statsPeriod === "week" ? snapshot?.week : snapshot?.month) ?? null;
+  const activeStats = (statsPeriod === "week" ? snapshot?.week : snapshot?.month) ?? null;
   const chartDays: ChartDay[] = (activeStats?.days ?? []) as ChartDay[];
   const isMonth = statsPeriod === "month";
 
