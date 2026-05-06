@@ -483,6 +483,58 @@ def test_beef_plain_cooked_not_dish(nutrition_svc: NutritionService) -> None:
     assert 200 <= cal <= 400, f"beef 150g calories {cal}"
 
 
+def test_cornmeal_porridge_cooked_not_dry(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"cornmeal porridge": {"grams": 150, "state": "cooked"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert any(x in m for x in ("corn", "grits", "polenta", "cereal"))
+    for bad in ("dry", "flour", "starch", "dry mix", "ready-to-eat", "bread", "muffin", "pancake", "snack", "unprepared", "uncooked"):
+        assert bad not in m
+    cal = int(data.get("calories") or 0)
+    p = float(data.get("proteins", 0) or 0)
+    f = float(data.get("fats", 0) or 0)
+    cb = float(data.get("carbohydrates", 0) or 0)
+    assert 80 <= cal <= 220, f"cornmeal porridge 150g calories {cal}"
+    assert p <= 8.0, f"cornmeal porridge 150g proteins {p}"
+    assert f <= 8.0, f"cornmeal porridge 150g fats {f}"
+    assert 15.0 <= cb <= 45.0, f"cornmeal porridge 150g carbs {cb}"
+
+
+def test_breakfast_cornmeal_porridge_regression(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    ing = {
+        "boiled eggs": {"grams": 120, "state": "boiled"},
+        "strawberries": {"grams": 100, "state": "raw"},
+        "almonds": {"grams": 30, "state": "raw"},
+        "chocolate truffle": {"grams": 15, "state": "unknown"},
+        "cornmeal porridge": {"grams": 150, "state": "cooked"},
+        "tea": {"grams": 150, "state": "unknown"},
+        "milk": {"grams": 50, "state": "unknown"},
+    }
+    full = nutrition_svc.aggregate_nutrition_full(ing)
+    assert full is not None
+    total_cal = int(round(float(full.get("calories", 0) or 0)))
+    total_p = float(full.get("proteins", 0) or 0)
+    total_f = float(full.get("fats", 0) or 0)
+    total_c = float(full.get("carbohydrates", 0) or 0)
+    assert 500 <= total_cal <= 750, f"breakfast cornmeal porridge calories {total_cal}"
+    assert total_p >= 20.0, f"breakfast cornmeal porridge proteins {total_p}"
+    assert total_f >= 20.0, f"breakfast cornmeal porridge fats {total_f}"
+    assert 45.0 <= total_c <= 95.0, f"breakfast cornmeal porridge carbs {total_c}"
+    flat = flatten_search_results(nutrition_svc.search(ing))
+    cm = str(flat.get("cornmeal porridge", {}).get("match") or "").lower()
+    assert any(x in cm for x in ("corn", "grits", "polenta", "cereal"))
+    for bad in ("dry", "flour", "starch", "unprepared", "uncooked"):
+        assert bad not in cm
+    tea_match = str(flat.get("tea", {}).get("match") or "").lower()
+    for bad in ("powder", "dry mix", "instant", "milkshake mix", "protein powder"):
+        assert bad not in tea_match
+
+
 def load_fixture_cases() -> list[dict[str, Any]]:
     raw = json.loads(_FIXTURE_CASES_PATH.read_text(encoding="utf-8"))
     if not isinstance(raw, list):

@@ -631,6 +631,52 @@ def _beef_candidate_adjustment(
     return max(score, -420.0), reasons
 
 
+def _porridge_like_grain_adjustment(
+    n: str,
+    query_lower: str,
+    requested_state: str,
+) -> tuple[float, list[str]]:
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    rs = (requested_state or "unknown").lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if rs != "cooked":
+        return 0.0, reasons
+
+    if "cooked" in nl:
+        add(60, "porridge_cooked")
+    if "prepared with water" in nl:
+        add(50, "porridge_prepared_with_water")
+    if "with water" in nl:
+        add(50, "porridge_with_water")
+    if "grits" in nl:
+        add(40, "porridge_grits")
+    if "polenta" in nl:
+        add(40, "porridge_polenta")
+    if "cornmeal" in nl and "cooked" in nl:
+        add(40, "porridge_cornmeal_cooked")
+    if "cereal" in nl and "cooked" in nl:
+        add(30, "porridge_cereal_cooked")
+
+    for bad in ("dry", "flour", "starch", "dry mix", "ready-to-eat"):
+        if bad in nl and bad not in query_lower:
+            add(-120, f"porridge_bad_{bad.replace(' ', '_')}")
+    for bad in ("bread", "muffin", "pancake", "snack"):
+        if bad in nl and bad not in query_lower:
+            add(-100, f"porridge_bad_{bad}")
+    for bad in ("unprepared", "uncooked"):
+        if bad in nl and bad not in query_lower:
+            add(-90, f"porridge_bad_{bad}")
+
+    return max(score, -420.0), reasons
+
+
 def _egg_whole_boiled_adjustment(n: str, ing: str) -> tuple[float, list[str]]:
     """Prefer whole hard-boiled eggs when user asks for boiled eggs."""
     reasons: list[str] = []
@@ -850,6 +896,7 @@ def state_score(
     beer_q: bool = False,
     generic_grain_query: bool = False,
     beef_q: bool = False,
+    porridge_like_grain_q: bool = False,
     tea_drink_q: bool = False,
     cottage_cheese_q: bool = False,
     banana_fruit_q: bool = False,
@@ -1058,6 +1105,11 @@ def state_score(
         bf, bfr = _beef_candidate_adjustment(n, query_lower, candidate_carbs_per100)
         score += bf
         reasons.extend(bfr)
+
+    if porridge_like_grain_q:
+        pg, pgr = _porridge_like_grain_adjustment(n, query_lower, rs)
+        score += pg
+        reasons.extend(pgr)
 
     if is_legume_like and rs in ("cooked", "boiled"):
         le, lr = _legume_cooked_boiled_extra(n, query_lower)

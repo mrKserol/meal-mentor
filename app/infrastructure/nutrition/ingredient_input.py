@@ -435,6 +435,27 @@ def is_beef_like_ingredient(ni: NormalizedIngredient) -> bool:
     return "beef" in blob or "говядин" in blob
 
 
+def is_porridge_like_grain(ni: NormalizedIngredient) -> bool:
+    """True for cooked porridge-like grain queries (cornmeal porridge/polenta/grits/mush/каша)."""
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if any(x in blob for x in ("dry", "flour", "мука", "сухая", "сухой")):
+        return False
+    keys = (
+        "porridge",
+        "polenta",
+        "grits",
+        "mush",
+        "cooked cereal",
+        "каша",
+        "мамалыга",
+        "полента",
+        "cornmeal porridge",
+        "corn porridge",
+        "кукурузная каша",
+    )
+    return any(k in blob for k in keys)
+
+
 def is_poultry_breast_query(ni: NormalizedIngredient) -> bool:
     blob = f"{ni.input_name} {ni.canonical_query}".lower()
     if "wing" in blob or "thigh" in blob or "drumstick" in blob:

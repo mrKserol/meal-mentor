@@ -6189,6 +6189,106 @@
       "default_state": "cooked",
       "category": "legume"
     },
+    "cornmeal porridge": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "cooked cornmeal porridge": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "corn porridge": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "polenta": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "cooked polenta": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "corn grits": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "cooked corn grits": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "кукурузная каша": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "каша из кукурузной крупы": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "кукурузная крупа вареная": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "кукурузная крупа варёная": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "мамалыга": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "полента": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "cornmeal": {
+      "canonical": "Cornmeal, yellow, unenriched, degermed",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "dry cornmeal": {
+      "canonical": "Cornmeal, yellow, unenriched, degermed",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "corn meal": {
+      "canonical": "Cornmeal, yellow, unenriched, degermed",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "corn flour": {
+      "canonical": "Cornmeal, yellow, unenriched, degermed",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "кукурузная крупа сухая": {
+      "canonical": "Cornmeal, yellow, unenriched, degermed",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "сухая кукурузная крупа": {
+      "canonical": "Cornmeal, yellow, unenriched, degermed",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "кукурузная мука": {
+      "canonical": "Cornmeal, yellow, unenriched, degermed",
+      "default_state": "dry",
+      "category": "grain"
+    },
     "крупа гречневая": {
       "canonical": "Buckwheat groats, dry, roasted",
       "default_state": "dry",

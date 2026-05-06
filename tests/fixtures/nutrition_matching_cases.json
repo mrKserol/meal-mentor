@@ -454,5 +454,66 @@
         "kidney beans": ["raw", "dry", "uncooked"]
       }
     }
+  },
+  {
+    "name": "cornmeal porridge breakfast",
+    "description": "Cooked cornmeal porridge should not match dry cornmeal/flour",
+    "ingredients": {
+      "cornmeal porridge": {"grams": 150, "state": "cooked"}
+    },
+    "expected": {
+      "calories_min": 80,
+      "calories_max": 220,
+      "protein_max": 8,
+      "fat_max": 8,
+      "carbohydrates_min": 15,
+      "carbohydrates_max": 45,
+      "required_contains_any": {
+        "cornmeal porridge": ["corn", "grits", "polenta", "cereal"]
+      },
+      "forbidden_match_contains": {
+        "cornmeal porridge": [
+          "dry",
+          "flour",
+          "starch",
+          "dry mix",
+          "ready-to-eat",
+          "bread",
+          "muffin",
+          "pancake",
+          "snack",
+          "unprepared",
+          "uncooked"
+        ]
+      }
+    }
+  },
+  {
+    "name": "breakfast eggs strawberries almonds cornmeal porridge milk tea",
+    "description": "Breakfast with cooked cornmeal porridge and separated tea+milk ingredients",
+    "ingredients": {
+      "boiled eggs": {"grams": 120, "state": "boiled"},
+      "strawberries": {"grams": 100, "state": "raw"},
+      "almonds": {"grams": 30, "state": "raw"},
+      "chocolate truffle": {"grams": 15, "state": "unknown"},
+      "cornmeal porridge": {"grams": 150, "state": "cooked"},
+      "tea": {"grams": 150, "state": "unknown"},
+      "milk": {"grams": 50, "state": "unknown"}
+    },
+    "expected": {
+      "calories_min": 500,
+      "calories_max": 750,
+      "protein_min": 20,
+      "fat_min": 20,
+      "carbohydrates_min": 45,
+      "carbohydrates_max": 95,
+      "required_contains_any": {
+        "cornmeal porridge": ["corn", "grits", "polenta", "cereal"]
+      },
+      "forbidden_match_contains": {
+        "cornmeal porridge": ["dry", "flour", "starch", "unprepared", "uncooked"],
+        "tea": ["powder", "dry mix", "instant", "milkshake mix", "protein powder"]
+      }
+    }
   }
 ]

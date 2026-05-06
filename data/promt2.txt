@@ -46,6 +46,10 @@ Rules:
   For porridge-like oats, use "oatmeal" with state "cooked".
   Do NOT output "cooked grains" unless there is absolutely no way to identify the grain; if forced, set lower confidence.
   Example: cooked whole oat kernels in a bowl -> "oat groats": {"grams": 150, "state": "cooked"}.
+* For grain porridge, return a specific cooked porridge ingredient: oatmeal, buckwheat porridge, rice porridge, cornmeal porridge / polenta.
+  If food looks like cooked corn porridge or polenta, use "cornmeal porridge": {"grams": ..., "state": "cooked"}.
+  Do NOT use dry grain names for cooked porridge.
+  Do NOT use "cornmeal" alone unless it is clearly dry uncooked cornmeal.
 * For drinks with milk (e.g. milk tea, latte, tea or coffee with milk): do NOT use a single ingredient name like "milk tea".
   Split into separate English ingredients: tea or coffee (liquid part) and milk (estimate milk grams separately).
   The brewed tea or coffee portion is very low in calories; do not assume sugar unless it is visible or explicitly mentioned.
