@@ -57,6 +57,7 @@ def build_web_meal_day_row(meal: Meal, user: User) -> WebMealDayRow:
         sugar_g=sugar_g,
         sodium_mg=sodium_mg,
         saturated_fat_g=round(saturated_fat_g, 2),
+        water_g=float(tot.get("water_g", 0) or 0),
         meal_photo_large=meal.meal_photo_large,
         meal_photo_thumb=meal.meal_photo_thumb,
         meal_photo_large_url=_absolute_public_url(meal.meal_photo_large),

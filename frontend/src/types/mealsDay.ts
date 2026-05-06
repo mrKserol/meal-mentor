@@ -25,6 +25,7 @@ export interface WebMealDayRow {
   sugar_g?: number;
   sodium_mg?: number;
   saturated_fat_g?: number;
+  water_g?: number;
   meal_photo_thumb: string | null;
   meal_photo_large: string | null;
   meal_photo_thumb_url: string | null;

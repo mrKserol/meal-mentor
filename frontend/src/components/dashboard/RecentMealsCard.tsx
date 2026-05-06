@@ -82,7 +82,7 @@ export function RecentMealsCard({ items }: RecentMealsCardProps) {
                 </p>
                 <p className="mt-1 text-left text-xs leading-snug text-slate-500 sm:text-right">
                   Сахар: {formatMacroGramsRu(meal.sugar_g)} г · Соль: {formatMacroGramsRu(meal.sodium_mg / 1000, 2)} г ·
-                  {" "}Насыщенные жиры: {formatMacroGramsRu(meal.saturated_fat_g)} г · Вода: {formatMacroGramsRu(meal.water_g)} г
+                  Насыщенные жиры: {formatMacroGramsRu(meal.saturated_fat_g)} г
                 </p>
               </div>
             </div>

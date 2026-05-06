@@ -339,6 +339,7 @@ function MealDayDetailModal({
   const totalSugar = meal.sugar_g ?? 0;
   const totalSalt = sodiumMgToSaltG(meal.sodium_mg ?? 0);
   const totalSatFat = meal.saturated_fat_g ?? 0;
+  const totalWater = meal.water_g ?? 0;
 
   return (
     <div
@@ -384,7 +385,8 @@ function MealDayDetailModal({
             <MealMacroInline proteinG={totM.p} fatG={totM.f} carbsG={totM.c} className="text-sm font-normal" />
             <p className="text-sm text-slate-600">
               Клетчатка: {formatMacroGramsRu(totalFiber)} г · Сахар: {formatMacroGramsRu(totalSugar)} г · Соль:{" "}
-              {formatMacroGramsRu(totalSalt)} г · Насыщенные жиры: {formatMacroGramsRu(totalSatFat)} г
+              {formatMacroGramsRu(totalSalt)} г · Насыщенные жиры: {formatMacroGramsRu(totalSatFat)} г · Вода:{" "}
+              {formatMacroGramsRu(totalWater)} г
             </p>
           </div>
           {meal.items.length > 0 ? (

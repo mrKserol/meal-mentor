@@ -193,6 +193,7 @@ class WebMealDayRow(BaseModel):
     sugar_g: int = 0
     sodium_mg: int = 0
     saturated_fat_g: float = 0.0
+    water_g: float = 0.0
     meal_photo_thumb: str | None = None
     meal_photo_large: str | None = None
     meal_photo_thumb_url: str | None = None

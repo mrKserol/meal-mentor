@@ -180,11 +180,13 @@ function WeightTrendChart({ items }: { items: WeightMeasurementPoint[] }) {
   const polyline = points.map((p) => `${p.x},${p.y}`).join(" ");
 
   return (
-    <div className="-mx-2 overflow-x-auto px-2">
+    <div className="w-full min-w-0">
       <svg
-        className="h-40 max-w-none"
-        style={{ width: chartWidth }}
+        width="100%"
+        height={chartHeight}
+        className="block min-h-[150px] w-full max-w-none"
         viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+        preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-label="График изменения веса"
       >
@@ -540,13 +542,13 @@ export function DiaryPage() {
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Насыщенные жиры</p>
                 </div>
               </div>
-              <div className="mt-5 flex justify-end">
+              <div className="mt-5 flex w-full justify-center px-1">
                 <button
                   type="button"
                   onClick={() => setAnalysisOpen(true)}
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
+                  className="w-full max-w-full rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-green-700"
                 >
-                  Подробный анализ
+                  Нутриентный профиль
                 </button>
               </div>
             </div>
@@ -640,7 +642,7 @@ export function DiaryPage() {
               <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl">
                 <div className="mb-4 flex items-center justify-between">
                   <h2 id="analysis-modal-title" className="text-xl font-semibold text-slate-900">
-                    Подробный анализ (средние значения)
+                    Нутриентный профиль (средние значения)
                   </h2>
                   <button
                     type="button"
