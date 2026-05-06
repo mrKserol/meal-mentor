@@ -3,7 +3,7 @@
 from alembic import op
 import sqlalchemy as sa
 
-revision = "012_extend_meal_item_nutrition_fields"
+revision = "012_meal_item_nutrients_ext"
 down_revision = "011_fiber_g_float"
 branch_labels = None
 depends_on = None
