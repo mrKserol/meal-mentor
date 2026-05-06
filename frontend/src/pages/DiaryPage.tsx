@@ -134,7 +134,8 @@ export function DiaryPage() {
       onMealSaved={() => void loadDiary()}
     >
       {() => (
-        <div className="mx-auto max-w-7xl space-y-6 p-4 pb-8 lg:p-8">
+        <div className="mx-auto w-full max-w-7xl overflow-x-hidden p-4 pb-8 lg:p-8">
+          <div className="space-y-6">
           {diaryPhase === "loading" && !snapshot ? (
             <p className="text-center text-slate-500">Загружаем данные дневника…</p>
           ) : null}
@@ -151,9 +152,9 @@ export function DiaryPage() {
             </div>
           </section>
 
-          <section>
-            <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-6 flex items-center justify-between gap-4">
+          <section className="min-w-0">
+            <div className="relative min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50">
                     <BarChart3 className="h-5 w-5 text-green-600" aria-hidden />
@@ -188,29 +189,31 @@ export function DiaryPage() {
                 </div>
               </div>
 
-              <div
-                className={[
-                  "flex h-48 w-full items-end px-2",
-                  isMonth ? "justify-between gap-1 overflow-x-auto" : "justify-between gap-2",
-                ].join(" ")}
-              >
-                {chartDays.map((item) => (
-                  <div
-                    key={item.date}
-                    className={[
-                      "flex h-full min-h-0 flex-col items-stretch justify-end px-0.5",
-                      isMonth ? "min-w-[18px] flex-1" : "flex-1",
-                    ].join(" ")}
-                  >
-                    <div className="relative flex min-h-[120px] w-full flex-1 items-end rounded-t-lg bg-slate-100">
-                      <div
-                        className="w-full min-h-[2px] rounded-t-lg bg-green-400 transition-all"
-                        style={{ height: item.bar_percent > 0 ? `${item.bar_percent}%` : "2px" }}
-                      />
+              <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain">
+                <div
+                  className={[
+                    "flex h-48 items-end px-2",
+                    isMonth ? "min-w-[620px] justify-between gap-1 md:min-w-0" : "w-full justify-between gap-2",
+                  ].join(" ")}
+                >
+                  {chartDays.map((item) => (
+                    <div
+                      key={item.date}
+                      className={[
+                        "flex h-full min-h-0 flex-col items-stretch justify-end px-0.5",
+                        isMonth ? "min-w-[18px] flex-1" : "flex-1",
+                      ].join(" ")}
+                    >
+                      <div className="relative flex min-h-[120px] w-full flex-1 items-end rounded-t-lg bg-slate-100">
+                        <div
+                          className="w-full min-h-[2px] rounded-t-lg bg-green-400 transition-all"
+                          style={{ height: item.bar_percent > 0 ? `${item.bar_percent}%` : "2px" }}
+                        />
+                      </div>
+                      <span className="mt-2 block text-center text-xs text-slate-400">{chartDayLabel(item)}</span>
                     </div>
-                    <span className="mt-2 block text-center text-xs text-slate-400">{chartDayLabel(item)}</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
               <div className="mt-6 grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 text-center md:grid-cols-4">
@@ -302,6 +305,7 @@ export function DiaryPage() {
               </div>
             </div>
           </section>
+          </div>
         </div>
       )}
     </AppShell>
