@@ -1,12 +1,25 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Apple, ChevronLeft, ChevronRight, Coffee, Salad, X } from "lucide-react";
+import { Apple, Beef, ChevronLeft, ChevronRight, Coffee, EggFried, Flame, Salad, Target, Wheat, X } from "lucide-react";
 
 import { deleteMyMeal, getMyMealsForDay } from "../../api/diaryApi";
 import { MealMacroInline, MealMacroLines } from "../meals/MealMacroLines";
+import type { NutritionTarget } from "../../types/auth";
 import type { WebMealDayItemLine, WebMealDayRow } from "../../types/mealsDay";
 import { formatIntRu } from "../../utils/recentMeals";
 
 const DELETE_PANEL_PX = 96;
+
+type GoalIconKind = "calories" | "protein" | "fat" | "carbs";
+
+type DayGoalItem = {
+  id: string;
+  label: string;
+  current: string;
+  target: string;
+  percent: number;
+  tone: "green" | "orange" | "slate";
+  icon: GoalIconKind;
+};
 
 function formatLocalYmd(d: Date): string {
   const y = d.getFullYear();
@@ -34,6 +47,130 @@ function getMealIcon(mt: string | null) {
   if (m === "breakfast") return Coffee;
   if (m === "lunch" || m === "dinner") return Salad;
   return Apple;
+}
+
+function pctCurrentTarget(current: number, target: number): number {
+  if (target <= 0) return 0;
+  return Math.min(100, Math.round((100 * current) / target));
+}
+
+function goalToneFromPercent(percent: number): DayGoalItem["tone"] {
+  if (percent >= 100) return "orange";
+  if (percent >= 60) return "green";
+  return "slate";
+}
+
+function getGoalIcon(icon: GoalIconKind) {
+  if (icon === "calories") return Flame;
+  if (icon === "protein") return Beef;
+  if (icon === "fat") return EggFried;
+  return Wheat;
+}
+
+function goalStrokeClass(tone: DayGoalItem["tone"]): string {
+  if (tone === "green") return "stroke-green-600";
+  if (tone === "orange") return "stroke-orange-500";
+  return "stroke-slate-700";
+}
+
+function goalIconClass(tone: DayGoalItem["tone"]): string {
+  if (tone === "green") return "text-green-600";
+  if (tone === "orange") return "text-orange-500";
+  return "text-slate-700";
+}
+
+function buildDayGoals(nutritionTarget: NutritionTarget | null, meals: WebMealDayRow[]): DayGoalItem[] {
+  if (!nutritionTarget) return [];
+
+  const totals = meals.reduce(
+    (acc, meal) => ({
+      calories: acc.calories + meal.calories,
+      protein_g: acc.protein_g + (meal.protein_g ?? 0),
+      fat_g: acc.fat_g + (meal.fat_g ?? 0),
+      carbs_g: acc.carbs_g + (meal.carbs_g ?? 0),
+    }),
+    { calories: 0, protein_g: 0, fat_g: 0, carbs_g: 0 },
+  );
+
+  const c = pctCurrentTarget(totals.calories, nutritionTarget.target_calories);
+  const p = pctCurrentTarget(totals.protein_g, nutritionTarget.target_protein_g);
+  const f = pctCurrentTarget(totals.fat_g, nutritionTarget.target_fat_g);
+  const cb = pctCurrentTarget(totals.carbs_g, nutritionTarget.target_carbs_g);
+
+  return [
+    {
+      id: "calories",
+      label: "Калории",
+      current: formatIntRu(totals.calories),
+      target: `${formatIntRu(nutritionTarget.target_calories)} kcal`,
+      percent: c,
+      tone: goalToneFromPercent(c),
+      icon: "calories",
+    },
+    {
+      id: "protein",
+      label: "Белки",
+      current: formatIntRu(totals.protein_g),
+      target: `${formatIntRu(nutritionTarget.target_protein_g)} г`,
+      percent: p,
+      tone: goalToneFromPercent(p),
+      icon: "protein",
+    },
+    {
+      id: "fat",
+      label: "Жиры",
+      current: formatIntRu(totals.fat_g),
+      target: `${formatIntRu(nutritionTarget.target_fat_g)} г`,
+      percent: f,
+      tone: goalToneFromPercent(f),
+      icon: "fat",
+    },
+    {
+      id: "carbs",
+      label: "Углеводы",
+      current: formatIntRu(totals.carbs_g),
+      target: `${formatIntRu(nutritionTarget.target_carbs_g)} г`,
+      percent: cb,
+      tone: goalToneFromPercent(cb),
+      icon: "carbs",
+    },
+  ];
+}
+
+function DayGoalProgress({ item }: { item: DayGoalItem }) {
+  const Icon = getGoalIcon(item.icon);
+  const strokeClass = goalStrokeClass(item.tone);
+  const iconClass = goalIconClass(item.tone);
+
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <div className="relative h-9 w-9 shrink-0">
+        <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36" aria-hidden>
+          <circle className="stroke-slate-100" cx="18" cy="18" fill="none" r="16" strokeWidth="3" />
+          <circle
+            className={strokeClass}
+            cx="18"
+            cy="18"
+            fill="none"
+            r="16"
+            strokeDasharray={`${item.percent}, 100`}
+            strokeLinecap="round"
+            strokeWidth="3"
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Icon className={`h-4 w-4 ${iconClass}`} aria-hidden />
+        </div>
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-xs font-semibold text-slate-900">{item.label}</p>
+        <p className="whitespace-nowrap text-[11px] text-slate-500">
+          {item.current} / {item.target}
+        </p>
+      </div>
+      <span className="ml-auto shrink-0 text-xs font-bold text-slate-700">{item.percent}%</span>
+    </div>
+  );
 }
 
 function MealIconCard({ mealType }: { mealType: string | null }) {
@@ -288,10 +425,11 @@ function MealDayRowContent({ meal }: { meal: WebMealDayRow }) {
 
 interface MealHistoryDaySectionProps {
   accessToken: string;
+  nutritionTarget: NutritionTarget | null;
   onMealsChanged?: () => void;
 }
 
-export function MealHistoryDaySection({ accessToken, onMealsChanged }: MealHistoryDaySectionProps) {
+export function MealHistoryDaySection({ accessToken, nutritionTarget, onMealsChanged }: MealHistoryDaySectionProps) {
   const [day, setDay] = useState(() => formatLocalYmd(new Date()));
   const [items, setItems] = useState<WebMealDayRow[]>([]);
   const [phase, setPhase] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -317,6 +455,7 @@ export function MealHistoryDaySection({ accessToken, onMealsChanged }: MealHisto
   }, [load]);
 
   const dateLabel = useMemo(() => ymdToRuLong(day), [day]);
+  const dayGoals = useMemo(() => buildDayGoals(nutritionTarget, items), [items, nutritionTarget]);
 
   const handleDelete = async (id: number) => {
     if (deletingId != null) return;
@@ -334,35 +473,58 @@ export function MealHistoryDaySection({ accessToken, onMealsChanged }: MealHisto
   return (
     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-100 p-5 md:p-6">
-        <h2 className="text-xl font-semibold text-slate-900">История приёмов пищи</h2>
-        <p className="mt-1 text-sm capitalize text-slate-500">{dateLabel}</p>
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:justify-between">
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setDay((d) => addDaysYmd(d, -1))}
-              className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
-              aria-label="Предыдущий день"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <input
-              type="date"
-              value={day}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (v) setDay(v);
-              }}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-800"
-            />
-            <button
-              type="button"
-              onClick={() => setDay((d) => addDaysYmd(d, 1))}
-              className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
-              aria-label="Следующий день"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0">
+            <h2 className="text-xl font-semibold text-slate-900">История приёмов пищи</h2>
+            <p className="mt-1 text-sm capitalize text-slate-500">{dateLabel}</p>
+            <div className="mt-4 flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setDay((d) => addDaysYmd(d, -1))}
+                className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
+                aria-label="Предыдущий день"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <input
+                type="date"
+                value={day}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v) setDay(v);
+                }}
+                className="min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-800"
+              />
+              <button
+                type="button"
+                onClick={() => setDay((d) => addDaysYmd(d, 1))}
+                className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
+                aria-label="Следующий день"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="w-full rounded-xl border border-slate-100 bg-slate-50/70 p-4 xl:max-w-2xl">
+            <div className="mb-3 flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white">
+                <Target className="h-4 w-4 text-green-600" aria-hidden />
+              </div>
+              <h3 className="text-sm font-semibold text-slate-900">Дневные цели</h3>
+            </div>
+
+            {dayGoals.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                Цели не рассчитаны. Заполните профиль (вес, цель, активность), чтобы появились нормы КБЖУ.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {dayGoals.map((item) => (
+                  <DayGoalProgress key={item.id} item={item} />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

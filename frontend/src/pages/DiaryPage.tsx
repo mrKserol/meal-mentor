@@ -1,15 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
   BarChart3,
-  Beef,
-  EggFried,
-  Flame,
   Info,
   Scale,
-  Target,
-  Wheat,
 } from "lucide-react";
 
 import { getMyNutritionTarget } from "../api/authApi";
@@ -19,18 +14,6 @@ import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
 import type { DiaryPeriodDay, DiarySnapshot, DiaryWeekDay } from "../types/diary";
 import type { NutritionTarget } from "../types/auth";
-
-type GoalIconKind = "calories" | "protein" | "fat" | "carbs";
-
-type DailyGoalItem = {
-  id: string;
-  label: string;
-  current: string;
-  target: string;
-  percent: number;
-  tone: "green" | "orange" | "slate";
-  icon: GoalIconKind;
-};
 
 const MEAL_MENTOR_ACCESS_TOKEN_KEY = "meal_mentor_access_token";
 
@@ -43,124 +26,8 @@ function chartDayLabel(d: ChartDay): string {
   return (d as DiaryPeriodDay).label;
 }
 
-function formatIntRu(n: number): string {
-  return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(n);
-}
-
 function formatFixedRu(n: number, frac = 1): string {
   return new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 0, maximumFractionDigits: frac }).format(n);
-}
-
-function pctCurrentTarget(current: number, target: number): number {
-  if (target <= 0) return 0;
-  return Math.min(100, Math.round((100 * current) / target));
-}
-
-function goalToneFromPercent(percent: number): DailyGoalItem["tone"] {
-  if (percent >= 100) return "orange";
-  if (percent >= 60) return "green";
-  return "slate";
-}
-
-function buildDailyGoals(nt: NutritionTarget | null, today: DiarySnapshot["today"]): DailyGoalItem[] {
-  if (!nt) return [];
-  const c = pctCurrentTarget(today.calories, nt.target_calories);
-  const p = pctCurrentTarget(today.protein_g, nt.target_protein_g);
-  const f = pctCurrentTarget(today.fat_g, nt.target_fat_g);
-  const cb = pctCurrentTarget(today.carbs_g, nt.target_carbs_g);
-  return [
-    {
-      id: "calories",
-      label: "Калории",
-      current: formatIntRu(today.calories),
-      target: `${formatIntRu(nt.target_calories)} kcal`,
-      percent: c,
-      tone: goalToneFromPercent(c),
-      icon: "calories",
-    },
-    {
-      id: "protein",
-      label: "Белки",
-      current: formatIntRu(today.protein_g),
-      target: `${formatIntRu(nt.target_protein_g)} г`,
-      percent: p,
-      tone: goalToneFromPercent(p),
-      icon: "protein",
-    },
-    {
-      id: "fat",
-      label: "Жиры",
-      current: formatIntRu(today.fat_g),
-      target: `${formatIntRu(nt.target_fat_g)} г`,
-      percent: f,
-      tone: goalToneFromPercent(f),
-      icon: "fat",
-    },
-    {
-      id: "carbs",
-      label: "Углеводы",
-      current: formatIntRu(today.carbs_g),
-      target: `${formatIntRu(nt.target_carbs_g)} г`,
-      percent: cb,
-      tone: goalToneFromPercent(cb),
-      icon: "carbs",
-    },
-  ];
-}
-
-function getGoalIcon(icon: GoalIconKind) {
-  if (icon === "calories") return Flame;
-  if (icon === "protein") return Beef;
-  if (icon === "fat") return EggFried;
-  return Wheat;
-}
-
-function goalStrokeClass(tone: DailyGoalItem["tone"]): string {
-  if (tone === "green") return "stroke-green-600";
-  if (tone === "orange") return "stroke-orange-500";
-  return "stroke-slate-700";
-}
-
-function goalIconClass(tone: DailyGoalItem["tone"]): string {
-  if (tone === "green") return "text-green-600";
-  if (tone === "orange") return "text-orange-500";
-  return "text-slate-700";
-}
-
-function DailyGoalProgress({ item }: { item: DailyGoalItem }) {
-  const Icon = getGoalIcon(item.icon);
-  const strokeClass = goalStrokeClass(item.tone);
-  const iconClass = goalIconClass(item.tone);
-
-  return (
-    <div className="flex items-center gap-4">
-      <div className="relative h-14 w-14 shrink-0">
-        <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36" aria-hidden>
-          <circle className="stroke-slate-100" cx="18" cy="18" fill="none" r="16" strokeWidth="3" />
-          <circle
-            className={strokeClass}
-            cx="18"
-            cy="18"
-            fill="none"
-            r="16"
-            strokeDasharray={`${item.percent}, 100`}
-            strokeLinecap="round"
-            strokeWidth="3"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Icon className={`h-5 w-5 ${iconClass}`} aria-hidden />
-        </div>
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-slate-900">{item.label}</p>
-        <p className="text-xs text-slate-500">
-          {item.current} / {item.target}
-        </p>
-      </div>
-      <span className="shrink-0 text-sm font-bold text-slate-700">{item.percent}%</span>
-    </div>
-  );
 }
 
 export function DiaryPage() {
@@ -225,11 +92,6 @@ export function DiaryPage() {
 
   const webDiaryToken = getAccessToken() ?? localStorage.getItem(MEAL_MENTOR_ACCESS_TOKEN_KEY) ?? "";
 
-  const dailyGoals = useMemo(() => {
-    if (!snapshot || !nutritionTarget) return [];
-    return buildDailyGoals(nutritionTarget, snapshot.today);
-  }, [snapshot, nutritionTarget]);
-
   if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6">
@@ -281,6 +143,18 @@ export function DiaryPage() {
           {diaryPhase === "loading" && !snapshot ? (
             <p className="text-center text-slate-500">Загружаем данные дневника…</p>
           ) : null}
+
+          <section className="rounded-xl border border-green-100 bg-green-50 p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
+                <Info className="h-5 w-5 text-green-600" aria-hidden />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-green-950">Совет ИИ</p>
+                <p className="mt-1 text-sm text-slate-600">Пейте больше воды сегодня!</p>
+              </div>
+            </div>
+          </section>
 
           <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:col-span-2">
@@ -446,43 +320,12 @@ export function DiaryPage() {
           </section>
 
           {webDiaryToken ? (
-            <MealHistoryDaySection accessToken={webDiaryToken} onMealsChanged={() => void loadDiary()} />
+            <MealHistoryDaySection
+              accessToken={webDiaryToken}
+              nutritionTarget={nutritionTarget}
+              onMealsChanged={() => void loadDiary()}
+            />
           ) : null}
-
-          <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
-              <div className="mb-5 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50">
-                  <Target className="h-5 w-5 text-green-600" aria-hidden />
-                </div>
-                <h2 className="text-xl font-semibold text-slate-900">Дневные цели</h2>
-              </div>
-
-              {dailyGoals.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  Цели не рассчитаны. Заполните профиль (вес, цель, активность), чтобы появились нормы КБЖУ.
-                </p>
-              ) : (
-                <div className="space-y-5">
-                  {dailyGoals.map((item) => (
-                    <DailyGoalProgress key={item.id} item={item} />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="rounded-xl border border-green-100 bg-green-50 p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
-                  <Info className="h-5 w-5 text-green-600" aria-hidden />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-green-950">Совет ИИ</p>
-                  <p className="mt-1 text-sm text-slate-600">Пейте больше воды сегодня!</p>
-                </div>
-              </div>
-            </div>
-          </section>
         </div>
       )}
     </AppShell>
