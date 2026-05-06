@@ -134,11 +134,11 @@ export function DiaryPage() {
       onMealSaved={() => void loadDiary()}
     >
       {() => (
-        <div className="mx-auto w-full max-w-7xl overflow-x-hidden p-4 pb-8 lg:p-8">
-          <div className="space-y-6">
-          {diaryPhase === "loading" && !snapshot ? (
-            <p className="text-center text-slate-500">Загружаем данные дневника…</p>
-          ) : null}
+        <div className="mx-auto w-full max-w-full overflow-x-hidden p-4 pb-8 lg:max-w-7xl lg:p-8">
+          <div className="min-w-0 space-y-6">
+            {diaryPhase === "loading" && !snapshot ? (
+              <p className="text-center text-slate-500">Загружаем данные дневника…</p>
+            ) : null}
 
           <section className="rounded-xl border border-green-100 bg-green-50 p-4">
             <div className="flex items-start gap-3">
@@ -189,11 +189,11 @@ export function DiaryPage() {
                 </div>
               </div>
 
-              <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain">
+              <div className="-mx-2 min-w-0 overflow-x-auto overscroll-x-contain px-2">
                 <div
                   className={[
-                    "flex h-48 items-end px-2",
-                    isMonth ? "min-w-[620px] justify-between gap-1 md:min-w-0" : "w-full justify-between gap-2",
+                    "flex h-48 items-end",
+                    isMonth ? "w-[620px] max-w-none justify-between gap-1 md:w-full" : "w-full justify-between gap-2",
                   ].join(" ")}
                 >
                   {chartDays.map((item) => (

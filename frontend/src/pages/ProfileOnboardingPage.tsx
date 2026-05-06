@@ -165,11 +165,11 @@ export function ProfileOnboardingPage() {
   }
 
   const inputClass =
-    "w-full h-12 rounded-lg border border-slate-200 bg-slate-50 px-4 outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100";
+    "h-12 w-full min-w-0 max-w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-base outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100";
 
   return (
     <AppShell activeNav="profile" avatarFallback={avatarFallback} onLogout={handleLogout}>
-      <div className="mx-auto max-w-7xl p-4 pb-8 lg:p-8">
+      <div className="mx-auto w-full max-w-full overflow-x-hidden p-4 pb-8 lg:max-w-7xl lg:p-8">
         <header className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Профиль пользователя</h1>
           <p className="mt-2 text-slate-500">
@@ -188,9 +188,9 @@ export function ProfileOnboardingPage() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          <section className="space-y-6 lg:col-span-8">
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-12">
+          <section className="min-w-0 space-y-6 lg:col-span-8">
+            <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
               <div className="mb-6 flex items-center gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-green-50">
                   <UserRound className="h-6 w-6 text-green-600" aria-hidden />
@@ -201,8 +201,8 @@ export function ProfileOnboardingPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <label className="flex flex-col gap-1">
+              <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
+                <label className="min-w-0 flex flex-col gap-1">
                   <span className="text-sm font-medium text-slate-600">Пол</span>
                   <select name="sex" value={form.sex} onChange={handleChange} className={inputClass}>
                     <option value="">Не указано</option>
@@ -211,18 +211,18 @@ export function ProfileOnboardingPage() {
                   </select>
                 </label>
 
-                <label className="flex flex-col gap-1">
+                <label className="min-w-0 flex flex-col gap-1">
                   <span className="text-sm font-medium text-slate-600">Дата рождения</span>
                   <input
                     name="birth_date"
                     type="date"
                     value={form.birth_date}
                     onChange={handleChange}
-                    className={inputClass}
+                    className={`${inputClass} appearance-none`}
                   />
                 </label>
 
-                <label className="flex flex-col gap-1">
+                <label className="min-w-0 flex flex-col gap-1">
                   <span className="text-sm font-medium text-slate-600">Рост, см</span>
                   <input
                     name="height_cm"
@@ -236,7 +236,7 @@ export function ProfileOnboardingPage() {
                   />
                 </label>
 
-                <label className="flex flex-col gap-1">
+                <label className="min-w-0 flex flex-col gap-1">
                   <span className="text-sm font-medium text-slate-600">Актуальный вес, кг</span>
                   <input
                     name="weight_kg"
@@ -251,7 +251,7 @@ export function ProfileOnboardingPage() {
                   />
                 </label>
 
-                <label className="flex flex-col gap-1">
+                <label className="min-w-0 flex flex-col gap-1">
                   <span className="text-sm font-medium text-slate-600">Цель</span>
                   <select name="goal" value={form.goal} onChange={handleChange} className={inputClass}>
                     <option value="">Не указано</option>
@@ -261,7 +261,7 @@ export function ProfileOnboardingPage() {
                   </select>
                 </label>
 
-                <label className="flex flex-col gap-1">
+                <label className="min-w-0 flex flex-col gap-1">
                   <span className="text-sm font-medium text-slate-600">Желаемый вес, кг</span>
                   <input
                     name="target_weight_kg"
@@ -276,7 +276,7 @@ export function ProfileOnboardingPage() {
                   />
                 </label>
 
-                <label className="flex flex-col gap-1 md:col-span-2">
+                <label className="min-w-0 flex flex-col gap-1 md:col-span-2">
                   <span className="text-sm font-medium text-slate-600">Уровень активности</span>
                   <select
                     name="activity_level"
@@ -297,7 +297,7 @@ export function ProfileOnboardingPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
               <div className="mb-6 flex items-center gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-orange-50">
                   <AlertTriangle className="h-6 w-6 text-orange-600" aria-hidden />
@@ -310,7 +310,7 @@ export function ProfileOnboardingPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
                 {ALLERGEN_OPTIONS.map(({ key, label, Icon }) => {
                   const selected = form.allergens.includes(key);
                   return (
@@ -348,8 +348,8 @@ export function ProfileOnboardingPage() {
             </div>
           </section>
 
-          <aside className="space-y-6 lg:col-span-4">
-            <div className="rounded-xl bg-green-700 p-6 text-white shadow-lg shadow-green-900/20">
+          <aside className="min-w-0 space-y-6 lg:col-span-4">
+            <div className="min-w-0 rounded-xl bg-green-700 p-4 text-white shadow-lg shadow-green-900/20 sm:p-6">
               <div className="mb-4 flex items-center gap-3">
                 <Target className="h-6 w-6 shrink-0" aria-hidden />
                 <h3 className="text-xl font-semibold">Дневная цель (КБЖУ)</h3>
@@ -357,19 +357,19 @@ export function ProfileOnboardingPage() {
 
               {nutritionTarget ? (
                 <div className="space-y-3 text-sm">
-                  <div className="flex justify-between border-b border-white/15 py-2">
+                  <div className="flex min-w-0 justify-between gap-3 border-b border-white/15 py-2">
                     <span className="text-white/90">Калории</span>
                     <span className="font-bold">{nutritionTarget.target_calories} kcal</span>
                   </div>
-                  <div className="flex justify-between border-b border-white/15 py-2">
+                  <div className="flex min-w-0 justify-between gap-3 border-b border-white/15 py-2">
                     <span className="text-white/90">Белки</span>
                     <span className="font-bold">{nutritionTarget.target_protein_g} g</span>
                   </div>
-                  <div className="flex justify-between border-b border-white/15 py-2">
+                  <div className="flex min-w-0 justify-between gap-3 border-b border-white/15 py-2">
                     <span className="text-white/90">Жиры</span>
                     <span className="font-bold">{nutritionTarget.target_fat_g} g</span>
                   </div>
-                  <div className="flex justify-between py-2">
+                  <div className="flex min-w-0 justify-between gap-3 py-2">
                     <span className="text-white/90">Углеводы</span>
                     <span className="font-bold">{nutritionTarget.target_carbs_g} g</span>
                   </div>
@@ -384,7 +384,7 @@ export function ProfileOnboardingPage() {
               )}
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
               <div className="flex items-start gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-50">
                   <Info className="h-5 w-5 text-green-600" aria-hidden />

@@ -50,17 +50,17 @@ export function AppShell({
   const closeComposition = useCallback(() => setCompositionOpen(false), []);
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24 text-slate-900 antialiased lg:pb-8">
+    <div className="min-h-screen w-full overflow-x-hidden bg-slate-50 pb-24 text-slate-900 antialiased lg:pb-8">
       <AppTopBar avatarFallback={avatarFallback} onLogout={onLogout} />
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen min-w-0">
         <AppSideNav
           activeItem={activeNav}
           onLogout={onLogout}
           onNewMeal={openAddMeal}
           onCompositionClick={openComposition}
         />
-        <div className="flex min-h-screen flex-1 flex-col pt-14 lg:ml-64">
-          <main className="flex-1">
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col pt-14 lg:ml-64">
+          <main className="min-w-0 flex-1">
             <AddMealOpenProvider onOpen={openAddMeal}>{renderChildren()}</AddMealOpenProvider>
           </main>
         </div>
