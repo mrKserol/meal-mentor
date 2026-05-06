@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from datetime import date, datetime
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.auth.profile import is_profile_completed
@@ -113,6 +114,25 @@ def get_active_nutrition_target(db: Session, *, user_id: int) -> NutritionTarget
     return (
         db.query(NutritionTarget)
         .filter(NutritionTarget.user_id == user_id, NutritionTarget.is_active.is_(True))
+        .first()
+    )
+
+
+def get_nutrition_target_for_range(
+    db: Session,
+    *,
+    user_id: int,
+    range_start: datetime,
+    range_end: datetime,
+) -> NutritionTarget | None:
+    return (
+        db.query(NutritionTarget)
+        .filter(
+            NutritionTarget.user_id == user_id,
+            NutritionTarget.created_at < range_end,
+            or_(NutritionTarget.is_active.is_(True), NutritionTarget.updated_at >= range_start),
+        )
+        .order_by(NutritionTarget.created_at.desc())
         .first()
     )
 

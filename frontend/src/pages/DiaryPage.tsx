@@ -220,7 +220,6 @@ export function DiaryPage() {
   const webDiaryToken = getAccessToken() ?? localStorage.getItem(MEAL_MENTOR_ACCESS_TOKEN_KEY) ?? "";
 
   const weightKg = snapshot?.weight.weight_kg ?? user?.weight_kg ?? null;
-  const deltaWeek = snapshot?.weight.delta_week_kg ?? null;
 
   const activeStats = statsPeriod === "week" ? snapshot?.week : snapshot?.month;
   const chartDays: ChartDay[] = (activeStats?.days ?? []) as ChartDay[];
@@ -501,29 +500,7 @@ export function DiaryPage() {
               )}
             </div>
 
-            <div className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Прогресс за неделю</span>
-                {deltaWeek != null ? (
-                  <span className={["font-bold", deltaWeek <= 0 ? "text-green-700" : "text-amber-700"].join(" ")}>
-                    {deltaWeek > 0 ? "+" : ""}
-                    {formatFixedRu(deltaWeek, 2)} кг
-                  </span>
-                ) : (
-                  <span className="font-medium text-slate-400">Нет взвешиваний</span>
-                )}
-              </div>
-              <div className="h-2 w-full rounded-full bg-slate-100">
-                <div
-                  className="h-full rounded-full bg-green-400"
-                  style={{
-                    width:
-                      deltaWeek == null
-                        ? "0%"
-                        : `${Math.min(100, Math.round((Math.abs(deltaWeek) / 2) * 100) || 35)}%`,
-                  }}
-                />
-              </div>
+            <div>
               <button
                 type="button"
                 onClick={() => {

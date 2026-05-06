@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
@@ -33,6 +33,7 @@ from app.services.ingredient_checker import analyze_label_from_image_bytes, form
 from app.services.nutrition_targets import (
     create_or_update_active_nutrition_target,
     get_active_nutrition_target,
+    get_nutrition_target_for_range,
 )
 from app.services.weight_measurements import record_weight_measurement
 
@@ -147,9 +148,26 @@ def delete_my_meal(
 
 
 @router.get("/me/nutrition-target", response_model=MyNutritionTargetResponse)
-def get_my_nutrition_target(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    active = get_active_nutrition_target(db, user_id=current_user.id)
-    nt = NutritionTargetResponse.model_validate(active, from_attributes=True) if active is not None else None
+def get_my_nutrition_target(
+    date_q: date | None = Query(default=None, alias="date"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if date_q is None:
+        target = get_active_nutrition_target(db, user_id=current_user.id)
+    else:
+        tz = _resolve_tz(current_user)
+        start_local = datetime.combine(date_q, datetime.min.time(), tzinfo=tz)
+        end_local = start_local + timedelta(days=1)
+        start_utc = start_local.astimezone(timezone.utc).replace(tzinfo=None)
+        end_utc = end_local.astimezone(timezone.utc).replace(tzinfo=None)
+        target = get_nutrition_target_for_range(
+            db,
+            user_id=current_user.id,
+            range_start=start_utc,
+            range_end=end_utc,
+        )
+    nt = NutritionTargetResponse.model_validate(target, from_attributes=True) if target is not None else None
     return {"nutrition_target": nt}
 
 

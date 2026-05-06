@@ -1,6 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Apple, Beef, ChevronLeft, ChevronRight, Coffee, EggFried, Flame, Salad, Target, Wheat, X } from "lucide-react";
 
+import { getMyNutritionTarget } from "../../api/authApi";
 import { deleteMyMeal, getMyMealsForDay } from "../../api/diaryApi";
 import { MealMacroInline, MealMacroLines } from "../meals/MealMacroLines";
 import type { NutritionTarget } from "../../types/auth";
@@ -432,6 +433,7 @@ interface MealHistoryDaySectionProps {
 export function MealHistoryDaySection({ accessToken, nutritionTarget, onMealsChanged }: MealHistoryDaySectionProps) {
   const [day, setDay] = useState(() => formatLocalYmd(new Date()));
   const [items, setItems] = useState<WebMealDayRow[]>([]);
+  const [dayNutritionTarget, setDayNutritionTarget] = useState<NutritionTarget | null>(nutritionTarget);
   const [phase, setPhase] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<WebMealDayRow | null>(null);
@@ -441,8 +443,12 @@ export function MealHistoryDaySection({ accessToken, nutritionTarget, onMealsCha
     setPhase("loading");
     setError(null);
     try {
-      const res = await getMyMealsForDay(accessToken, day);
-      setItems(res.items);
+      const [mealsRes, targetRes] = await Promise.all([
+        getMyMealsForDay(accessToken, day),
+        getMyNutritionTarget(accessToken, day),
+      ]);
+      setItems(mealsRes.items);
+      setDayNutritionTarget(targetRes.nutrition_target);
       setPhase("ready");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Не удалось загрузить приёмы");
@@ -455,7 +461,7 @@ export function MealHistoryDaySection({ accessToken, nutritionTarget, onMealsCha
   }, [load]);
 
   const dateLabel = useMemo(() => ymdToRuLong(day), [day]);
-  const dayGoals = useMemo(() => buildDayGoals(nutritionTarget, items), [items, nutritionTarget]);
+  const dayGoals = useMemo(() => buildDayGoals(dayNutritionTarget, items), [dayNutritionTarget, items]);
 
   const handleDelete = async (id: number) => {
     if (deletingId != null) return;
