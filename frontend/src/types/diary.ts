@@ -32,6 +32,7 @@ export interface DiaryWeekBlock {
   avg_protein_g: number;
   avg_fat_g: number;
   avg_carbs_g: number;
+  avg_fiber_g: number;
   days_with_data: number;
 }
 
@@ -40,6 +41,7 @@ export interface DiaryTodayTotals {
   protein_g: number;
   fat_g: number;
   carbs_g: number;
+  fiber_g: number;
 }
 
 export interface DiaryWeightCard {
@@ -60,6 +62,7 @@ export interface DiaryPeriodBlock {
   avg_protein_g: number;
   avg_fat_g: number;
   avg_carbs_g: number;
+  avg_fiber_g: number;
   days_with_data: number;
 }
 

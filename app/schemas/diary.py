@@ -37,6 +37,7 @@ class DiaryWeekBlock(BaseModel):
     avg_protein_g: float
     avg_fat_g: float
     avg_carbs_g: float
+    avg_fiber_g: float
     days_with_data: int = Field(
         ...,
         description="Дней с ненулевыми калориями; средние делятся на это число (минимум 1)",
@@ -48,6 +49,7 @@ class DiaryTodayTotals(BaseModel):
     protein_g: int
     fat_g: int
     carbs_g: int
+    fiber_g: float
 
 
 class DiaryWeightCard(BaseModel):
@@ -71,6 +73,7 @@ class DiaryPeriodBlock(BaseModel):
     avg_protein_g: float
     avg_fat_g: float
     avg_carbs_g: float
+    avg_fiber_g: float
     days_with_data: int = Field(
         ...,
         description="Дней с ненулевыми калориями; средние делятся на это число (минимум 1)",

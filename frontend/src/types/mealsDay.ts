@@ -6,6 +6,7 @@ export interface WebMealDayItemLine {
   protein_g: number | null;
   fat_g: number | null;
   carbs_g: number | null;
+  fiber_g: number | null;
 }
 
 export interface WebMealDayRow {
@@ -20,6 +21,10 @@ export interface WebMealDayRow {
   protein_g?: number;
   fat_g?: number;
   carbs_g?: number;
+  fiber_g?: number;
+  sugar_g?: number;
+  sodium_mg?: number;
+  saturated_fat_g?: number;
   meal_photo_thumb: string | null;
   meal_photo_large: string | null;
   meal_photo_thumb_url: string | null;

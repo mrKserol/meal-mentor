@@ -161,6 +161,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
 
     by_day_cal: dict[date, int] = defaultdict(int)
     week_p = week_f = week_cb = 0
+    week_fiber = 0.0
 
     for meal in meals_week:
         local = _utc_naive_to_local(_meal_naive_dt(meal), tz)
@@ -172,6 +173,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         week_p += t["protein_g"]
         week_f += t["fat_g"]
         week_cb += t["carbs_g"]
+        week_fiber += float(t["fiber_g"])
 
     days_with_data = sum(1 for i in range(7) if by_day_cal.get(week_first + timedelta(days=i), 0) > 0)
     div = max(1, days_with_data)
@@ -194,6 +196,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         avg_protein_g=round(week_p / div, 1),
         avg_fat_g=round(week_f / div, 1),
         avg_carbs_g=round(week_cb / div, 1),
+        avg_fiber_g=round(week_fiber / div, 1),
         days_with_data=days_with_data,
     )
 
@@ -206,6 +209,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
     )
     month_by_cal: dict[date, int] = defaultdict(int)
     month_p = month_f = month_cb = 0
+    month_fiber = 0.0
     for meal in meals_month:
         local = _utc_naive_to_local(_meal_naive_dt(meal), tz_m)
         d = local.date()
@@ -216,6 +220,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         month_p += t["protein_g"]
         month_f += t["fat_g"]
         month_cb += t["carbs_g"]
+        month_fiber += float(t["fiber_g"])
 
     month_span = 30
     month_days_with = sum(
@@ -243,6 +248,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         avg_protein_g=round(month_p / month_div, 1),
         avg_fat_g=round(month_f / month_div, 1),
         avg_carbs_g=round(month_cb / month_div, 1),
+        avg_fiber_g=round(month_fiber / month_div, 1),
         days_with_data=month_days_with,
     )
 
@@ -254,13 +260,15 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         .all()
     )
     tc = tp = tf = tcb = 0
+    tfib = 0.0
     for meal in meals_today:
         nut = _sum_meal_nutrition(meal)
         tc += nut["calories"]
         tp += nut["protein_g"]
         tf += nut["fat_g"]
         tcb += nut["carbs_g"]
-    today = DiaryTodayTotals(calories=tc, protein_g=tp, fat_g=tf, carbs_g=tcb)
+        tfib += float(nut["fiber_g"])
+    today = DiaryTodayTotals(calories=tc, protein_g=tp, fat_g=tf, carbs_g=tcb, fiber_g=round(tfib, 2))
 
     meals_today_desc = sorted(meals_today, key=lambda m: m.meal_datetime, reverse=True)
     today_meals: list[DiaryRecentMeal] = []

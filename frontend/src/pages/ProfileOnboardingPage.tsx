@@ -352,7 +352,7 @@ export function ProfileOnboardingPage() {
             <div className="min-w-0 rounded-xl bg-green-700 p-4 text-white shadow-lg shadow-green-900/20 sm:p-6">
               <div className="mb-4 flex items-center gap-3">
                 <Target className="h-6 w-6 shrink-0" aria-hidden />
-                <h3 className="text-xl font-semibold">Дневная цель (КБЖУ)</h3>
+                <h3 className="text-xl font-semibold">Дневная цель (КБЖУ)+клетчатка</h3>
               </div>
 
               {nutritionTarget ? (
@@ -369,9 +369,13 @@ export function ProfileOnboardingPage() {
                     <span className="text-white/90">Жиры</span>
                     <span className="font-bold">{nutritionTarget.target_fat_g} g</span>
                   </div>
-                  <div className="flex min-w-0 justify-between gap-3 py-2">
+                  <div className="flex min-w-0 justify-between gap-3 border-b border-white/15 py-2">
                     <span className="text-white/90">Углеводы</span>
                     <span className="font-bold">{nutritionTarget.target_carbs_g} g</span>
+                  </div>
+                  <div className="flex min-w-0 justify-between gap-3 py-2">
+                    <span className="text-white/90">Клетчатка</span>
+                    <span className="font-bold">{nutritionTarget.target_fiber_g} g</span>
                   </div>
                 </div>
               ) : (

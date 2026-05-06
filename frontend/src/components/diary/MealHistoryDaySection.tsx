@@ -1,16 +1,16 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Apple, Beef, ChevronLeft, ChevronRight, Coffee, EggFried, Flame, Salad, Target, Wheat, X } from "lucide-react";
+import { Apple, Beef, ChevronLeft, ChevronRight, Coffee, EggFried, Flame, Leaf, Salad, Target, Wheat, X } from "lucide-react";
 
 import { getMyNutritionTarget } from "../../api/authApi";
 import { deleteMyMeal, getMyMealsForDay } from "../../api/diaryApi";
 import { MealMacroInline, MealMacroLines } from "../meals/MealMacroLines";
 import type { NutritionTarget } from "../../types/auth";
 import type { WebMealDayItemLine, WebMealDayRow } from "../../types/mealsDay";
-import { formatIntRu } from "../../utils/recentMeals";
+import { formatIntRu, formatMacroGramsRu } from "../../utils/recentMeals";
 
 const DELETE_PANEL_PX = 96;
 
-type GoalIconKind = "calories" | "protein" | "fat" | "carbs";
+type GoalIconKind = "calories" | "protein" | "fat" | "carbs" | "fiber";
 
 type DayGoalItem = {
   id: string;
@@ -65,6 +65,7 @@ function getGoalIcon(icon: GoalIconKind) {
   if (icon === "calories") return Flame;
   if (icon === "protein") return Beef;
   if (icon === "fat") return EggFried;
+  if (icon === "fiber") return Leaf;
   return Wheat;
 }
 
@@ -89,14 +90,16 @@ function buildDayGoals(nutritionTarget: NutritionTarget | null, meals: WebMealDa
       protein_g: acc.protein_g + (meal.protein_g ?? 0),
       fat_g: acc.fat_g + (meal.fat_g ?? 0),
       carbs_g: acc.carbs_g + (meal.carbs_g ?? 0),
+      fiber_g: acc.fiber_g + (meal.fiber_g ?? 0),
     }),
-    { calories: 0, protein_g: 0, fat_g: 0, carbs_g: 0 },
+    { calories: 0, protein_g: 0, fat_g: 0, carbs_g: 0, fiber_g: 0 },
   );
 
   const c = pctCurrentTarget(totals.calories, nutritionTarget.target_calories);
   const p = pctCurrentTarget(totals.protein_g, nutritionTarget.target_protein_g);
   const f = pctCurrentTarget(totals.fat_g, nutritionTarget.target_fat_g);
   const cb = pctCurrentTarget(totals.carbs_g, nutritionTarget.target_carbs_g);
+  const fib = pctCurrentTarget(totals.fiber_g, nutritionTarget.target_fiber_g);
 
   return [
     {
@@ -134,6 +137,15 @@ function buildDayGoals(nutritionTarget: NutritionTarget | null, meals: WebMealDa
       percent: cb,
       tone: goalToneFromPercent(cb),
       icon: "carbs",
+    },
+    {
+      id: "fiber",
+      label: "Клетчатка",
+      current: formatIntRu(totals.fiber_g),
+      target: `${formatMacroGramsRu(nutritionTarget.target_fiber_g)} г`,
+      percent: fib,
+      tone: goalToneFromPercent(fib),
+      icon: "fiber",
     },
   ];
 }
@@ -300,11 +312,16 @@ function mealTotalsMacros(m: WebMealDayRow): { p: number; f: number; c: number }
   };
 }
 
-function itemLineMacros(it: WebMealDayItemLine): { p: number; f: number; c: number } {
+function sodiumMgToSaltG(sodiumMg: number): number {
+  return Number((sodiumMg / 1000).toFixed(2));
+}
+
+function itemLineMacros(it: WebMealDayItemLine): { p: number; f: number; c: number; fiber: number } {
   return {
     p: it.protein_g ?? 0,
     f: it.fat_g ?? 0,
     c: it.carbs_g ?? 0,
+    fiber: it.fiber_g ?? 0,
   };
 }
 
@@ -318,6 +335,10 @@ function MealDayDetailModal({
   const large = meal.meal_photo_large_url || meal.meal_photo_thumb_url;
   const pred = predictionHeading(meal);
   const totM = mealTotalsMacros(meal);
+  const totalFiber = meal.fiber_g ?? 0;
+  const totalSugar = meal.sugar_g ?? 0;
+  const totalSalt = sodiumMgToSaltG(meal.sodium_mg ?? 0);
+  const totalSatFat = meal.saturated_fat_g ?? 0;
 
   return (
     <div
@@ -358,9 +379,13 @@ function MealDayDetailModal({
           <p className="text-sm leading-relaxed text-slate-800">
             <span className="font-medium text-slate-900">Состав:</span> {meal.composition}
           </p>
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <div className="space-y-1">
             <p className="text-sm font-semibold text-slate-900">{formatIntRu(meal.calories)} kcal</p>
             <MealMacroInline proteinG={totM.p} fatG={totM.f} carbsG={totM.c} className="text-sm font-normal" />
+            <p className="text-sm text-slate-600">
+              Клетчатка: {formatMacroGramsRu(totalFiber)} г · Сахар: {formatMacroGramsRu(totalSugar)} г · Соль:{" "}
+              {formatMacroGramsRu(totalSalt)} г · Насыщенные жиры: {formatMacroGramsRu(totalSatFat)} г
+            </p>
           </div>
           {meal.items.length > 0 ? (
             <ul className="divide-y divide-slate-100 rounded-lg border border-slate-100 text-sm">
@@ -377,6 +402,7 @@ function MealDayDetailModal({
                         proteinG={im.p}
                         fatG={im.f}
                         carbsG={im.c}
+                        fiberG={im.fiber}
                         className="mt-1 block text-xs text-slate-500"
                       />
                     </div>
@@ -525,7 +551,7 @@ export function MealHistoryDaySection({ accessToken, nutritionTarget, onMealsCha
                 Цели не рассчитаны. Заполните профиль (вес, цель, активность), чтобы появились нормы КБЖУ.
               </p>
             ) : (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {dayGoals.map((item) => (
                   <DayGoalProgress key={item.id} item={item} />
                 ))}

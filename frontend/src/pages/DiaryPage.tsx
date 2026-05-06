@@ -400,7 +400,7 @@ export function DiaryPage() {
                 </div>
               </div>
 
-              <div className="mt-6 grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 text-center md:grid-cols-4">
+              <div className="mt-6 grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 text-center md:grid-cols-5">
                 <div>
                   <p className="text-xl font-bold text-green-700">{formatFixedRu(activeStats?.avg_calories ?? 0, 0)}</p>
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Средние ккал</p>
@@ -418,6 +418,12 @@ export function DiaryPage() {
                 <div>
                   <p className="text-xl font-bold text-slate-900">{formatFixedRu(activeStats?.avg_carbs_g ?? 0, 0)} г</p>
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Углеводы</p>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-emerald-700">
+                    {formatFixedRu(activeStats?.avg_fiber_g ?? 0, 1)} г
+                  </p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Клетчатка</p>
                 </div>
               </div>
             </div>

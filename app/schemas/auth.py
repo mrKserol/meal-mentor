@@ -174,6 +174,7 @@ class WebMealDayItemLine(BaseModel):
     protein_g: int | None = None
     fat_g: int | None = None
     carbs_g: int | None = None
+    fiber_g: float | None = None
 
 
 class WebMealDayRow(BaseModel):
@@ -188,6 +189,10 @@ class WebMealDayRow(BaseModel):
     protein_g: int = 0
     fat_g: int = 0
     carbs_g: int = 0
+    fiber_g: float = 0.0
+    sugar_g: int = 0
+    sodium_mg: int = 0
+    saturated_fat_g: float = 0.0
     meal_photo_thumb: str | None = None
     meal_photo_large: str | None = None
     meal_photo_thumb_url: str | None = None
