@@ -159,6 +159,31 @@ function nutrientProfileValue(activeStats: DiarySnapshot["week"] | DiarySnapshot
   return activeStats.detailed_avg?.[key] ?? 0;
 }
 
+function nutrientProfileFracDigits(key: string): number {
+  if (key === "calories") return 0;
+  if (["protein_g", "fat_g", "carbs_g", "fiber_g", "sugar_g"].includes(key)) return 1;
+  if (
+    [
+      "calcium_mg",
+      "magnesium_mg",
+      "potassium_mg",
+      "phosphorus_mg",
+      "iron_mg",
+      "zinc_mg",
+      "copper_mg",
+      "manganese_mg",
+      "sodium_mg",
+      "cholesterol_mg",
+    ].includes(key)
+  ) {
+    return 0;
+  }
+  if (["caffeine_mg", "theobromine_mg"].includes(key)) return 1;
+  if (key.endsWith("_mcg") || key.endsWith("_iu")) return 0;
+  if (key.endsWith("_g")) return 2;
+  return 1;
+}
+
 function formatWeightDateLabel(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
@@ -673,7 +698,9 @@ export function DiaryPage() {
                       <div className="space-y-1">
                         {group.items.map((item) => (
                           <p key={item.key} className="text-sm text-slate-700">
-                            {item.label} - {formatFixedRu(nutrientProfileValue(activeStats, item.key), 3)} {item.unit}
+                            {item.label} -{" "}
+                            {formatFixedRu(nutrientProfileValue(activeStats, item.key), nutrientProfileFracDigits(item.key))}{" "}
+                            {item.unit}
                           </p>
                         ))}
                       </div>
