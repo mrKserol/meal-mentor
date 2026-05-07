@@ -180,7 +180,7 @@ class NutritionService:
         data["saturated_fatty_acids_g"] = self._series_first_available(df, ("saturated_fatty_acids", "saturated_fat"))
         data["monounsaturated_fatty_acids_g"] = self._series(df, "monounsaturated_fatty_acids")
         data["polyunsaturated_fatty_acids_g"] = self._series(df, "polyunsaturated_fatty_acids")
-        data["fatty_acids_total_trans_g"] = self._series(df, "fatty_acids_total_trans")
+        data["fatty_acids_total_trans_mg"] = self._series(df, "fatty_acids_total_trans")
         data["sodium_mg"] = self._series(df, "sodium")
         data["serving_size_g"] = self._series(df, "serving_size")
         data["cholesterol_mg"] = self._series(df, "cholesterol")
@@ -194,23 +194,15 @@ class NutritionService:
         data["selenium_mcg"] = self._series(df, "selenium")
         data["copper_mg"] = self._series(df, "copper")
         data["manganese_mg"] = self._series(df, "manganese")
-        # nutrition.csv stores vitamin_a as IU; convert to mcg (1 IU = 0.3 mcg).
-        if "vitamin_a" in df.columns:
-            data["vitamin_a_mcg"] = self._series_scaled(df, "vitamin_a", multiplier=0.3)
-        else:
-            data["vitamin_a_mcg"] = self._series(df, "vitamin_a_rae")
-        if "vitamin_a_rae" in df.columns:
-            data["vitamin_a_rae_mcg"] = self._series(df, "vitamin_a_rae")
-        else:
-            data["vitamin_a_rae_mcg"] = self._series_scaled(df, "vitamin_a", multiplier=0.3)
+        data["vitamin_a_iu"] = self._series(df, "vitamin_a")
+        data["vitamin_a_rae_mcg"] = self._series(df, "vitamin_a_rae")
         data["carotene_alpha_mcg"] = self._series(df, "carotene_alpha")
         data["carotene_beta_mcg"] = self._series(df, "carotene_beta")
         data["cryptoxanthin_beta_mcg"] = self._series(df, "cryptoxanthin_beta")
         data["lutein_zeaxanthin_mcg"] = self._series(df, "lutein_zeaxanthin")
         data["lycopene_mcg"] = self._series(df, "lycopene")
         data["vitamin_c_mg"] = self._series(df, "vitamin_c")
-        # nutrition.csv stores vitamin_d as IU; convert to mcg (1 IU = 0.025 mcg).
-        data["vitamin_d_mcg"] = self._series_scaled(df, "vitamin_d", multiplier=0.025)
+        data["vitamin_d_iu"] = self._series(df, "vitamin_d")
         data["vitamin_e_mg"] = self._series(df, "vitamin_e")
         data["tocopherol_alpha_mg"] = self._series(df, "tocopherol_alpha")
         data["vitamin_k_mcg"] = self._series(df, "vitamin_k")

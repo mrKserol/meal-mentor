@@ -30,98 +30,103 @@ const ANALYSIS_GROUPS: { title: string; items: Array<{ key: string; label: strin
   {
     title: "Витамины",
     items: [
-      { key: "vitamin_a_mcg", label: "Витамин А", unit: "mcg" },
-      { key: "vitamin_a_rae_mcg", label: "Витамин А RAE", unit: "mcg" },
-      { key: "vitamin_c_mg", label: "Витамин С", unit: "mg" },
-      { key: "vitamin_d_mcg", label: "Витамин D", unit: "mcg" },
-      { key: "vitamin_e_mg", label: "Витамин Е", unit: "mg" },
-      { key: "vitamin_k_mcg", label: "Витамин K", unit: "mcg" },
-      { key: "vitamin_b6_mg", label: "Витамин B6", unit: "mg" },
-      { key: "vitamin_b12_mcg", label: "Витамин B12", unit: "mcg" },
-      { key: "thiamin_mg", label: "Тиамин (витамин B1)", unit: "mg" },
-      { key: "riboflavin_mg", label: "Рибофлавин (витамин B2)", unit: "mg" },
-      { key: "niacin_mg", label: "Ниацин (витамин B3)", unit: "mg" },
-      { key: "folate_mcg", label: "Фолат (витамин B9)", unit: "mcg" },
-      { key: "folic_acid_mcg", label: "Фолиевая кислота", unit: "mcg" },
-      { key: "pantothenic_acid_mg", label: "Пантотеновая кислота (витамин B5)", unit: "mg" },
-      { key: "tocopherol_alpha_mg", label: "Токоферол альфа", unit: "mg" },
-      { key: "carotene_alpha_mcg", label: "Каротин альфа", unit: "mcg" },
-      { key: "carotene_beta_mcg", label: "Каротин бета", unit: "mcg" },
-      { key: "cryptoxanthin_beta_mcg", label: "Криптоксантин бета", unit: "mcg" },
-      { key: "lutein_zeaxanthin_mcg", label: "Лютеин и зеаксантин", unit: "mcg" },
-      { key: "lycopene_mcg", label: "Ликопин", unit: "mcg" },
-      { key: "choline_mg", label: "Холин", unit: "mg" },
+      { key: "vitamin_a_iu", label: "Витамин A", unit: "МЕ" },
+      { key: "vitamin_a_rae_mcg", label: "Витамин A RAE", unit: "мкг" },
+      { key: "vitamin_c_mg", label: "Витамин C", unit: "мг" },
+      { key: "vitamin_d_iu", label: "Витамин D", unit: "МЕ" },
+      { key: "vitamin_e_mg", label: "Витамин E", unit: "мг" },
+      { key: "tocopherol_alpha_mg", label: "Альфа-токоферол", unit: "мг" },
+      { key: "vitamin_k_mcg", label: "Витамин K", unit: "мкг" },
+      { key: "thiamin_mg", label: "Витамин B1 / тиамин", unit: "мг" },
+      { key: "riboflavin_mg", label: "Витамин B2 / рибофлавин", unit: "мг" },
+      { key: "niacin_mg", label: "Витамин B3 / ниацин", unit: "мг" },
+      { key: "pantothenic_acid_mg", label: "Витамин B5 / пантотеновая кислота", unit: "мг" },
+      { key: "vitamin_b6_mg", label: "Витамин B6", unit: "мг" },
+      { key: "folate_mcg", label: "Витамин B9 / фолат", unit: "мкг" },
+      { key: "folic_acid_mcg", label: "Фолиевая кислота", unit: "мкг" },
+      { key: "vitamin_b12_mcg", label: "Витамин B12", unit: "мкг" },
+      { key: "choline_mg", label: "Холин", unit: "мг" },
+    ],
+  },
+  {
+    title: "Каротиноиды",
+    items: [
+      { key: "carotene_alpha_mcg", label: "Альфа-каротин", unit: "мкг" },
+      { key: "carotene_beta_mcg", label: "Бета-каротин", unit: "мкг" },
+      { key: "cryptoxanthin_beta_mcg", label: "Бета-криптоксантин", unit: "мкг" },
+      { key: "lutein_zeaxanthin_mcg", label: "Лютеин + зеаксантин", unit: "мкг" },
+      { key: "lycopene_mcg", label: "Ликопин", unit: "мкг" },
     ],
   },
   {
     title: "Минералы",
     items: [
-      { key: "calcium_mg", label: "Кальций", unit: "mg" },
-      { key: "magnesium_mg", label: "Магний", unit: "mg" },
-      { key: "potassium_mg", label: "Калий", unit: "mg" },
-      { key: "phosphorus_mg", label: "Фосфор", unit: "mg" },
-      { key: "iron_mg", label: "Железо", unit: "mg" },
-      { key: "zinc_mg", label: "Цинк", unit: "mg" },
-      { key: "selenium_mcg", label: "Селен", unit: "mcg" },
-      { key: "copper_mg", label: "Медь", unit: "mg" },
-      { key: "manganese_mg", label: "Марганец", unit: "mg" },
-      { key: "sodium_mg", label: "Натрий", unit: "mg" },
+      { key: "calcium_mg", label: "Кальций", unit: "мг" },
+      { key: "magnesium_mg", label: "Магний", unit: "мг" },
+      { key: "potassium_mg", label: "Калий", unit: "мг" },
+      { key: "phosphorus_mg", label: "Фосфор", unit: "мг" },
+      { key: "iron_mg", label: "Железо", unit: "мг" },
+      { key: "zinc_mg", label: "Цинк", unit: "мг" },
+      { key: "selenium_mcg", label: "Селен", unit: "мкг" },
+      { key: "copper_mg", label: "Медь", unit: "мг" },
+      { key: "manganese_mg", label: "Марганец", unit: "мг" },
+      { key: "sodium_mg", label: "Натрий", unit: "мг" },
     ],
   },
   {
     title: "Аминокислоты",
     items: [
-      { key: "alanine_g", label: "Аланин", unit: "g" },
-      { key: "arginine_g", label: "Аргинин", unit: "g" },
-      { key: "aspartic_acid_g", label: "Аспарагиновая кислота", unit: "g" },
-      { key: "cystine_g", label: "Цистин", unit: "g" },
-      { key: "glutamic_acid_g", label: "Глутаминовая кислота", unit: "g" },
-      { key: "glycine_g", label: "Глицин", unit: "g" },
-      { key: "histidine_g", label: "Гистидин", unit: "g" },
-      { key: "hydroxyproline_g", label: "Гидроксипролин", unit: "g" },
-      { key: "isoleucine_g", label: "Изолейцин", unit: "g" },
-      { key: "leucine_g", label: "Лейцин", unit: "g" },
-      { key: "lysine_g", label: "Лизин", unit: "g" },
-      { key: "methionine_g", label: "Метионин", unit: "g" },
-      { key: "phenylalanine_g", label: "Фенилаланин", unit: "g" },
-      { key: "proline_g", label: "Пролин", unit: "g" },
-      { key: "serine_g", label: "Серин", unit: "g" },
-      { key: "threonine_g", label: "Треонин", unit: "g" },
-      { key: "tryptophan_g", label: "Триптофан", unit: "g" },
-      { key: "tyrosine_g", label: "Тирозин", unit: "g" },
-      { key: "valine_g", label: "Валин", unit: "g" },
+      { key: "alanine_g", label: "Аланин", unit: "г" },
+      { key: "arginine_g", label: "Аргинин", unit: "г" },
+      { key: "aspartic_acid_g", label: "Аспарагиновая кислота", unit: "г" },
+      { key: "cystine_g", label: "Цистин", unit: "г" },
+      { key: "glutamic_acid_g", label: "Глутаминовая кислота", unit: "г" },
+      { key: "glycine_g", label: "Глицин", unit: "г" },
+      { key: "histidine_g", label: "Гистидин", unit: "г" },
+      { key: "hydroxyproline_g", label: "Гидроксипролин", unit: "г" },
+      { key: "isoleucine_g", label: "Изолейцин", unit: "г" },
+      { key: "leucine_g", label: "Лейцин", unit: "г" },
+      { key: "lysine_g", label: "Лизин", unit: "г" },
+      { key: "methionine_g", label: "Метионин", unit: "г" },
+      { key: "phenylalanine_g", label: "Фенилаланин", unit: "г" },
+      { key: "proline_g", label: "Пролин", unit: "г" },
+      { key: "serine_g", label: "Серин", unit: "г" },
+      { key: "threonine_g", label: "Треонин", unit: "г" },
+      { key: "tryptophan_g", label: "Триптофан", unit: "г" },
+      { key: "tyrosine_g", label: "Тирозин", unit: "г" },
+      { key: "valine_g", label: "Валин", unit: "г" },
     ],
   },
   {
-    title: "Жиры",
+    title: "Липиды и жирные кислоты",
     items: [
-      { key: "total_fat_g", label: "Жиры всего", unit: "g" },
-      { key: "saturated_fatty_acids_g", label: "Насыщенные жирные кислоты", unit: "g" },
-      { key: "monounsaturated_fatty_acids_g", label: "Мононенасыщенные жирные кислоты", unit: "g" },
-      { key: "polyunsaturated_fatty_acids_g", label: "Полиненасыщенные жирные кислоты", unit: "g" },
-      { key: "fatty_acids_total_trans_g", label: "Трансжиры", unit: "g" },
+      { key: "fat_g", label: "Жиры всего", unit: "г" },
+      { key: "saturated_fat_g", label: "Насыщенные жиры", unit: "г" },
+      { key: "monounsaturated_fatty_acids_g", label: "Мононенасыщенные жирные кислоты", unit: "г" },
+      { key: "polyunsaturated_fatty_acids_g", label: "Полиненасыщенные жирные кислоты", unit: "г" },
+      { key: "fatty_acids_total_trans_mg", label: "Трансжиры", unit: "мг" },
+      { key: "cholesterol_mg", label: "Холестерин", unit: "мг" },
     ],
   },
   {
     title: "Сахара",
     items: [
-      { key: "sugar_g", label: "Сахар", unit: "g" },
-      { key: "fructose_g", label: "Фруктоза", unit: "g" },
-      { key: "glucose_g", label: "Глюкоза", unit: "g" },
-      { key: "lactose_g", label: "Лактоза", unit: "g" },
-      { key: "galactose_g", label: "Галактоза", unit: "g" },
-      { key: "maltose_g", label: "Мальтоза", unit: "g" },
-      { key: "sucrose_g", label: "Сахароза", unit: "g" },
+      { key: "sugar_g", label: "Сахара всего", unit: "г" },
+      { key: "fructose_g", label: "Фруктоза", unit: "г" },
+      { key: "glucose_g", label: "Глюкоза", unit: "г" },
+      { key: "lactose_g", label: "Лактоза", unit: "г" },
+      { key: "galactose_g", label: "Галактоза", unit: "г" },
+      { key: "maltose_g", label: "Мальтоза", unit: "г" },
+      { key: "sucrose_g", label: "Сахароза", unit: "г" },
     ],
   },
   {
     title: "Дополнительно",
     items: [
-      { key: "cholesterol_mg", label: "Холестерин", unit: "mg" },
-      { key: "water_g", label: "Вода", unit: "g" },
-      { key: "alcohol_g", label: "Алкоголь", unit: "g" },
-      { key: "caffeine_mg", label: "Кофеин", unit: "mg" },
-      { key: "theobromine_mg", label: "Теобромин", unit: "mg" },
+      { key: "water_g", label: "Вода", unit: "г" },
+      { key: "alcohol_g", label: "Алкоголь", unit: "г" },
+      { key: "caffeine_mg", label: "Кофеин", unit: "мг" },
+      { key: "theobromine_mg", label: "Теобромин", unit: "мг" },
     ],
   },
 ];
@@ -144,6 +149,14 @@ function chartDayLabel(d: ChartDay): string {
 
 function formatFixedRu(n: number, frac = 1): string {
   return new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 0, maximumFractionDigits: frac }).format(n);
+}
+
+function nutrientProfileValue(activeStats: DiarySnapshot["week"] | DiarySnapshot["month"] | null, key: string): number {
+  if (!activeStats) return 0;
+  if (key === "fat_g") return activeStats.avg_fat_g ?? 0;
+  if (key === "sugar_g") return activeStats.avg_sugar_g ?? 0;
+  if (key === "saturated_fat_g") return activeStats.avg_saturated_fat_g ?? 0;
+  return activeStats.detailed_avg?.[key] ?? 0;
 }
 
 function formatWeightDateLabel(iso: string): string {
@@ -660,7 +673,7 @@ export function DiaryPage() {
                       <div className="space-y-1">
                         {group.items.map((item) => (
                           <p key={item.key} className="text-sm text-slate-700">
-                            {item.label} - {formatFixedRu(activeStats?.detailed_avg?.[item.key] ?? 0, 3)} {item.unit}
+                            {item.label} - {formatFixedRu(nutrientProfileValue(activeStats, item.key), 3)} {item.unit}
                           </p>
                         ))}
                       </div>

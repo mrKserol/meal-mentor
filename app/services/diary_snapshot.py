@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
+import logging
 from typing import Any
 
 import zoneinfo
@@ -33,6 +34,7 @@ _MEAL_TYPE_RU: dict[str, str] = {
     "dinner": "Ужин",
     "snack": "Перекус",
 }
+logger = logging.getLogger(__name__)
 
 _PRIMARY_DAILY_KEYS = frozenset({"calories", "protein_g", "fat_g", "carbs_g", "fiber_g"})
 
@@ -48,6 +50,29 @@ def _accumulate_detailed_meal_nutrients(meal: Meal, totals: dict[str, float]) ->
             continue
         for key in totals.keys():
             totals[key] += float(getattr(n, key, 0.0) or 0.0)
+
+
+def _warn_suspicious_nutrient_mapping(avg_values: dict[str, float], *, avg_fat_g: float) -> None:
+    cholesterol_mg = float(avg_values.get("cholesterol_mg", 0.0) or 0.0)
+    trans_mg = float(avg_values.get("fatty_acids_total_trans_mg", 0.0) or 0.0)
+    if cholesterol_mg > 0 and trans_mg > 0 and cholesterol_mg == trans_mg:
+        logger.warning(
+            "Suspicious nutrient mapping: cholesterol_mg equals fatty_acids_total_trans_mg",
+            extra={
+                "cholesterol_mg": cholesterol_mg,
+                "fatty_acids_total_trans_mg": trans_mg,
+            },
+        )
+    trans_fat_g = trans_mg / 1000.0
+    if avg_fat_g > 0 and trans_fat_g > avg_fat_g:
+        logger.warning(
+            "Suspicious nutrient data: trans fat is greater than total fat",
+            extra={
+                "fat_g": avg_fat_g,
+                "fatty_acids_total_trans_mg": trans_mg,
+                "trans_fat_g": trans_fat_g,
+            },
+        )
 
 
 def _resolve_tz(user: User) -> zoneinfo.ZoneInfo:
@@ -227,6 +252,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         week_days.append(DiaryWeekDay(date=dd, weekday_short=day_label, calories=cal, bar_percent=pct))
 
     week_detailed_avg = {k: round(v / div, 3) for k, v in week_details.items()}
+    _warn_suspicious_nutrient_mapping(week_detailed_avg, avg_fat_g=round(week_f / div, 1))
     week_block = DiaryWeekBlock(
         days=week_days,
         avg_calories=round(sum(by_day_cal.values()) / div, 1),
@@ -235,7 +261,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         avg_carbs_g=round(week_cb / div, 1),
         avg_fiber_g=round(week_fiber / div, 1),
         avg_sugar_g=round(week_detailed_avg.get("sugar_g", 0.0), 1),
-        avg_salt_g=round((week_detailed_avg.get("sodium_mg", 0.0) / 1000.0), 2),
+        avg_salt_g=round((week_detailed_avg.get("sodium_mg", 0.0) * 2.54 / 1000.0), 2),
         avg_saturated_fat_g=round(week_detailed_avg.get("saturated_fat_g", 0.0), 1),
         detailed_avg=week_detailed_avg,
         days_with_data=days_with_data,
@@ -286,6 +312,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
             DiaryPeriodDay(date=dd, label=f"{dd.day}.{dd.month}", calories=cal, bar_percent=pct),
         )
     month_detailed_avg = {k: round(v / month_div, 3) for k, v in month_details.items()}
+    _warn_suspicious_nutrient_mapping(month_detailed_avg, avg_fat_g=round(month_f / month_div, 1))
     month_block = DiaryPeriodBlock(
         days=period_days,
         avg_calories=round(sum(month_by_cal.values()) / month_div, 1),
@@ -294,7 +321,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         avg_carbs_g=round(month_cb / month_div, 1),
         avg_fiber_g=round(month_fiber / month_div, 1),
         avg_sugar_g=round(month_detailed_avg.get("sugar_g", 0.0), 1),
-        avg_salt_g=round((month_detailed_avg.get("sodium_mg", 0.0) / 1000.0), 2),
+        avg_salt_g=round((month_detailed_avg.get("sodium_mg", 0.0) * 2.54 / 1000.0), 2),
         avg_saturated_fat_g=round(month_detailed_avg.get("saturated_fat_g", 0.0), 1),
         detailed_avg=month_detailed_avg,
         days_with_data=month_days_with,
