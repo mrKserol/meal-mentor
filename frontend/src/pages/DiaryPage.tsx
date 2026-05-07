@@ -102,8 +102,8 @@ const ANALYSIS_GROUPS: { title: string; items: Array<{ key: string; label: strin
     items: [
       { key: "fat_g", label: "Жиры всего", unit: "г" },
       { key: "saturated_fat_g", label: "Насыщенные жиры", unit: "г" },
-      { key: "monounsaturated_fatty_acids_g", label: "Мононенасыщенные жирные кислоты", unit: "г" },
-      { key: "polyunsaturated_fatty_acids_g", label: "Полиненасыщенные жирные кислоты", unit: "г" },
+      { key: "monounsaturated_fatty_acids_g", label: "Мононенасыщенные", unit: "г" },
+      { key: "polyunsaturated_fatty_acids_g", label: "Полиненасыщенные", unit: "г" },
       { key: "fatty_acids_total_trans_mg", label: "Трансжиры", unit: "мг" },
       { key: "cholesterol_mg", label: "Холестерин", unit: "мг" },
     ],
@@ -680,7 +680,7 @@ export function DiaryPage() {
               <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl">
                 <div className="mb-4 flex items-center justify-between">
                   <h2 id="analysis-modal-title" className="text-xl font-semibold text-slate-900">
-                    Нутриентный профиль (средние значения)
+                    Нутриентный профиль (средние суточные значения)
                   </h2>
                   <button
                     type="button"
