@@ -10,6 +10,9 @@ from enum import Enum
 class NutritionCategory(str, Enum):
     MEAT = "meat"
     BEEF = "beef"
+    BEEF_PATTY = "beef_patty"
+    GROUND_BEEF = "ground_beef"
+    BURGER = "burger"
     POULTRY = "poultry"
     SEAFOOD = "seafood"
     FISH = "fish"
@@ -134,6 +137,44 @@ def detect_ingredient_categories(
         mark(NutritionCategory.TEA, NutritionCategory.BEVERAGE, reason="tea_like")
     if "coffee" in blob or "кофе" in blob:
         mark(NutritionCategory.COFFEE, NutritionCategory.BEVERAGE, reason="coffee_like")
+    if (
+        "beef patty" in blob
+        or "hamburger patty" in blob
+        or "burger patty" in blob
+        or "котлета для бургера" in blob
+        or "бургерная котлета" in blob
+        or "говяжья котлета" in blob
+        or "котлета из говядины" in blob
+        or ac == "beef_patty"
+    ):
+        mark(
+            NutritionCategory.BEEF_PATTY,
+            NutritionCategory.BEEF,
+            NutritionCategory.MEAT,
+            reason="beef_patty_like",
+        )
+    if (
+        "ground beef" in blob
+        or "beef mince" in blob
+        or "minced beef" in blob
+        or "говяжий фарш" in blob
+        or "фарш говяжий" in blob
+        or "фарш" in blob
+        or ac == "ground_beef"
+    ):
+        mark(
+            NutritionCategory.GROUND_BEEF,
+            NutritionCategory.BEEF,
+            NutritionCategory.MEAT,
+            reason="ground_beef_like",
+        )
+    if (
+        "burger" in blob
+        or "hamburger" in blob
+        or "cheeseburger" in blob
+        or ac == "burger"
+    ):
+        mark(NutritionCategory.BURGER, reason="burger_like")
     if "beef" in blob or "говядин" in blob or ac == "beef":
         mark(NutritionCategory.BEEF, NutritionCategory.MEAT, reason="beef_like")
     if any(x in blob for x in ("chicken", "turkey", "куриц", "индей")) or ac == "poultry":
@@ -147,6 +188,17 @@ def detect_ingredient_categories(
     alias_map = {
         "meat": (NutritionCategory.MEAT,),
         "beef": (NutritionCategory.BEEF, NutritionCategory.MEAT),
+        "beef_patty": (
+            NutritionCategory.BEEF_PATTY,
+            NutritionCategory.BEEF,
+            NutritionCategory.MEAT,
+        ),
+        "ground_beef": (
+            NutritionCategory.GROUND_BEEF,
+            NutritionCategory.BEEF,
+            NutritionCategory.MEAT,
+        ),
+        "burger": (NutritionCategory.BURGER,),
         "poultry": (NutritionCategory.POULTRY, NutritionCategory.MEAT),
         "seafood": (NutritionCategory.SEAFOOD,),
         "fish": (NutritionCategory.FISH,),

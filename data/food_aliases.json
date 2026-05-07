@@ -6184,6 +6184,91 @@
       "default_state": "cooked",
       "category": "beef"
     },
+    "beef patty": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "hamburger patty": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "burger patty": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "cooked beef patty": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "ground beef patty": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "котлета для бургера": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "говяжья котлета": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "котлета из говядины": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "бургерная котлета": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "ground beef": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "ground_beef"
+    },
+    "beef mince": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "ground_beef"
+    },
+    "minced beef": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "ground_beef"
+    },
+    "говяжий фарш": {
+      "canonical": "USDA Commodity, raw, frozen, bulk/coarse ground, ground, beef",
+      "default_state": "raw",
+      "category": "ground_beef"
+    },
+    "фарш говяжий": {
+      "canonical": "USDA Commodity, raw, frozen, bulk/coarse ground, ground, beef",
+      "default_state": "raw",
+      "category": "ground_beef"
+    },
+    "bun": {
+      "canonical": "Rolls, plain, hamburger or hotdog",
+      "default_state": "unknown",
+      "category": "grain"
+    },
+    "burger bun": {
+      "canonical": "Rolls, plain, hamburger or hotdog",
+      "default_state": "unknown",
+      "category": "grain"
+    },
+    "hamburger bun": {
+      "canonical": "Rolls, plain, hamburger or hotdog",
+      "default_state": "unknown",
+      "category": "grain"
+    },
     "kidney beans": {
       "canonical": "Beans, without salt, boiled, cooked, mature seeds, red, kidney",
       "default_state": "cooked",

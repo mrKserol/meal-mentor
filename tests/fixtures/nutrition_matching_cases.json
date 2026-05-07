@@ -515,5 +515,34 @@
         "tea": ["powder", "dry mix", "instant", "milkshake mix", "protein powder"]
       }
     }
+  },
+  {
+    "name": "double cheeseburger decomposed",
+    "description": "Double cheeseburger ingredients should not match beef patty to beef fat",
+    "ingredients": {
+      "beef patty": {"grams": 150, "state": "cooked"},
+      "sauce": {"grams": 20, "state": "unknown"},
+      "pickles": {"grams": 10, "state": "canned"},
+      "onion": {"grams": 10, "state": "raw"},
+      "tomato": {"grams": 20, "state": "raw"},
+      "lettuce": {"grams": 15, "state": "raw"},
+      "bun": {"grams": 70, "state": "unknown"},
+      "cheese": {"grams": 40, "state": "unknown"}
+    },
+    "expected": {
+      "calories_min": 650,
+      "calories_max": 950,
+      "protein_min": 30,
+      "fat_min": 25,
+      "fat_max": 65,
+      "carbohydrates_min": 25,
+      "carbohydrates_max": 70,
+      "forbidden_match_contains": {
+        "beef patty": ["fat", "tallow", "suet", "separable fat", "fat only", "babyfood", "sausage", "canned"]
+      },
+      "required_contains_any": {
+        "beef patty": ["beef", "ground", "patty"]
+      }
+    }
   }
 ]

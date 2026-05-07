@@ -483,6 +483,27 @@ def test_beef_plain_cooked_not_dish(nutrition_svc: NutritionService) -> None:
     assert 200 <= cal <= 400, f"beef 150g calories {cal}"
 
 
+def test_beef_patty_not_fat(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"beef patty": {"grams": 150, "state": "cooked"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "beef" in m
+    assert "patty" in m or "ground" in m
+    for bad in ("fat", "tallow", "suet", "separable fat", "fat only", "babyfood", "sausage", "canned"):
+        assert bad not in m
+    cal = int(data.get("calories") or 0)
+    p = float(data.get("proteins", 0) or 0)
+    f = float(data.get("fats", 0) or 0)
+    cb = float(data.get("carbohydrates", 0) or 0)
+    assert 300 <= cal <= 550, f"beef patty 150g calories {cal}"
+    assert p >= 25.0, f"beef patty 150g proteins {p}"
+    assert 15.0 <= f <= 45.0, f"beef patty 150g fats {f}"
+    assert cb <= 5.0, f"beef patty 150g carbs {cb}"
+
+
 def test_cornmeal_porridge_cooked_not_dry(nutrition_svc: NutritionService) -> None:
     if not nutrition_svc.aliases.is_loaded:
         pytest.skip("food_aliases.json not loaded")

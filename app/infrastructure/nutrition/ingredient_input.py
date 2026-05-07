@@ -435,6 +435,22 @@ def is_beef_like_ingredient(ni: NormalizedIngredient) -> bool:
     return "beef" in blob or "говядин" in blob
 
 
+def is_beef_patty_like_ingredient(ni: NormalizedIngredient) -> bool:
+    if NutritionCategory.BEEF_PATTY.value in ni.categories:
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    keys = (
+        "beef patty",
+        "hamburger patty",
+        "burger patty",
+        "котлета для бургера",
+        "бургерная котлета",
+        "говяжья котлета",
+        "котлета из говядины",
+    )
+    return any(k in blob for k in keys)
+
+
 def is_porridge_like_grain(ni: NormalizedIngredient) -> bool:
     """True for cooked porridge-like grain queries (cornmeal porridge/polenta/grits/mush/каша)."""
     blob = f"{ni.input_name} {ni.canonical_query}".lower()

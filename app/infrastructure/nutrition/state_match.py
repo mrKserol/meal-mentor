@@ -631,6 +631,51 @@ def _beef_candidate_adjustment(
     return max(score, -420.0), reasons
 
 
+def _beef_patty_candidate_adjustment(n: str, query_lower: str) -> tuple[float, list[str]]:
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    query_is_patty_only = any(x in query_lower for x in ("patty", "котлета"))
+
+    if "patty" in nl:
+        add(80, "beef_patty_word")
+    if "ground beef" in nl or "beef, ground" in nl:
+        add(70, "beef_patty_ground_beef")
+    if "cooked" in nl:
+        add(50, "beef_patty_cooked")
+    if "broiled" in nl or "grilled" in nl:
+        add(40, "beef_patty_broiled_grilled")
+    if "80%" in nl or "85%" in nl or "lean meat" in nl:
+        add(30, "beef_patty_lean_ratio")
+    if "hamburger" in nl:
+        add(25, "beef_patty_hamburger_word")
+
+    for bad in ("fat", "tallow", "suet", "separable fat", "fat only"):
+        if bad in nl and bad not in query_lower:
+            add(-150, f"beef_patty_bad_{bad.replace(' ', '_')}")
+    if "with bun" in nl and "with bun" not in query_lower:
+        add(-120, "beef_patty_with_bun")
+    if "cheeseburger" in nl and query_is_patty_only:
+        add(-120, "beef_patty_cheeseburger")
+    if "sandwich" in nl and "sandwich" not in query_lower:
+        add(-120, "beef_patty_sandwich")
+    for bad in ("babyfood", "sausage", "meat loaf", "canned"):
+        if bad in nl and bad not in query_lower:
+            add(-100, f"beef_patty_bad_{bad.replace(' ', '_')}")
+    if "breaded" in nl and "breaded" not in query_lower:
+        add(-80, "beef_patty_breaded")
+    if "fast food" in nl and query_is_patty_only:
+        add(-80, "beef_patty_fast_food")
+
+    return max(score, -500.0), reasons
+
+
 def _porridge_like_grain_adjustment(
     n: str,
     query_lower: str,
@@ -896,6 +941,7 @@ def state_score(
     beer_q: bool = False,
     generic_grain_query: bool = False,
     beef_q: bool = False,
+    beef_patty_q: bool = False,
     porridge_like_grain_q: bool = False,
     tea_drink_q: bool = False,
     cottage_cheese_q: bool = False,
@@ -1105,6 +1151,10 @@ def state_score(
         bf, bfr = _beef_candidate_adjustment(n, query_lower, candidate_carbs_per100)
         score += bf
         reasons.extend(bfr)
+    if beef_patty_q:
+        bp, bpr = _beef_patty_candidate_adjustment(n, query_lower)
+        score += bp
+        reasons.extend(bpr)
 
     if porridge_like_grain_q:
         pg, pgr = _porridge_like_grain_adjustment(n, query_lower, rs)
