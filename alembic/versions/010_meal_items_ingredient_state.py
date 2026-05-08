@@ -9,8 +9,17 @@ branch_labels = None
 depends_on = None
 
 
+def _has_column(bind, table: str, column: str) -> bool:
+    insp = sa.inspect(bind)
+    if table not in insp.get_table_names():
+        return False
+    return any(c["name"] == column for c in insp.get_columns(table))
+
+
 def upgrade() -> None:
-    op.add_column("meal_items", sa.Column("ingredient_state", sa.String(length=32), nullable=True))
+    bind = op.get_bind()
+    if not _has_column(bind, "meal_items", "ingredient_state"):
+        op.add_column("meal_items", sa.Column("ingredient_state", sa.String(length=32), nullable=True))
 
 
 def downgrade() -> None:
