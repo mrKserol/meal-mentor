@@ -11,7 +11,7 @@ export interface AdminPlanFeature {
   value_bool: boolean | null;
   value_int: number | null;
   value_text: string | null;
-  created_at: string;
+  created_at: string | null;
   updated_at: string | null;
 }
 

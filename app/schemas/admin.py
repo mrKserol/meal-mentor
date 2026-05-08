@@ -12,7 +12,7 @@ class AdminUserListItem(BaseModel):
     role: str
     status: str
     subscription_status: str
-    created_at: datetime
+    created_at: datetime | None = None
     updated_at: datetime | None = None
     active_subscription_ends_at: datetime | None = None
 
