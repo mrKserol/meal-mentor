@@ -30,6 +30,7 @@ class MealAnalysisResult(BaseModel):
     ingredients: dict[str, Any] = Field(default_factory=dict)
     confidence: float | None = None
     nutrition: MacroTotals | None = None
+    nutrition_full: dict[str, float] | None = None
     prediction: str | None = None
     error: str = ""
 
@@ -46,6 +47,8 @@ class MealAnalysisResult(BaseModel):
             out["prediction"] = self.prediction
         if self.nutrition is not None:
             out["nutrition"] = self.nutrition.model_dump()
+        if self.nutrition_full is not None:
+            out["nutrition_full"] = self.nutrition_full
         return out
 
 

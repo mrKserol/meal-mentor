@@ -91,7 +91,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if not isinstance(ingredients, dict):
         ingredients = {}
     confidence = data.get("confidence")
-    nutrition = data.get("nutrition")
+    nutrition = data.get("nutrition_full") or data.get("nutrition")
 
     if _needs_user_description(ingredients, confidence):
         pred_raw = data.get("prediction")

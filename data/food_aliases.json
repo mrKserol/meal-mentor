@@ -5744,6 +5744,636 @@
       "default_state": "cooked",
       "category": "seafood"
     },
+    "креветка": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "cooked",
+      "category": "seafood"
+    },
+    "вареные креветки": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "cooked",
+      "category": "seafood"
+    },
+    "варёные креветки": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "cooked",
+      "category": "seafood"
+    },
+    "отварные креветки": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "cooked",
+      "category": "seafood"
+    },
+    "жареные креветки": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "fried",
+      "category": "seafood"
+    },
+    "shrimp": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "cooked",
+      "category": "seafood"
+    },
+    "shrimps": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "cooked",
+      "category": "seafood"
+    },
+    "cooked shrimp": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "cooked",
+      "category": "seafood"
+    },
+    "boiled shrimp": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "boiled",
+      "category": "seafood"
+    },
+    "grilled shrimp": {
+      "canonical": "Crustaceans, moist heat (may have been previously frozen), cooked, mixed species, shrimp",
+      "default_state": "grilled",
+      "category": "seafood"
+    },
+    "corn": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "sweet corn": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "cooked corn": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "canned corn": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "canned",
+      "category": "vegetable"
+    },
+    "кукуруза": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "сладкая кукуруза": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "вареная кукуруза": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "варёная кукуруза": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "консервированная кукуруза": {
+      "canonical": "Corn, microwaved, frozen, whole kernel, yellow",
+      "default_state": "canned",
+      "category": "vegetable"
+    },
+    "peas": {
+      "canonical": "Peas, drained solids, no salt added, canned, green",
+      "default_state": "cooked",
+      "category": "legume"
+    },
+    "green peas": {
+      "canonical": "Peas, drained solids, no salt added, canned, green",
+      "default_state": "cooked",
+      "category": "legume"
+    },
+    "green beans": {
+      "canonical": "Beans, drained solids, no salt added, canned, yellow, snap",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "carrot": {
+      "canonical": "Carrots, drained solids, regular pack, canned",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "carrots": {
+      "canonical": "Carrots, drained solids, regular pack, canned",
+      "default_state": "cooked",
+      "category": "vegetable"
+    },
+    "pasta": {
+      "canonical": "Pasta, cooked, plain, fresh-refrigerated",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "spaghetti": {
+      "canonical": "Pasta, cooked, plain, fresh-refrigerated",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "peanut butter": {
+      "canonical": "Peanut butter, with salt, smooth style",
+      "default_state": "unknown",
+      "category": "fat"
+    },
+    "beer": {
+      "canonical": "Alcoholic beverage, all, regular, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "regular beer": {
+      "canonical": "Alcoholic beverage, all, regular, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "lager": {
+      "canonical": "Alcoholic beverage, all, regular, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "пиво": {
+      "canonical": "Alcoholic beverage, all, regular, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "обычное пиво": {
+      "canonical": "Alcoholic beverage, all, regular, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "светлое пиво": {
+      "canonical": "Alcoholic beverage, all, regular, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "лагер": {
+      "canonical": "Alcoholic beverage, all, regular, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "light beer": {
+      "canonical": "Alcoholic beverage, light, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "light lager": {
+      "canonical": "Alcoholic beverage, light, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "легкое пиво": {
+      "canonical": "Alcoholic beverage, light, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "лёгкое пиво": {
+      "canonical": "Alcoholic beverage, light, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "strong beer": {
+      "canonical": "Alcoholic beverages, higher alcohol, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "high alcohol beer": {
+      "canonical": "Alcoholic beverages, higher alcohol, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "крепкое пиво": {
+      "canonical": "Alcoholic beverages, higher alcohol, beer",
+      "default_state": "unknown",
+      "category": "alcoholic_beverage"
+    },
+    "oat groats": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "cooked oat groats": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "oats": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "cooked oats": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "whole oats": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "whole grain oats": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "овес": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "овёс": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "овсяные зерна": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "овсяные зёрна": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "цельный овес": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "цельный овёс": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "вареный овес": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "варёный овёс": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "отварной овес": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "отварной овёс": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "oatmeal": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "cooked oatmeal": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "овсянка": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "овсяная каша": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "каша овсяная": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "dry oats": {
+      "canonical": "Oats",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "oats dry": {
+      "canonical": "Oats",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "oat flakes": {
+      "canonical": "Oats",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "rolled oats": {
+      "canonical": "Oats",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "овсяные хлопья": {
+      "canonical": "Oats",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "сухая овсянка": {
+      "canonical": "Oats",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "сухие овсяные хлопья": {
+      "canonical": "Oats",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "cooked grains": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
+    "grains cooked": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
+    "cooked cereal grains": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
+    "вареные злаки": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
+    "варёные злаки": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
+    "вареные зерна": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
+    "варёные зёрна": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
+    "злаки вареные": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
+    "злаки варёные": {
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain_generic_fallback"
+    },
+    "beef": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "beef"
+    },
+    "cooked beef": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "beef"
+    },
+    "beef meat": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "beef"
+    },
+    "говядина": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "beef"
+    },
+    "вареная говядина": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "beef"
+    },
+    "варёная говядина": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "beef"
+    },
+    "тушеная говядина": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "beef"
+    },
+    "тушёная говядина": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "beef"
+    },
+    "жареная говядина": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "beef"
+    },
+    "запеченная говядина": {
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
+      "default_state": "cooked",
+      "category": "beef"
+    },
+    "beef patty": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "hamburger patty": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "burger patty": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "cooked beef patty": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "ground beef patty": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "котлета для бургера": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "говяжья котлета": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "котлета из говядины": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "бургерная котлета": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "beef_patty"
+    },
+    "ground beef": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "ground_beef"
+    },
+    "beef mince": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "ground_beef"
+    },
+    "minced beef": {
+      "canonical": "USDA Commodity, cooked, frozen, ground bulk/coarse ground, beef",
+      "default_state": "cooked",
+      "category": "ground_beef"
+    },
+    "говяжий фарш": {
+      "canonical": "USDA Commodity, raw, frozen, bulk/coarse ground, ground, beef",
+      "default_state": "raw",
+      "category": "ground_beef"
+    },
+    "фарш говяжий": {
+      "canonical": "USDA Commodity, raw, frozen, bulk/coarse ground, ground, beef",
+      "default_state": "raw",
+      "category": "ground_beef"
+    },
+    "bun": {
+      "canonical": "Rolls, plain, hamburger or hotdog",
+      "default_state": "unknown",
+      "category": "grain"
+    },
+    "burger bun": {
+      "canonical": "Rolls, plain, hamburger or hotdog",
+      "default_state": "unknown",
+      "category": "grain"
+    },
+    "hamburger bun": {
+      "canonical": "Rolls, plain, hamburger or hotdog",
+      "default_state": "unknown",
+      "category": "grain"
+    },
+    "kidney beans": {
+      "canonical": "Beans, without salt, boiled, cooked, mature seeds, red, kidney",
+      "default_state": "cooked",
+      "category": "legume"
+    },
+    "cornmeal porridge": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "cooked cornmeal porridge": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "corn porridge": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "polenta": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "cooked polenta": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "corn grits": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "cooked corn grits": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "кукурузная каша": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "каша из кукурузной крупы": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "кукурузная крупа вареная": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "кукурузная крупа варёная": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "мамалыга": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "полента": {
+      "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "cornmeal": {
+      "canonical": "Cornmeal, yellow, unenriched, degermed",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "dry cornmeal": {
+      "canonical": "Cornmeal, yellow, unenriched, degermed",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "corn meal": {
+      "canonical": "Cornmeal, yellow, unenriched, degermed",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "corn flour": {
+      "canonical": "Cornmeal, yellow, unenriched, degermed",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "кукурузная крупа сухая": {
+      "canonical": "Cornmeal, yellow, unenriched, degermed",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "сухая кукурузная крупа": {
+      "canonical": "Cornmeal, yellow, unenriched, degermed",
+      "default_state": "dry",
+      "category": "grain"
+    },
+    "кукурузная мука": {
+      "canonical": "Cornmeal, yellow, unenriched, degermed",
+      "default_state": "dry",
+      "category": "grain"
+    },
     "крупа гречневая": {
       "canonical": "Buckwheat groats, dry, roasted",
       "default_state": "dry",
@@ -6187,7 +6817,7 @@
     "семена чиа": {
       "canonical": "Seeds, dried, chia seeds",
       "default_state": "dry",
-      "category": "seeds"
+      "category": "seed"
     },
     "семечки": {
       "canonical": "Seeds, dried, sunflower seed kernels",
@@ -6290,9 +6920,9 @@
       "category": "fish"
     },
     "творог": {
-      "canonical": "Cheese, large or small curd, creamed, cottage",
+      "canonical": "Cheese, 2% milkfat, lowfat, cottage",
       "default_state": "unknown",
-      "category": "dairy"
+      "category": "cottage_cheese"
     },
     "тилапия": {
       "canonical": "Fish, dry heat, cooked, tilapia",
@@ -6669,6 +7299,56 @@
       "default_state": "cooked",
       "category": "poultry"
     },
+    "chicken meat with skin": {
+      "canonical": "Chicken, raw, meat and skin, broilers or fryers",
+      "default_state": "unknown",
+      "category": "poultry"
+    },
+    "chicken leg with skin": {
+      "canonical": "Chicken, raw, meat and skin, leg, broilers or fryers",
+      "default_state": "unknown",
+      "category": "poultry"
+    },
+    "chicken thigh with skin": {
+      "canonical": "Chicken, raw, meat and skin, thigh, broilers or fryers",
+      "default_state": "unknown",
+      "category": "poultry"
+    },
+    "chicken drumstick with skin": {
+      "canonical": "Chicken, raw, meat and skin, drumstick, broilers or fryers",
+      "default_state": "unknown",
+      "category": "poultry"
+    },
+    "boiled chicken leg": {
+      "canonical": "Chicken, stewed, cooked, meat and skin, stewing",
+      "default_state": "boiled",
+      "category": "poultry"
+    },
+    "boiled chicken thigh": {
+      "canonical": "Chicken, stewed, cooked, meat and skin, stewing",
+      "default_state": "boiled",
+      "category": "poultry"
+    },
+    "курица с кожей": {
+      "canonical": "Chicken, raw, meat and skin, broilers or fryers",
+      "default_state": "unknown",
+      "category": "poultry"
+    },
+    "куриная ножка": {
+      "canonical": "Chicken, raw, meat and skin, leg, broilers or fryers",
+      "default_state": "unknown",
+      "category": "poultry"
+    },
+    "куриное бедро": {
+      "canonical": "Chicken, raw, meat and skin, thigh, broilers or fryers",
+      "default_state": "unknown",
+      "category": "poultry"
+    },
+    "куриная голень": {
+      "canonical": "Chicken, raw, meat and skin, drumstick, broilers or fryers",
+      "default_state": "unknown",
+      "category": "poultry"
+    },
     "feta cheese": {
       "canonical": "Cheese, feta",
       "default_state": "unknown",
@@ -6734,6 +7414,61 @@
       "default_state": "canned",
       "category": "fish"
     },
+    "tuna canned": {
+      "canonical": "Fish, drained solids, canned in water, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "tuna": {
+      "canonical": "Fish, drained solids, canned in water, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "тунец": {
+      "canonical": "Fish, drained solids, canned in water, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "консервированный тунец": {
+      "canonical": "Fish, drained solids, canned in water, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "тунец консервированный": {
+      "canonical": "Fish, drained solids, canned in water, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "тунец в собственном соку": {
+      "canonical": "Fish, drained solids, canned in water, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "тунец в воде": {
+      "canonical": "Fish, drained solids, canned in water, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "tuna in oil": {
+      "canonical": "Fish, drained solids, canned in oil, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "canned tuna in oil": {
+      "canonical": "Fish, drained solids, canned in oil, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "тунец в масле": {
+      "canonical": "Fish, drained solids, canned in oil, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
+    "консервированный тунец в масле": {
+      "canonical": "Fish, drained solids, canned in oil, light, tuna",
+      "default_state": "canned",
+      "category": "fish"
+    },
     "bell pepper": {
       "canonical": "Peppers, raw, red, sweet",
       "default_state": "raw",
@@ -6763,6 +7498,146 @@
       "canonical": "Beverages, prepared with tap water, brewed, black, tea",
       "default_state": "unknown",
       "category": "beverage"
+    },
+    "tea": {
+      "canonical": "Beverages, prepared with tap water, brewed, black, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "brewed tea": {
+      "canonical": "Beverages, prepared with tap water, brewed, black, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "green tea": {
+      "canonical": "Beverages, regular, brewed, green, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "зеленый чай": {
+      "canonical": "Beverages, regular, brewed, green, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "зелёный чай": {
+      "canonical": "Beverages, regular, brewed, green, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "herbal tea": {
+      "canonical": "Beverages, brewed, other than chamomile, herb, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "травяной чай": {
+      "canonical": "Beverages, brewed, other than chamomile, herb, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "черный чай": {
+      "canonical": "Beverages, prepared with tap water, brewed, black, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "чёрный чай": {
+      "canonical": "Beverages, prepared with tap water, brewed, black, tea",
+      "default_state": "unknown",
+      "category": "beverage"
+    },
+    "cottage cheese": {
+      "canonical": "Cheese, 2% milkfat, lowfat, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "curd": {
+      "canonical": "Cheese, 2% milkfat, lowfat, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "творог 0%": {
+      "canonical": "Cheese, 1% milkfat, lowfat, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "творог обезжиренный": {
+      "canonical": "Cheese, 1% milkfat, lowfat, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "обезжиренный творог": {
+      "canonical": "Cheese, 1% milkfat, lowfat, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "творог 2%": {
+      "canonical": "Cheese, 2% milkfat, lowfat, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "творог 5%": {
+      "canonical": "Cheese, large or small curd, creamed, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "творог 9%": {
+      "canonical": "Cheese, large or small curd, creamed, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "домашний творог": {
+      "canonical": "Cheese, 2% milkfat, lowfat, cottage",
+      "default_state": "unknown",
+      "category": "cottage_cheese"
+    },
+    "banana": {
+      "canonical": "Bananas, raw",
+      "default_state": "raw",
+      "category": "fruit"
+    },
+    "bananas": {
+      "canonical": "Bananas, raw",
+      "default_state": "raw",
+      "category": "fruit"
+    },
+    "pumpkin seeds": {
+      "canonical": "Seeds, dried, pumpkin and squash seed kernels",
+      "default_state": "dry",
+      "category": "seed"
+    },
+    "pumpkin seed": {
+      "canonical": "Seeds, dried, pumpkin and squash seed kernels",
+      "default_state": "dry",
+      "category": "seed"
+    },
+    "pepitas": {
+      "canonical": "Seeds, dried, pumpkin and squash seed kernels",
+      "default_state": "dry",
+      "category": "seed"
+    },
+    "тыквенные семечки": {
+      "canonical": "Seeds, dried, pumpkin and squash seed kernels",
+      "default_state": "dry",
+      "category": "seed"
+    },
+    "семечки тыквы": {
+      "canonical": "Seeds, dried, pumpkin and squash seed kernels",
+      "default_state": "dry",
+      "category": "seed"
+    },
+    "семена тыквы": {
+      "canonical": "Seeds, dried, pumpkin and squash seed kernels",
+      "default_state": "dry",
+      "category": "seed"
+    },
+    "chia seeds": {
+      "canonical": "Seeds, dried, chia seeds",
+      "default_state": "dry",
+      "category": "seed"
+    },
+    "chia seed": {
+      "canonical": "Seeds, dried, chia seeds",
+      "default_state": "dry",
+      "category": "seed"
     },
     "чай": {
       "canonical": "Beverages, prepared with tap water, brewed, black, tea",

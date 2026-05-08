@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
+import logging
 from typing import Any
 
 import zoneinfo
@@ -11,6 +12,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.config import BASE_URL
 from app.db.models import Meal, MealItem, User
+from app.db.nutrition_columns import MEAL_ITEM_NUTRITION_KEYS
 from app.services.meal_serialization import meal_composition_line
 from app.db.repository import list_user_measurements
 from app.schemas.diary import (
@@ -32,6 +34,45 @@ _MEAL_TYPE_RU: dict[str, str] = {
     "dinner": "Ужин",
     "snack": "Перекус",
 }
+logger = logging.getLogger(__name__)
+
+_PRIMARY_DAILY_KEYS = frozenset({"calories", "protein_g", "fat_g", "carbs_g", "fiber_g"})
+
+
+def _init_detailed_sums() -> dict[str, float]:
+    return {k: 0.0 for k in MEAL_ITEM_NUTRITION_KEYS if k not in _PRIMARY_DAILY_KEYS}
+
+
+def _accumulate_detailed_meal_nutrients(meal: Meal, totals: dict[str, float]) -> None:
+    for item in meal.items:
+        n = item.nutrition
+        if n is None:
+            continue
+        for key in totals.keys():
+            totals[key] += float(getattr(n, key, 0.0) or 0.0)
+
+
+def _warn_suspicious_nutrient_mapping(avg_values: dict[str, float], *, avg_fat_g: float) -> None:
+    cholesterol_mg = float(avg_values.get("cholesterol_mg", 0.0) or 0.0)
+    trans_mg = float(avg_values.get("fatty_acids_total_trans_mg", 0.0) or 0.0)
+    if cholesterol_mg > 0 and trans_mg > 0 and cholesterol_mg == trans_mg:
+        logger.warning(
+            "Suspicious nutrient mapping: cholesterol_mg equals fatty_acids_total_trans_mg",
+            extra={
+                "cholesterol_mg": cholesterol_mg,
+                "fatty_acids_total_trans_mg": trans_mg,
+            },
+        )
+    trans_fat_g = trans_mg / 1000.0
+    if avg_fat_g > 0 and trans_fat_g > avg_fat_g:
+        logger.warning(
+            "Suspicious nutrient data: trans fat is greater than total fat",
+            extra={
+                "fat_g": avg_fat_g,
+                "fatty_acids_total_trans_mg": trans_mg,
+                "trans_fat_g": trans_fat_g,
+            },
+        )
 
 
 def _resolve_tz(user: User) -> zoneinfo.ZoneInfo:
@@ -91,8 +132,13 @@ def _rolling_30_days_utc_naive(user: User) -> tuple[datetime, datetime, date, da
     return start_utc, end_utc, first, today, tz
 
 
-def _sum_meal_nutrition(meal: Meal) -> dict[str, int]:
+def _sum_meal_nutrition(meal: Meal) -> dict[str, int | float]:
     c = p = f = cb = 0
+    fib = 0.0
+    sugar = 0.0
+    sodium_mg = 0.0
+    sat_fat = 0.0
+    water = 0.0
     for item in meal.items:
         n = item.nutrition
         if n is None:
@@ -101,7 +147,22 @@ def _sum_meal_nutrition(meal: Meal) -> dict[str, int]:
         p += n.protein_g or 0
         f += n.fat_g or 0
         cb += n.carbs_g or 0
-    return {"calories": c, "protein_g": p, "fat_g": f, "carbs_g": cb}
+        fib += float(n.fiber_g or 0)
+        sugar += float(n.sugar_g or 0)
+        sodium_mg += float(n.sodium_mg or 0)
+        sat_fat += float(n.saturated_fat_g or 0)
+        water += float(n.water_g or 0)
+    return {
+        "calories": c,
+        "protein_g": p,
+        "fat_g": f,
+        "carbs_g": cb,
+        "fiber_g": round(fib, 2),
+        "sugar_g": round(sugar, 2),
+        "sodium_mg": round(sodium_mg, 2),
+        "saturated_fat_g": round(sat_fat, 2),
+        "water_g": round(water, 2),
+    }
 
 
 def _absolute_public_url(web_path: str | None) -> str | None:
@@ -159,6 +220,8 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
 
     by_day_cal: dict[date, int] = defaultdict(int)
     week_p = week_f = week_cb = 0
+    week_fiber = 0.0
+    week_details = _init_detailed_sums()
 
     for meal in meals_week:
         local = _utc_naive_to_local(_meal_naive_dt(meal), tz)
@@ -170,6 +233,8 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         week_p += t["protein_g"]
         week_f += t["fat_g"]
         week_cb += t["carbs_g"]
+        week_fiber += float(t["fiber_g"])
+        _accumulate_detailed_meal_nutrients(meal, week_details)
 
     days_with_data = sum(1 for i in range(7) if by_day_cal.get(week_first + timedelta(days=i), 0) > 0)
     div = max(1, days_with_data)
@@ -186,12 +251,19 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         day_label = _WEEKDAY_RU[dd.weekday()]
         week_days.append(DiaryWeekDay(date=dd, weekday_short=day_label, calories=cal, bar_percent=pct))
 
+    week_detailed_avg = {k: round(v / div, 3) for k, v in week_details.items()}
+    _warn_suspicious_nutrient_mapping(week_detailed_avg, avg_fat_g=round(week_f / div, 1))
     week_block = DiaryWeekBlock(
         days=week_days,
         avg_calories=round(sum(by_day_cal.values()) / div, 1),
         avg_protein_g=round(week_p / div, 1),
         avg_fat_g=round(week_f / div, 1),
         avg_carbs_g=round(week_cb / div, 1),
+        avg_fiber_g=round(week_fiber / div, 1),
+        avg_sugar_g=round(week_detailed_avg.get("sugar_g", 0.0), 1),
+        avg_salt_g=round((week_detailed_avg.get("sodium_mg", 0.0) * 2.54 / 1000.0), 2),
+        avg_saturated_fat_g=round(week_detailed_avg.get("saturated_fat_g", 0.0), 1),
+        detailed_avg=week_detailed_avg,
         days_with_data=days_with_data,
     )
 
@@ -204,6 +276,8 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
     )
     month_by_cal: dict[date, int] = defaultdict(int)
     month_p = month_f = month_cb = 0
+    month_fiber = 0.0
+    month_details = _init_detailed_sums()
     for meal in meals_month:
         local = _utc_naive_to_local(_meal_naive_dt(meal), tz_m)
         d = local.date()
@@ -214,6 +288,8 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         month_p += t["protein_g"]
         month_f += t["fat_g"]
         month_cb += t["carbs_g"]
+        month_fiber += float(t["fiber_g"])
+        _accumulate_detailed_meal_nutrients(meal, month_details)
 
     month_span = 30
     month_days_with = sum(
@@ -235,12 +311,19 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         period_days.append(
             DiaryPeriodDay(date=dd, label=f"{dd.day}.{dd.month}", calories=cal, bar_percent=pct),
         )
+    month_detailed_avg = {k: round(v / month_div, 3) for k, v in month_details.items()}
+    _warn_suspicious_nutrient_mapping(month_detailed_avg, avg_fat_g=round(month_f / month_div, 1))
     month_block = DiaryPeriodBlock(
         days=period_days,
         avg_calories=round(sum(month_by_cal.values()) / month_div, 1),
         avg_protein_g=round(month_p / month_div, 1),
         avg_fat_g=round(month_f / month_div, 1),
         avg_carbs_g=round(month_cb / month_div, 1),
+        avg_fiber_g=round(month_fiber / month_div, 1),
+        avg_sugar_g=round(month_detailed_avg.get("sugar_g", 0.0), 1),
+        avg_salt_g=round((month_detailed_avg.get("sodium_mg", 0.0) * 2.54 / 1000.0), 2),
+        avg_saturated_fat_g=round(month_detailed_avg.get("saturated_fat_g", 0.0), 1),
+        detailed_avg=month_detailed_avg,
         days_with_data=month_days_with,
     )
 
@@ -252,13 +335,15 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         .all()
     )
     tc = tp = tf = tcb = 0
+    tfib = 0.0
     for meal in meals_today:
         nut = _sum_meal_nutrition(meal)
         tc += nut["calories"]
         tp += nut["protein_g"]
         tf += nut["fat_g"]
         tcb += nut["carbs_g"]
-    today = DiaryTodayTotals(calories=tc, protein_g=tp, fat_g=tf, carbs_g=tcb)
+        tfib += float(nut["fiber_g"])
+    today = DiaryTodayTotals(calories=tc, protein_g=tp, fat_g=tf, carbs_g=tcb, fiber_g=round(tfib, 2))
 
     meals_today_desc = sorted(meals_today, key=lambda m: m.meal_datetime, reverse=True)
     today_meals: list[DiaryRecentMeal] = []
@@ -275,6 +360,14 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
                 meal_type_label=_meal_type_label(meal.meal_type),
                 time_local=local.strftime("%H:%M"),
                 calories=tot["calories"],
+                protein_g=tot["protein_g"],
+                fat_g=tot["fat_g"],
+                carbs_g=tot["carbs_g"],
+                fiber_g=tot["fiber_g"],
+                sugar_g=tot["sugar_g"],
+                sodium_mg=tot["sodium_mg"],
+                saturated_fat_g=tot["saturated_fat_g"],
+                water_g=tot["water_g"],
                 recorded_at=recorded,
                 prediction=meal.prediction,
                 user_text=meal.user_text,

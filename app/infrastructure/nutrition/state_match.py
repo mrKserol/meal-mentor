@@ -121,33 +121,605 @@ def _beverage_candidate_adjustment(n: str) -> tuple[float, list[str]]:
     score = 0.0
     nl = n.lower()
     if "brewed" in nl or "prepared with tap water" in nl or "prepared with distilled water" in nl:
-        score += 38
-        reasons.append("+38:beverage_brewed_or_prepared_water")
-    penalties: list[tuple[str, str]] = [
-        ("powder", "beverage_powder"),
-        ("dry mix", "beverage_dry_mix"),
-        ("protein powder", "beverage_protein_powder"),
-        ("beverage powder", "beverage_powder_label"),
-        ("milkshake mix", "beverage_milkshake_mix"),
-        ("instant", "beverage_instant"),
-        ("cereal", "beverage_cereal"),
-        ("dessert", "beverage_dessert"),
+        score += 45
+        reasons.append("+45:beverage_brewed_or_prepared_water")
+    penalties: list[tuple[str, str, int]] = [
+        ("powder", "beverage_powder", 90),
+        ("sweetened powder", "beverage_sweetened_powder", 90),
+        ("prepared from powder", "beverage_prepared_from_powder", 90),
+        ("dry mix", "beverage_dry_mix", 90),
+        ("protein powder", "beverage_protein_powder", 90),
+        ("beverage powder", "beverage_powder_label", 90),
+        ("milkshake mix", "beverage_milkshake_mix", 90),
+        ("instant", "beverage_instant", 85),
+        ("cereal", "beverage_cereal", 85),
+        ("dessert", "beverage_dessert", 85),
     ]
-    for needle, tag in penalties:
+    for needle, tag, pen in penalties:
         if needle in nl:
-            score -= 80
-            reasons.append(f"-80:{tag}")
+            score -= float(pen)
+            reasons.append(f"-{pen}:{tag}")
     if re.search(r"milk,\s*dry|nonfat dry milk|dry milk", nl):
-        score -= 80
-        reasons.append("-80:beverage_dry_milk")
+        score -= 85
+        reasons.append("-85:beverage_dry_milk")
     if re.search(r"\bmix\b", nl) and "brewed" not in nl and "prepared with tap water" not in nl:
-        score -= 80
-        reasons.append("-80:beverage_mix_non_brewed")
+        score -= 85
+        reasons.append("-85:beverage_mix_non_brewed")
     if re.search(r"\bdry\b", nl) and "brewed" not in nl and "prepared with tap water" not in nl:
         if any(x in nl for x in ("beverage", "drink", "tea", "coffee", "cocoa", "juice")):
+            score -= 85
+            reasons.append("-85:beverage_dry_drink_product")
+    return max(score, -320.0), reasons
+
+
+def _tea_drink_row_adjustment(n: str, ing_lower: str) -> tuple[float, list[str]]:
+    """Avoid teaseed oil / non-tea rows when user asked for a tea drink."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    if "teaseed" in nl or "tea seed" in nl:
+        score -= 220
+        reasons.append("-220:tea_teaseed_oil")
+    if nl.startswith("oil,") and "tea" in ing_lower:
+        score -= 120
+        reasons.append("-120:tea_oil_row")
+    if ("brewed" in nl or "prepared with tap water" in nl or "prepared with distilled water" in nl) and (
+        ", tea" in nl or ", herb, tea" in nl or nl.endswith(" tea")
+    ):
+        score += 55
+        reasons.append("+55:tea_brewed_row")
+    if "tea" in nl and "beverage" in nl and ("brewed" in nl or "prepared with tap water" in nl):
+        score += 25
+        reasons.append("+25:tea_beverage_brewed")
+    return max(score, -280.0), reasons
+
+
+def _cottage_cheese_adjustment(n: str, query_lower: str) -> tuple[float, list[str]]:
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    if "cottage-cut" in nl or "cottage cut" in nl:
+        score -= 150
+        reasons.append("-150:cottage_cut_potato")
+    if "cottage" in nl:
+        score += 70
+        reasons.append("+70:cottage_word")
+    if "cheese, cottage" in nl or ("cheese, " in nl and "cottage" in nl):
+        score += 40
+        reasons.append("+40:cottage_cheese_phrase")
+    if ("lowfat" in nl or "creamed" in nl or "nonfat" in nl) and "cottage" in nl:
+        score += 20
+        reasons.append("+20:cottage_lowfat_or_creamed")
+
+    def q_has(s: str) -> bool:
+        return s in query_lower
+
+    for needle, pen in (
+        ("cheddar", -100),
+        ("cream cheese", -100),
+        ("cheese spread", -100),
+        ("cheesecake", -100),
+        ("dessert", -100),
+        ("processed", -80),
+        ("pasteurized process", -80),
+        ("parmesan", -80),
+        ("swiss", -80),
+        ("feta", -80),
+        ("mozzarella", -80),
+    ):
+        if needle in nl and not q_has(needle):
+            score += float(pen)
+            reasons.append(f"{pen:.0f}:cottage_bad_{needle.replace(' ', '_')}")
+    if "cottage" not in nl and re.search(r"\bcheese\b", nl):
+        score -= 60
+        reasons.append("-60:cottage_missing")
+    return max(score, -320.0), reasons
+
+
+def _banana_fruit_adjustment(n: str, query_lower: str, requested_state: str) -> tuple[float, list[str]]:
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    rs = (requested_state or "unknown").lower()
+
+    if "bananas" in nl and "raw" in nl:
+        score += 75
+        reasons.append("+75:bananas_raw")
+    elif "banana" in nl and "raw" in nl and "pepper" not in nl:
+        score += 45
+        reasons.append("+45:banana_raw")
+    elif "raw" in nl and "banana" in nl:
+        score += 30
+        reasons.append("+30:banana_raw_soft")
+
+    if "pepper" in nl and "banana" in nl and "pepper" not in query_lower:
+        score -= 120
+        reasons.append("-120:banana_pepper_confusion")
+    if "melon" in nl and "banana" in nl and "navajo" in nl:
+        score -= 100
+        reasons.append("-100:banana_melon_navajo")
+
+    def qx(*words: str) -> bool:
+        return any(w in query_lower for w in words)
+
+    if "babyfood" in nl and not qx("babyfood", "baby"):
+        score -= 85
+        reasons.append("-85:banana_babyfood")
+    for bad, tag in (
+        ("juice", "juice"),
+        ("beverage", "beverage"),
+        ("chips", "chips"),
+        ("flour", "flour"),
+        ("dessert", "dessert"),
+        ("pudding", "pudding"),
+        ("cake", "cake"),
+    ):
+        if bad in nl and not qx(bad):
             score -= 80
-            reasons.append("-80:beverage_dry_drink_product")
-    return max(score, -260.0), reasons
+            reasons.append(f"-80:banana_{tag}")
+    if rs != "dry" and any(x in nl for x in ("dried", "dehydrated", "powder")):
+        score -= 85
+        reasons.append("-85:banana_not_dry_but_dried_row")
+    return max(score, -280.0), reasons
+
+
+def _seed_kernel_adjustment(n: str, query_lower: str) -> tuple[float, list[str]]:
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    wants_chia = "chia" in query_lower
+    wants_pumpkin_blob = "pumpkin" in query_lower or "тыкв" in query_lower or "pepitas" in query_lower
+    wants_pumpkin_seed = wants_pumpkin_blob and (
+        "seed" in query_lower
+        or "pepitas" in query_lower
+        or "семеч" in query_lower
+        or "семен" in query_lower
+    )
+
+    def qx(*words: str) -> bool:
+        return any(w in query_lower for w in words)
+
+    if wants_chia:
+        if "chia" in nl:
+            score += 70
+            reasons.append("+70:chia_word")
+        if "dried" in nl or "dry" in nl:
+            score += 25
+            reasons.append("+25:chia_dried")
+        if "pumpkin" in nl and "chia" not in nl:
+            score -= 80
+            reasons.append("-80:chia_query_pumpkin_row")
+    if wants_pumpkin_seed:
+        if "pumpkin" in nl:
+            score += 60
+            reasons.append("+60:pumpkin_seed_word")
+        if "seeds" in nl or "seed" in nl:
+            score += 45
+            reasons.append("+45:seeds_word")
+        if "kernels" in nl:
+            score += 35
+            reasons.append("+35:kernels")
+        if "dried" in nl:
+            score += 25
+            reasons.append("+25:seed_dried")
+        if "chia" in nl and "pumpkin" not in nl:
+            score -= 70
+            reasons.append("-70:pumpkin_query_chia_row")
+
+    for bad, pen in (
+        ("fish oil", 100),
+        ("babyfood", 85),
+        ("flour", 85),
+        ("meal", 85),
+        ("butter", 85),
+        ("beverage", 85),
+        ("soup", 85),
+        ("sprouts", 85),
+    ):
+        if bad in nl and not qx(bad):
+            score -= float(pen)
+            reasons.append(f"-{pen:.0f}:seed_{bad.replace(' ', '_')}")
+    if (wants_chia or wants_pumpkin_seed) and nl.startswith("oil,"):
+        score -= 110
+        reasons.append("-110:seed_query_oil_row")
+
+    return max(score, -300.0), reasons
+
+
+def _tuna_canned_adjustment(n: str, ing: str, query_lower: str) -> tuple[float, list[str]]:
+    """Boost real canned tuna rows; penalize oil, salad, soups, non-tuna fish for canned queries."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    blob = f"{ing} {query_lower}".lower()
+    wants_oil = any(
+        x in blob
+        for x in (
+            " in oil",
+            "in oil",
+            "oil pack",
+            "масло",
+            "tuna in oil",
+            "canned tuna in oil",
+            "canned in oil",
+        )
+    )
+
+    if "tuna" in nl:
+        score += 60
+        reasons.append("+60:tuna_word")
+    if "canned" in nl:
+        score += 45
+        reasons.append("+45:tuna_canned")
+    if "drained solids" in nl:
+        score += 35
+        reasons.append("+35:tuna_drained_solids")
+    if "in water" in nl and not wants_oil:
+        score += 25
+        reasons.append("+25:tuna_in_water")
+    if "in oil" in nl and wants_oil:
+        score += 25
+        reasons.append("+25:tuna_in_oil")
+    if "light" in nl or "white" in nl:
+        score += 15
+        reasons.append("+15:tuna_light_or_white")
+
+    if "fish oil" in nl:
+        score -= 100
+        reasons.append("-100:tuna_fish_oil")
+    if "babyfood" in nl:
+        score -= 90
+        reasons.append("-90:tuna_babyfood")
+    if "salad" in nl and "salad" not in blob and "салат" not in blob:
+        score -= 80
+        reasons.append("-80:tuna_salad_mismatch")
+    for bad, tag in (
+        ("soup", "tuna_soup"),
+        ("sauce", "tuna_sauce"),
+        ("spread", "tuna_spread"),
+    ):
+        if bad in nl:
+            score -= 80
+            reasons.append(f"-80:{tag}")
+    if re.search(r"\braw\b", nl) or ", raw" in nl:
+        score -= 80
+        reasons.append("-80:tuna_raw_product")
+    if "smoked" in nl:
+        score -= 80
+        reasons.append("-80:tuna_smoked")
+    if re.search(r"\bfresh\b", nl):
+        score -= 60
+        reasons.append("-60:tuna_fresh")
+    if re.search(r"\bdry\b", nl) or "dry heat" in nl:
+        score -= 60
+        reasons.append("-60:tuna_dry")
+    if "roe" in nl:
+        score -= 60
+        reasons.append("-60:tuna_roe")
+    if "tuna" not in nl:
+        score -= 60
+        reasons.append("-60:not_tuna")
+
+    return max(score, -280.0), reasons
+
+
+def _shrimp_candidate_adjustment(n: str, query_lower: str, requested_state: str) -> tuple[float, list[str]]:
+    """
+    Prefer plain shrimp rows; aggressively avoid breaded/tempura/fast-food/dish/sauce.
+    This is used for shrimp/prawn-like queries (EN/RU) only.
+    """
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    rs = (requested_state or "unknown").lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if "shrimp" in nl:
+        add(70, "shrimp_word")
+    else:
+        add(-70, "missing_shrimp_word")
+    if "crustaceans" in nl:
+        add(40, "crustaceans")
+    if "cooked" in nl:
+        add(40, "cooked_word")
+    if "moist heat" in nl:
+        add(35, "moist_heat")
+    if "boiled" in nl or "steamed" in nl:
+        add(25, "boiled_or_steamed")
+    if "raw" in nl and rs == "raw":
+        add(15, "raw_aligned")
+
+    for bad in ("breaded", "battered", "tempura"):
+        if bad in nl:
+            add(-100, f"bad_{bad}")
+    for bad in ("fast food",):
+        if bad in nl:
+            add(-90, f"bad_{bad.replace(' ', '_')}")
+    if "fried" in nl and rs != "fried":
+        add(-90, "fried_mismatch")
+    for bad in ("sauce", "with sauce", "salad", "soup", "gumbo", "dish", "mixture"):
+        if bad in nl and bad not in query_lower:
+            add(-80, f"bad_{bad.replace(' ', '_')}")
+    if "canned" in nl and rs != "canned":
+        add(-70, "canned_mismatch")
+    if "dried" in nl or re.search(r"\bdry\b", nl):
+        add(-70, "dried_or_dry")
+
+    return max(score, -360.0), reasons
+
+
+def _corn_candidate_adjustment(n: str, query_lower: str, requested_state: str) -> tuple[float, list[str]]:
+    """Prefer plain sweet/whole-kernel corn; avoid starch/flour/cereal/snacks/popcorn/dry rows."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    rs = (requested_state or "unknown").lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    wants_plain = not any(w in query_lower for w in ("flour", "meal", "cereal", "starch", "popcorn", "chips"))
+
+    if wants_plain:
+        if "corn, sweet" in nl or "sweet corn" in nl:
+            add(60, "sweet_corn")
+        if "whole kernel" in nl:
+            add(20, "whole_kernel")
+        if "cooked" in nl or "boiled" in nl or "microwaved" in nl or "steamed" in nl:
+            add(35, "cooked_like")
+        if "canned" in nl and rs == "canned":
+            add(30, "canned_aligned")
+
+        for bad in ("cornmeal", "flour", "starch", "cereal", "snacks", "chips"):
+            if bad in nl and bad not in query_lower:
+                add(-100, f"bad_{bad}")
+        if "popcorn" in nl and "popcorn" not in query_lower:
+            add(-90, "bad_popcorn")
+        if "dry" in nl and rs != "dry":
+            add(-80, "dry_mismatch")
+        if "raw" in nl and rs != "raw":
+            add(-80, "raw_mismatch")
+        if "babyfood" in nl and "baby" not in query_lower and "babyfood" not in query_lower:
+            add(-80, "babyfood")
+        for bad in ("bread", "tortilla"):
+            if bad in nl and bad not in query_lower:
+                add(-70, f"bad_{bad}")
+
+    return max(score, -360.0), reasons
+
+
+def _beer_candidate_adjustment(n: str, query_lower: str) -> tuple[float, list[str]]:
+    """Prefer alcoholic beverage beer rows over food/dry/mix/yeast/snack rows."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    ql = query_lower.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    wants_light = any(x in ql for x in ("light", "легкое", "лёгкое"))
+    wants_strong = any(x in ql for x in ("strong", "крепкое", "high alcohol"))
+
+    if "alcoholic beverage" in nl or "alcoholic beverages" in nl:
+        add(80, "alcoholic_beverage")
+    if "beer" in nl:
+        add(70, "beer_word")
+    else:
+        add(-120, "not_beer")
+
+    if "regular" in nl:
+        add(40, "regular")
+    if "all" in nl:
+        add(15, "all")
+
+    if "light" in nl:
+        add(25 if wants_light else -8, "light_adjust")
+    if "higher alcohol" in nl:
+        add(25 if wants_strong else -8, "higher_alcohol_adjust")
+
+    for bad in ("bread", "batter", "cheese", "soup", "sauce", "snack", "yeast", "malt powder", "dry", "mix", "cereal"):
+        if bad in nl and bad not in ql:
+            add(-100, f"bad_{bad.replace(' ', '_')}")
+    for bad in ("beef", "beet", "babyfood"):
+        if bad in nl and bad not in ql:
+            add(-80, f"bad_{bad}")
+
+    return max(score, -380.0), reasons
+
+
+def _generic_grain_candidate_adjustment(
+    n: str,
+    query_lower: str,
+    requested_state: str,
+) -> tuple[float, list[str]]:
+    """Keep vague grain queries on plain cooked oats/cereal-with-water rows."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    rs = (requested_state or "unknown").lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if "oats" in nl or "oat" in nl:
+        add(50, "generic_grain_oats")
+    if "cooked" in nl:
+        add(40, "generic_grain_cooked")
+    if "with water" in nl:
+        add(30, "generic_grain_with_water")
+    if "without salt" in nl:
+        add(20, "generic_grain_without_salt")
+    if "cereal" in nl and ("cooked" in nl or "with water" in nl or "oat" in nl):
+        add(15, "generic_grain_cereal_cooked_oat")
+
+    for bad in ("protein", "seed", "nut", "snack", "bar", "granola", "muesli"):
+        if bad in nl and bad not in query_lower:
+            add(-120, f"generic_bad_{bad}")
+    if "mix" in nl and "cooked with water" not in nl and "with water" not in nl and "mix" not in query_lower:
+        add(-100, "generic_bad_mix")
+    for bad in ("meal replacement", "babyfood", "breakfast bar"):
+        if bad in nl and bad not in query_lower:
+            add(-100, f"generic_bad_{bad.replace(' ', '_')}")
+    if rs == "cooked":
+        for bad in ("dry", "uncooked", "unprepared"):
+            if bad in nl and bad not in query_lower:
+                add(-90, f"generic_bad_{bad}")
+    if "flour" in nl and "flour" not in query_lower:
+        add(-80, "generic_bad_flour")
+    if "bran" in nl and "bran" not in query_lower:
+        add(-80, "generic_bad_bran")
+    if "cereal, ready-to-eat" in nl:
+        add(-80, "generic_bad_ready_to_eat")
+    if "sugars" in nl:
+        add(-80, "generic_bad_sugars")
+    if "with milk" in nl and "milk" not in query_lower and "молок" not in query_lower:
+        add(-80, "generic_bad_with_milk")
+
+    return max(score, -420.0), reasons
+
+
+def _beef_candidate_adjustment(
+    n: str,
+    query_lower: str,
+    candidate_carbs_per100: float = 0.0,
+) -> tuple[float, list[str]]:
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if "beef" in nl:
+        add(80, "beef_word")
+    if "meat only" in nl:
+        add(50, "meat_only")
+    if "cooked" in nl:
+        add(40, "cooked")
+    if "stewed" in nl or "roasted" in nl or "braised" in nl:
+        add(30, "stewed_or_roasted")
+
+    for bad in ("dish", "mixture", "with sauce", "soup"):
+        if bad in nl and bad not in query_lower:
+            add(-120, f"beef_bad_{bad.replace(' ', '_')}")
+    if "stew" in nl and "vegetable" in nl:
+        add(-120, "beef_stew_with_vegetables")
+
+    for bad in ("processed", "canned", "babyfood", "fast food", "burger", "mixed"):
+        if bad in nl and bad not in query_lower:
+            add(-100, f"beef_bad_{bad.replace(' ', '_')}")
+    if "ground" in nl and "ground" not in query_lower:
+        add(-100, "beef_ground_mismatch")
+    if "carbs" in nl:
+        add(-100, "beef_bad_carbs_keyword")
+    if (candidate_carbs_per100 or 0) > 0:
+        add(-100, "beef_positive_carbs")
+
+    return max(score, -420.0), reasons
+
+
+def _beef_patty_candidate_adjustment(n: str, query_lower: str) -> tuple[float, list[str]]:
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    query_is_patty_only = any(x in query_lower for x in ("patty", "котлета"))
+
+    if "patty" in nl:
+        add(80, "beef_patty_word")
+    if "ground beef" in nl or "beef, ground" in nl:
+        add(70, "beef_patty_ground_beef")
+    if "cooked" in nl:
+        add(50, "beef_patty_cooked")
+    if "broiled" in nl or "grilled" in nl:
+        add(40, "beef_patty_broiled_grilled")
+    if "80%" in nl or "85%" in nl or "lean meat" in nl:
+        add(30, "beef_patty_lean_ratio")
+    if "hamburger" in nl:
+        add(25, "beef_patty_hamburger_word")
+
+    for bad in ("fat", "tallow", "suet", "separable fat", "fat only"):
+        if bad in nl and bad not in query_lower:
+            add(-150, f"beef_patty_bad_{bad.replace(' ', '_')}")
+    if "with bun" in nl and "with bun" not in query_lower:
+        add(-120, "beef_patty_with_bun")
+    if "cheeseburger" in nl and query_is_patty_only:
+        add(-120, "beef_patty_cheeseburger")
+    if "sandwich" in nl and "sandwich" not in query_lower:
+        add(-120, "beef_patty_sandwich")
+    for bad in ("babyfood", "sausage", "meat loaf", "canned"):
+        if bad in nl and bad not in query_lower:
+            add(-100, f"beef_patty_bad_{bad.replace(' ', '_')}")
+    if "breaded" in nl and "breaded" not in query_lower:
+        add(-80, "beef_patty_breaded")
+    if "fast food" in nl and query_is_patty_only:
+        add(-80, "beef_patty_fast_food")
+
+    return max(score, -500.0), reasons
+
+
+def _porridge_like_grain_adjustment(
+    n: str,
+    query_lower: str,
+    requested_state: str,
+) -> tuple[float, list[str]]:
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    rs = (requested_state or "unknown").lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if rs != "cooked":
+        return 0.0, reasons
+
+    if "cooked" in nl:
+        add(60, "porridge_cooked")
+    if "prepared with water" in nl:
+        add(50, "porridge_prepared_with_water")
+    if "with water" in nl:
+        add(50, "porridge_with_water")
+    if "grits" in nl:
+        add(40, "porridge_grits")
+    if "polenta" in nl:
+        add(40, "porridge_polenta")
+    if "cornmeal" in nl and "cooked" in nl:
+        add(40, "porridge_cornmeal_cooked")
+    if "cereal" in nl and "cooked" in nl:
+        add(30, "porridge_cereal_cooked")
+
+    for bad in ("dry", "flour", "starch", "dry mix", "ready-to-eat"):
+        if bad in nl and bad not in query_lower:
+            add(-120, f"porridge_bad_{bad.replace(' ', '_')}")
+    for bad in ("bread", "muffin", "pancake", "snack"):
+        if bad in nl and bad not in query_lower:
+            add(-100, f"porridge_bad_{bad}")
+    for bad in ("unprepared", "uncooked"):
+        if bad in nl and bad not in query_lower:
+            add(-90, f"porridge_bad_{bad}")
+
+    return max(score, -420.0), reasons
 
 
 def _egg_whole_boiled_adjustment(n: str, ing: str) -> tuple[float, list[str]]:
@@ -218,15 +790,163 @@ def _grain_cooked_extra(n: str) -> tuple[float, list[str]]:
     return score, reasons
 
 
+def _category_common_adjustment(
+    candidate_name: str,
+    *,
+    query: str,
+    ingredient_input: str,
+    categories: set[str] | frozenset[str],
+    requested_state: str,
+) -> tuple[float, list[str]]:
+    """
+    Safe generic layer on top of state-aware scoring.
+    Keeps existing specialized helpers intact, but adds broad category penalties/bonuses.
+    """
+    reasons: list[str] = []
+    score = 0.0
+    nl = candidate_name.lower()
+    ql = query.lower()
+    il = ingredient_input.lower()
+    rs = (requested_state or "unknown").lower()
+    cats = set(categories)
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    def q_has(*words: str) -> bool:
+        blob = f"{ql} {il}"
+        return any(w in blob for w in words)
+
+    # Meat / beef
+    if "meat" in cats or "beef" in cats:
+        if "meat only" in nl:
+            add(40, "cat_meat_only")
+        if rs in ("cooked", "boiled", "fried", "baked", "grilled", "roasted") and any(
+            x in nl for x in ("cooked", "stewed", "roasted", "grilled", "fried", "braised")
+        ):
+            add(35, "cat_meat_state_aligned")
+        if "beef" in cats and "beef" in nl:
+            add(30, "cat_beef_word")
+        for bad in ("dish", "mixture", "soup", "sauce"):
+            if bad in nl and not q_has(bad):
+                add(-90, f"cat_meat_bad_{bad}")
+        for bad in ("babyfood", "fast food", "processed"):
+            if bad in nl and not q_has(bad):
+                add(-80, f"cat_meat_bad_{bad.replace(' ', '_')}")
+        if "canned" in nl and rs != "canned":
+            add(-80, "cat_meat_canned")
+        if "burger" in nl and not q_has("burger"):
+            add(-80, "cat_meat_burger")
+        if "ground" in nl and not q_has("ground", "minced", "farsh", "фарш"):
+            add(-70, "cat_meat_ground")
+        if any(x in nl for x in ("breaded", "battered")):
+            add(-70, "cat_meat_breaded")
+        if "beef" in cats and not q_has("rice", "pasta", "potato", "карто", "рис", "макарон"):
+            for bad in ("rice", "pasta", "potato"):
+                if bad in nl:
+                    add(-70, f"cat_meat_with_{bad}")
+
+    # Poultry
+    if "poultry" in cats:
+        if any(x in nl for x in ("chicken", "turkey")):
+            add(25, "cat_poultry_plain")
+        for bad in ("nuggets", "breaded", "fast food", "patty", "sausage", "spread"):
+            if bad in nl and not q_has(bad):
+                add(-80, f"cat_poultry_bad_{bad.replace(' ', '_')}")
+        if "canned" in nl and rs != "canned":
+            add(-80, "cat_poultry_canned")
+
+    # Seafood / fish
+    if any(x in cats for x in ("seafood", "fish", "shrimp", "tuna")):
+        if any(x in nl for x in ("fish", "seafood", "shrimp", "tuna", "crustaceans")):
+            add(20, "cat_seafood_plain")
+        for bad in ("breaded", "battered", "tempura", "sauce", "salad", "soup", "mixture", "fast food"):
+            if bad in nl and not q_has(bad):
+                add(-70, f"cat_seafood_bad_{bad.replace(' ', '_')}")
+
+    # Grains
+    if "grain" in cats:
+        if rs == "cooked" and any(x in nl for x in ("cooked", "boiled", "with water")):
+            add(20, "cat_grain_cooked")
+        if rs == "cooked":
+            for bad in ("dry", "uncooked", "unprepared", "flour", "dry mix"):
+                if bad in nl and not q_has(bad):
+                    add(-60, f"cat_grain_bad_{bad.replace(' ', '_')}")
+
+    # Legumes
+    if "legume" in cats and rs in ("cooked", "boiled"):
+        if any(x in nl for x in ("cooked", "boiled", "canned")):
+            add(20, "cat_legume_prepared")
+        for bad in ("raw", "dry", "unprepared"):
+            if bad in nl and not q_has(bad):
+                add(-60, f"cat_legume_bad_{bad}")
+
+    # Vegetables
+    if "vegetable" in cats:
+        if rs in ("raw", "cooked", "boiled", "canned"):
+            if rs == "raw" and "raw" in nl:
+                add(15, "cat_veg_raw")
+            if rs in ("cooked", "boiled") and any(x in nl for x in ("cooked", "boiled", "steamed")):
+                add(15, "cat_veg_cooked")
+            if rs == "canned" and "canned" in nl:
+                add(15, "cat_veg_canned")
+        for bad in ("snacks", "chips", "flour", "bread", "soup", "sauce", "babyfood"):
+            if bad in nl and not q_has(bad):
+                add(-60, f"cat_veg_bad_{bad}")
+
+    # Dairy / cheese / cottage cheese
+    if "dairy" in cats or "cheese" in cats or "cottage_cheese" in cats:
+        if "cottage_cheese" not in cats:
+            for bad in ("dessert", "cheesecake"):
+                if bad in nl and not q_has(bad):
+                    add(-60, f"cat_dairy_bad_{bad}")
+            if "processed" in nl and not q_has("processed"):
+                add(-50, "cat_dairy_processed")
+
+    # Seed / nut
+    if "seed" in cats or "nut" in cats:
+        if any(x in nl for x in ("seed", "seeds", "kernel", "kernels", "nut", "nuts")):
+            add(20, "cat_seed_nut_plain")
+        for bad in ("oil", "flour", "meal", "butter", "beverage", "soup", "babyfood"):
+            if bad in nl and not q_has(bad):
+                add(-70, f"cat_seed_nut_bad_{bad}")
+
+    # Beverages
+    if "beverage" in cats or "tea" in cats or "coffee" in cats:
+        if any(x in nl for x in ("brewed", "prepared with tap water", "prepared with distilled water")):
+            add(20, "cat_beverage_brewed")
+        for bad in ("powder", "dry mix", "milkshake mix", "protein powder", "cereal", "dessert"):
+            if bad in nl and not q_has(bad):
+                add(-70, f"cat_beverage_bad_{bad.replace(' ', '_')}")
+
+    return score, reasons
+
+
 def state_score(
     requested_state: str,
     candidate_name: str,
     *,
     query: str,
     ingredient_input: str = "",
+    candidate_carbs_per100: float = 0.0,
+    categories: tuple[str, ...] = (),
     is_grain_like: bool,
     is_legume_like: bool = False,
     is_poultry_breast_query: bool = False,
+    is_tuna_like: bool = False,
+    seafood_like_q: bool = False,
+    corn_like_q: bool = False,
+    beer_q: bool = False,
+    generic_grain_query: bool = False,
+    beef_q: bool = False,
+    beef_patty_q: bool = False,
+    porridge_like_grain_q: bool = False,
+    tea_drink_q: bool = False,
+    cottage_cheese_q: bool = False,
+    banana_fruit_q: bool = False,
+    seed_kernel_q: bool = False,
 ) -> tuple[float, list[str]]:
     """
     Returns (score_adjustment, reason strings).
@@ -257,6 +977,16 @@ def state_score(
     has_grilled = "grilled" in n
     has_roasted = "roasted" in n
     has_canned = any(x in n for x in canned_markers)
+
+    common, common_reasons = _category_common_adjustment(
+        candidate_name,
+        query=query,
+        ingredient_input=ingredient_input,
+        categories=frozenset(categories),
+        requested_state=rs,
+    )
+    score += common
+    reasons.extend(common_reasons)
 
     if rs != "unknown":
         if rs == "cooked":
@@ -392,6 +1122,45 @@ def state_score(
         score += eb
         reasons.extend(er)
 
+    if is_tuna_like and rs == "canned":
+        tu, tr = _tuna_canned_adjustment(n, ing, query_lower)
+        score += tu
+        reasons.extend(tr)
+
+    if seafood_like_q:
+        sh, shr = _shrimp_candidate_adjustment(n, query_lower, rs)
+        score += sh
+        reasons.extend(shr)
+
+    if corn_like_q:
+        co, cor = _corn_candidate_adjustment(n, query_lower, rs)
+        score += co
+        reasons.extend(cor)
+
+    if beer_q:
+        be, ber = _beer_candidate_adjustment(n, query_lower)
+        score += be
+        reasons.extend(ber)
+
+    if generic_grain_query:
+        gg, ggr = _generic_grain_candidate_adjustment(n, query_lower, rs)
+        score += gg
+        reasons.extend(ggr)
+
+    if beef_q:
+        bf, bfr = _beef_candidate_adjustment(n, query_lower, candidate_carbs_per100)
+        score += bf
+        reasons.extend(bfr)
+    if beef_patty_q:
+        bp, bpr = _beef_patty_candidate_adjustment(n, query_lower)
+        score += bp
+        reasons.extend(bpr)
+
+    if porridge_like_grain_q:
+        pg, pgr = _porridge_like_grain_adjustment(n, query_lower, rs)
+        score += pg
+        reasons.extend(pgr)
+
     if is_legume_like and rs in ("cooked", "boiled"):
         le, lr = _legume_cooked_boiled_extra(n, query_lower)
         score += le
@@ -402,5 +1171,25 @@ def state_score(
         if pen < 0:
             score += pen
             reasons.append(f"{pen:.0f}:poultry_breast_mismatch")
+
+    if tea_drink_q:
+        td, tdr = _tea_drink_row_adjustment(n, ing)
+        score += td
+        reasons.extend(tdr)
+
+    if cottage_cheese_q:
+        cc, cr = _cottage_cheese_adjustment(n, query_lower)
+        score += cc
+        reasons.extend(cr)
+
+    if banana_fruit_q:
+        ba, bar = _banana_fruit_adjustment(n, query_lower, rs)
+        score += ba
+        reasons.extend(bar)
+
+    if seed_kernel_q:
+        sk, skr = _seed_kernel_adjustment(n, query_lower)
+        score += sk
+        reasons.extend(skr)
 
     return score, reasons

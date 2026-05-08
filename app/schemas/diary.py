@@ -10,6 +10,14 @@ class DiaryRecentMeal(BaseModel):
     meal_type_label: str
     time_local: str
     calories: int
+    protein_g: int = 0
+    fat_g: int = 0
+    carbs_g: int = 0
+    fiber_g: float = 0.0
+    sugar_g: float = 0.0
+    sodium_mg: float = 0.0
+    saturated_fat_g: float = 0.0
+    water_g: float = 0.0
     recorded_at: datetime
     prediction: str | None = None
     user_text: str | None = None
@@ -33,6 +41,11 @@ class DiaryWeekBlock(BaseModel):
     avg_protein_g: float
     avg_fat_g: float
     avg_carbs_g: float
+    avg_fiber_g: float
+    avg_sugar_g: float
+    avg_salt_g: float
+    avg_saturated_fat_g: float
+    detailed_avg: dict[str, float] = Field(default_factory=dict)
     days_with_data: int = Field(
         ...,
         description="Дней с ненулевыми калориями; средние делятся на это число (минимум 1)",
@@ -44,6 +57,7 @@ class DiaryTodayTotals(BaseModel):
     protein_g: int
     fat_g: int
     carbs_g: int
+    fiber_g: float
 
 
 class DiaryWeightCard(BaseModel):
@@ -67,6 +81,11 @@ class DiaryPeriodBlock(BaseModel):
     avg_protein_g: float
     avg_fat_g: float
     avg_carbs_g: float
+    avg_fiber_g: float
+    avg_sugar_g: float
+    avg_salt_g: float
+    avg_saturated_fat_g: float
+    detailed_avg: dict[str, float] = Field(default_factory=dict)
     days_with_data: int = Field(
         ...,
         description="Дней с ненулевыми калориями; средние делятся на это число (минимум 1)",

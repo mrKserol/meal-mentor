@@ -13,11 +13,91 @@ from sqlalchemy.orm import Session
 from app.core.schemas import MacroTotals, MealAnalysisResult, MealLogRequest, MealLogResponse
 from app.db.repository import create_meal, get_or_create_user
 from app.infrastructure.ai.openai_food_client import OpenAIVisionService
-from app.infrastructure.nutrition.csv_nutrition_provider import NutritionService
+from app.infrastructure.nutrition.csv_nutrition_provider import NutritionService, safe_float
 from app.infrastructure.nutrition.ingredient_input import NormalizedIngredient, parse_ingredients_dict
 from app.infrastructure.storage.meal_photo_storage import save_meal_photo_pair
 
 logger = logging.getLogger(__name__)
+
+NUTRIENT_FIELD_MAP: dict[str, str] = {
+    "calories": "calories",
+    "proteins": "protein_g",
+    "fats": "fat_g",
+    "total_fat_g": "total_fat_g",
+    "carbohydrates": "carbs_g",
+    "fiber_g": "fiber_g",
+    "sugar_g": "sugar_g",
+    "sodium_mg": "sodium_mg",
+    "saturated_fat_g": "saturated_fat_g",
+    "saturated_fatty_acids_g": "saturated_fatty_acids_g",
+    "monounsaturated_fatty_acids_g": "monounsaturated_fatty_acids_g",
+    "polyunsaturated_fatty_acids_g": "polyunsaturated_fatty_acids_g",
+    "fatty_acids_total_trans_mg": "fatty_acids_total_trans_mg",
+    "serving_size_g": "serving_size_g",
+    "cholesterol_mg": "cholesterol_mg",
+    "choline_mg": "choline_mg",
+    "folate_mcg": "folate_mcg",
+    "folic_acid_mcg": "folic_acid_mcg",
+    "niacin_mg": "niacin_mg",
+    "pantothenic_acid_mg": "pantothenic_acid_mg",
+    "riboflavin_mg": "riboflavin_mg",
+    "thiamin_mg": "thiamin_mg",
+    "vitamin_a_iu": "vitamin_a_iu",
+    "vitamin_a_rae_mcg": "vitamin_a_rae_mcg",
+    "carotene_alpha_mcg": "carotene_alpha_mcg",
+    "carotene_beta_mcg": "carotene_beta_mcg",
+    "cryptoxanthin_beta_mcg": "cryptoxanthin_beta_mcg",
+    "lutein_zeaxanthin_mcg": "lutein_zeaxanthin_mcg",
+    "lycopene_mcg": "lycopene_mcg",
+    "vitamin_b12_mcg": "vitamin_b12_mcg",
+    "vitamin_b6_mg": "vitamin_b6_mg",
+    "vitamin_c_mg": "vitamin_c_mg",
+    "vitamin_d_iu": "vitamin_d_iu",
+    "vitamin_e_mg": "vitamin_e_mg",
+    "tocopherol_alpha_mg": "tocopherol_alpha_mg",
+    "vitamin_k_mcg": "vitamin_k_mcg",
+    "calcium_mg": "calcium_mg",
+    "copper_mg": "copper_mg",
+    "iron_mg": "iron_mg",
+    "magnesium_mg": "magnesium_mg",
+    "manganese_mg": "manganese_mg",
+    "phosphorus_mg": "phosphorus_mg",
+    "potassium_mg": "potassium_mg",
+    "selenium_mcg": "selenium_mcg",
+    "zinc_mg": "zinc_mg",
+    "alanine_g": "alanine_g",
+    "arginine_g": "arginine_g",
+    "aspartic_acid_g": "aspartic_acid_g",
+    "cystine_g": "cystine_g",
+    "glutamic_acid_g": "glutamic_acid_g",
+    "glycine_g": "glycine_g",
+    "histidine_g": "histidine_g",
+    "hydroxyproline_g": "hydroxyproline_g",
+    "isoleucine_g": "isoleucine_g",
+    "leucine_g": "leucine_g",
+    "lysine_g": "lysine_g",
+    "methionine_g": "methionine_g",
+    "phenylalanine_g": "phenylalanine_g",
+    "proline_g": "proline_g",
+    "serine_g": "serine_g",
+    "threonine_g": "threonine_g",
+    "tryptophan_g": "tryptophan_g",
+    "tyrosine_g": "tyrosine_g",
+    "valine_g": "valine_g",
+    "fructose_g": "fructose_g",
+    "galactose_g": "galactose_g",
+    "glucose_g": "glucose_g",
+    "lactose_g": "lactose_g",
+    "maltose_g": "maltose_g",
+    "sucrose_g": "sucrose_g",
+    "alcohol_g": "alcohol_g",
+    "ash_g": "ash_g",
+    "caffeine_mg": "caffeine_mg",
+    "theobromine_mg": "theobromine_mg",
+    "water_g": "water_g",
+}
+
+_INT_NUTRIENT_COLUMNS = frozenset({"calories", "protein_g", "fat_g", "carbs_g", "sugar_g", "sodium_mg"})
 
 
 def _get_vision() -> OpenAIVisionService:
@@ -30,48 +110,32 @@ def _get_nutrition() -> NutritionService:
 
 def _scaled_row_to_nutrition_dict(row: dict[str, Any]) -> dict[str, Any]:
     """Map CSV search row (scaled) to MealItemNutrition kwargs."""
-    skip = frozenset({"match", "weight", "state", "match_score", "candidates", "csv_display_name"})
     out: dict[str, Any] = {}
-    if "calories" in row and row["calories"] is not None:
-        out["calories"] = int(row["calories"])
-    if "proteins" in row and row["proteins"] is not None:
-        out["protein_g"] = int(row["proteins"])
-    if "fats" in row and row["fats"] is not None:
-        out["fat_g"] = int(row["fats"])
-    if "carbohydrates" in row and row["carbohydrates"] is not None:
-        out["carbs_g"] = int(row["carbohydrates"])
-    int_micro = ("fiber_g", "sugar_g", "sodium_mg")
-    for k in int_micro:
-        if k in row and row[k] is not None:
-            out[k] = int(round(float(row[k])))
-    float_keys = (
-        "saturated_fat_g",
-        "calcium_mg",
-        "magnesium_mg",
-        "potassium_mg",
-        "phosphorus_mg",
-        "iron_mg",
-        "zinc_mg",
-        "selenium_mcg",
-        "copper_mg",
-        "manganese_mg",
-        "vitamin_a_mcg",
-        "vitamin_c_mg",
-        "vitamin_d_mcg",
-        "vitamin_e_mg",
-        "vitamin_k_mcg",
-        "vitamin_b6_mg",
-        "vitamin_b12_mcg",
-        "folate_mcg",
-        "thiamin_mg",
-        "riboflavin_mg",
-        "niacin_mg",
-        "pantothenic_acid_mg",
-        "choline_mg",
-    )
-    for k in float_keys:
-        if k in row and row[k] is not None and k not in skip:
-            out[k] = float(row[k])
+    for src_field, dst_field in NUTRIENT_FIELD_MAP.items():
+        if src_field not in row:
+            continue
+        val = safe_float(row.get(src_field))
+        if dst_field in _INT_NUTRIENT_COLUMNS:
+            out[dst_field] = int(round(val))
+        elif dst_field == "fiber_g":
+            out[dst_field] = round(val, 2)
+        else:
+            out[dst_field] = round(val, 3)
+
+    if "fat_g" not in out:
+        out["fat_g"] = int(round(safe_float(row.get("fats") or row.get("total_fat_g"))))
+    if "total_fat_g" not in out:
+        out["total_fat_g"] = round(safe_float(row.get("total_fat_g") or row.get("fats")), 3)
+    if "saturated_fat_g" not in out:
+        out["saturated_fat_g"] = round(
+            safe_float(row.get("saturated_fat_g") or row.get("saturated_fatty_acids_g")),
+            3,
+        )
+    if "saturated_fatty_acids_g" not in out:
+        out["saturated_fatty_acids_g"] = round(
+            safe_float(row.get("saturated_fatty_acids_g") or row.get("saturated_fat_g")),
+            3,
+        )
     return out
 
 
@@ -143,8 +207,10 @@ def _meal_result_from_vision_dict(out: dict[str, Any]) -> MealAnalysisResult:
     prediction = pred.strip() if isinstance(pred, str) and pred.strip() else None
     nutrition_svc = _get_nutrition()
     nutrition = None
+    nutrition_full: dict[str, float] | None = None
     if nutrition_svc.is_available and ingredients:
         agg = nutrition_svc.aggregate_nutrition(ingredients)
+        nutrition_full = nutrition_svc.aggregate_nutrition_full(ingredients)
         if agg is not None:
             nutrition = MacroTotals(**agg)
     return MealAnalysisResult(
@@ -152,6 +218,7 @@ def _meal_result_from_vision_dict(out: dict[str, Any]) -> MealAnalysisResult:
         ingredients=ingredients,
         confidence=conf,
         nutrition=nutrition,
+        nutrition_full=nutrition_full,
         prediction=prediction,
         error="",
     )

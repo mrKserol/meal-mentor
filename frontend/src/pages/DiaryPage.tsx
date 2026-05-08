@@ -1,164 +1,252 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
   BarChart3,
-  Beef,
-  EggFried,
-  Flame,
   Info,
+  Plus,
   Scale,
-  Target,
-  Wheat,
+  X,
 } from "lucide-react";
 
 import { getMyNutritionTarget } from "../api/authApi";
-import { getMyDiary } from "../api/diaryApi";
+import { addMyWeightMeasurement, getMyDiary, getMyWeightMeasurements } from "../api/diaryApi";
 import { MealHistoryDaySection } from "../components/diary/MealHistoryDaySection";
 import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
-import type { DiaryPeriodDay, DiarySnapshot, DiaryWeekDay } from "../types/diary";
+import type {
+  DiaryPeriodDay,
+  DiarySnapshot,
+  DiaryWeekDay,
+  WeightMeasurementPeriod,
+  WeightMeasurementPoint,
+} from "../types/diary";
 import type { NutritionTarget } from "../types/auth";
-
-type GoalIconKind = "calories" | "protein" | "fat" | "carbs";
-
-type DailyGoalItem = {
-  id: string;
-  label: string;
-  current: string;
-  target: string;
-  percent: number;
-  tone: "green" | "orange" | "slate";
-  icon: GoalIconKind;
-};
 
 const MEAL_MENTOR_ACCESS_TOKEN_KEY = "meal_mentor_access_token";
 
 type ChartDay = DiaryWeekDay | DiaryPeriodDay;
+const ANALYSIS_GROUPS: { title: string; items: Array<{ key: string; label: string; unit: string }> }[] = [
+  {
+    title: "Витамины",
+    items: [
+      { key: "vitamin_a_iu", label: "Витамин A", unit: "МЕ" },
+      { key: "vitamin_a_rae_mcg", label: "Витамин A RAE", unit: "мкг" },
+      { key: "vitamin_c_mg", label: "Витамин C", unit: "мг" },
+      { key: "vitamin_d_iu", label: "Витамин D", unit: "МЕ" },
+      { key: "vitamin_e_mg", label: "Витамин E", unit: "мг" },
+      { key: "tocopherol_alpha_mg", label: "Альфа-токоферол", unit: "мг" },
+      { key: "vitamin_k_mcg", label: "Витамин K", unit: "мкг" },
+      { key: "thiamin_mg", label: "Витамин B1 / тиамин", unit: "мг" },
+      { key: "riboflavin_mg", label: "Витамин B2 / рибофлавин", unit: "мг" },
+      { key: "niacin_mg", label: "Витамин B3 / ниацин", unit: "мг" },
+      { key: "pantothenic_acid_mg", label: "Витамин B5 / пантотеновая кислота", unit: "мг" },
+      { key: "vitamin_b6_mg", label: "Витамин B6", unit: "мг" },
+      { key: "folate_mcg", label: "Витамин B9 / фолат", unit: "мкг" },
+      { key: "folic_acid_mcg", label: "Фолиевая кислота", unit: "мкг" },
+      { key: "vitamin_b12_mcg", label: "Витамин B12", unit: "мкг" },
+      { key: "choline_mg", label: "Холин", unit: "мг" },
+    ],
+  },
+  {
+    title: "Каротиноиды",
+    items: [
+      { key: "carotene_alpha_mcg", label: "Альфа-каротин", unit: "мкг" },
+      { key: "carotene_beta_mcg", label: "Бета-каротин", unit: "мкг" },
+      { key: "cryptoxanthin_beta_mcg", label: "Бета-криптоксантин", unit: "мкг" },
+      { key: "lutein_zeaxanthin_mcg", label: "Лютеин + зеаксантин", unit: "мкг" },
+      { key: "lycopene_mcg", label: "Ликопин", unit: "мкг" },
+    ],
+  },
+  {
+    title: "Минералы",
+    items: [
+      { key: "calcium_mg", label: "Кальций", unit: "мг" },
+      { key: "magnesium_mg", label: "Магний", unit: "мг" },
+      { key: "potassium_mg", label: "Калий", unit: "мг" },
+      { key: "phosphorus_mg", label: "Фосфор", unit: "мг" },
+      { key: "iron_mg", label: "Железо", unit: "мг" },
+      { key: "zinc_mg", label: "Цинк", unit: "мг" },
+      { key: "selenium_mcg", label: "Селен", unit: "мкг" },
+      { key: "copper_mg", label: "Медь", unit: "мг" },
+      { key: "manganese_mg", label: "Марганец", unit: "мг" },
+      { key: "sodium_mg", label: "Натрий", unit: "мг" },
+    ],
+  },
+  {
+    title: "Аминокислоты",
+    items: [
+      { key: "alanine_g", label: "Аланин", unit: "г" },
+      { key: "arginine_g", label: "Аргинин", unit: "г" },
+      { key: "aspartic_acid_g", label: "Аспарагиновая кислота", unit: "г" },
+      { key: "cystine_g", label: "Цистин", unit: "г" },
+      { key: "glutamic_acid_g", label: "Глутаминовая кислота", unit: "г" },
+      { key: "glycine_g", label: "Глицин", unit: "г" },
+      { key: "histidine_g", label: "Гистидин", unit: "г" },
+      { key: "hydroxyproline_g", label: "Гидроксипролин", unit: "г" },
+      { key: "isoleucine_g", label: "Изолейцин", unit: "г" },
+      { key: "leucine_g", label: "Лейцин", unit: "г" },
+      { key: "lysine_g", label: "Лизин", unit: "г" },
+      { key: "methionine_g", label: "Метионин", unit: "г" },
+      { key: "phenylalanine_g", label: "Фенилаланин", unit: "г" },
+      { key: "proline_g", label: "Пролин", unit: "г" },
+      { key: "serine_g", label: "Серин", unit: "г" },
+      { key: "threonine_g", label: "Треонин", unit: "г" },
+      { key: "tryptophan_g", label: "Триптофан", unit: "г" },
+      { key: "tyrosine_g", label: "Тирозин", unit: "г" },
+      { key: "valine_g", label: "Валин", unit: "г" },
+    ],
+  },
+  {
+    title: "Липиды и жирные кислоты",
+    items: [
+      { key: "fat_g", label: "Жиры всего", unit: "г" },
+      { key: "saturated_fat_g", label: "Насыщенные жиры", unit: "г" },
+      { key: "monounsaturated_fatty_acids_g", label: "Мононенасыщенные", unit: "г" },
+      { key: "polyunsaturated_fatty_acids_g", label: "Полиненасыщенные", unit: "г" },
+      { key: "fatty_acids_total_trans_mg", label: "Трансжиры", unit: "мг" },
+      { key: "cholesterol_mg", label: "Холестерин", unit: "мг" },
+    ],
+  },
+  {
+    title: "Сахара",
+    items: [
+      { key: "sugar_g", label: "Сахара всего", unit: "г" },
+      { key: "fructose_g", label: "Фруктоза", unit: "г" },
+      { key: "glucose_g", label: "Глюкоза", unit: "г" },
+      { key: "lactose_g", label: "Лактоза", unit: "г" },
+      { key: "galactose_g", label: "Галактоза", unit: "г" },
+      { key: "maltose_g", label: "Мальтоза", unit: "г" },
+      { key: "sucrose_g", label: "Сахароза", unit: "г" },
+    ],
+  },
+  {
+    title: "Дополнительно",
+    items: [
+      { key: "water_g", label: "Вода", unit: "г" },
+      { key: "alcohol_g", label: "Алкоголь", unit: "г" },
+      { key: "caffeine_mg", label: "Кофеин", unit: "мг" },
+      { key: "theobromine_mg", label: "Теобромин", unit: "мг" },
+    ],
+  },
+];
+
+const WEIGHT_PERIOD_OPTIONS: { value: WeightMeasurementPeriod; label: string }[] = [
+  { value: "1m", label: "1 м" },
+  { value: "3m", label: "3 м" },
+  { value: "6m", label: "6 м" },
+  { value: "1y", label: "1 г" },
+  { value: "all", label: "Всё время" },
+];
 
 function chartDayLabel(d: ChartDay): string {
   if ("weekday_short" in d && typeof d.weekday_short === "string" && d.weekday_short.length > 0) {
     return d.weekday_short;
   }
-  return (d as DiaryPeriodDay).label;
-}
-
-function formatIntRu(n: number): string {
-  return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(n);
+  const dayOfMonth = Number(d.date.slice(8, 10));
+  return Number.isFinite(dayOfMonth) && dayOfMonth > 0 ? String(dayOfMonth) : (d as DiaryPeriodDay).label;
 }
 
 function formatFixedRu(n: number, frac = 1): string {
   return new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 0, maximumFractionDigits: frac }).format(n);
 }
 
-function pctCurrentTarget(current: number, target: number): number {
-  if (target <= 0) return 0;
-  return Math.min(100, Math.round((100 * current) / target));
+function nutrientProfileValue(activeStats: DiarySnapshot["week"] | DiarySnapshot["month"] | null, key: string): number {
+  if (!activeStats) return 0;
+  if (key === "fat_g") return activeStats.avg_fat_g ?? 0;
+  if (key === "sugar_g") return activeStats.avg_sugar_g ?? 0;
+  if (key === "saturated_fat_g") return activeStats.avg_saturated_fat_g ?? 0;
+  return activeStats.detailed_avg?.[key] ?? 0;
 }
 
-function goalToneFromPercent(percent: number): DailyGoalItem["tone"] {
-  if (percent >= 100) return "orange";
-  if (percent >= 60) return "green";
-  return "slate";
+function nutrientProfileFracDigits(key: string): number {
+  if (key === "calories") return 0;
+  if (["protein_g", "fat_g", "carbs_g", "fiber_g", "sugar_g"].includes(key)) return 1;
+  if (
+    [
+      "calcium_mg",
+      "magnesium_mg",
+      "potassium_mg",
+      "phosphorus_mg",
+      "iron_mg",
+      "zinc_mg",
+      "copper_mg",
+      "manganese_mg",
+      "sodium_mg",
+      "cholesterol_mg",
+    ].includes(key)
+  ) {
+    return 0;
+  }
+  if (["caffeine_mg", "theobromine_mg"].includes(key)) return 1;
+  if (key.endsWith("_mcg") || key.endsWith("_iu")) return 0;
+  if (key.endsWith("_g")) return 2;
+  return 1;
 }
 
-function buildDailyGoals(nt: NutritionTarget | null, today: DiarySnapshot["today"]): DailyGoalItem[] {
-  if (!nt) return [];
-  const c = pctCurrentTarget(today.calories, nt.target_calories);
-  const p = pctCurrentTarget(today.protein_g, nt.target_protein_g);
-  const f = pctCurrentTarget(today.fat_g, nt.target_fat_g);
-  const cb = pctCurrentTarget(today.carbs_g, nt.target_carbs_g);
-  return [
-    {
-      id: "calories",
-      label: "Калории",
-      current: formatIntRu(today.calories),
-      target: `${formatIntRu(nt.target_calories)} kcal`,
-      percent: c,
-      tone: goalToneFromPercent(c),
-      icon: "calories",
-    },
-    {
-      id: "protein",
-      label: "Белки",
-      current: formatIntRu(today.protein_g),
-      target: `${formatIntRu(nt.target_protein_g)} г`,
-      percent: p,
-      tone: goalToneFromPercent(p),
-      icon: "protein",
-    },
-    {
-      id: "fat",
-      label: "Жиры",
-      current: formatIntRu(today.fat_g),
-      target: `${formatIntRu(nt.target_fat_g)} г`,
-      percent: f,
-      tone: goalToneFromPercent(f),
-      icon: "fat",
-    },
-    {
-      id: "carbs",
-      label: "Углеводы",
-      current: formatIntRu(today.carbs_g),
-      target: `${formatIntRu(nt.target_carbs_g)} г`,
-      percent: cb,
-      tone: goalToneFromPercent(cb),
-      icon: "carbs",
-    },
-  ];
+function formatWeightDateLabel(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit" }).format(d);
 }
 
-function getGoalIcon(icon: GoalIconKind) {
-  if (icon === "calories") return Flame;
-  if (icon === "protein") return Beef;
-  if (icon === "fat") return EggFried;
-  return Wheat;
-}
+function WeightTrendChart({ items }: { items: WeightMeasurementPoint[] }) {
+  if (items.length === 0) {
+    return (
+      <div className="flex h-36 items-center justify-center rounded-lg bg-slate-50 text-sm text-slate-400">
+        Пока нет взвешиваний
+      </div>
+    );
+  }
 
-function goalStrokeClass(tone: DailyGoalItem["tone"]): string {
-  if (tone === "green") return "stroke-green-600";
-  if (tone === "orange") return "stroke-orange-500";
-  return "stroke-slate-700";
-}
-
-function goalIconClass(tone: DailyGoalItem["tone"]): string {
-  if (tone === "green") return "text-green-600";
-  if (tone === "orange") return "text-orange-500";
-  return "text-slate-700";
-}
-
-function DailyGoalProgress({ item }: { item: DailyGoalItem }) {
-  const Icon = getGoalIcon(item.icon);
-  const strokeClass = goalStrokeClass(item.tone);
-  const iconClass = goalIconClass(item.tone);
+  const chartWidth = Math.max(320, items.length * 56);
+  const chartHeight = 150;
+  const padX = 28;
+  const padTop = 18;
+  const padBottom = 34;
+  const weights = items.map((it) => it.weight_kg);
+  const minW = Math.min(...weights);
+  const maxW = Math.max(...weights);
+  const range = Math.max(maxW - minW, 1);
+  const plotH = chartHeight - padTop - padBottom;
+  const plotW = chartWidth - padX * 2;
+  const points = items.map((it, index) => {
+    const x = items.length === 1 ? chartWidth / 2 : padX + (plotW * index) / (items.length - 1);
+    const y = padTop + ((maxW - it.weight_kg) / range) * plotH;
+    return { x, y, item: it };
+  });
+  const polyline = points.map((p) => `${p.x},${p.y}`).join(" ");
 
   return (
-    <div className="flex items-center gap-4">
-      <div className="relative h-14 w-14 shrink-0">
-        <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36" aria-hidden>
-          <circle className="stroke-slate-100" cx="18" cy="18" fill="none" r="16" strokeWidth="3" />
-          <circle
-            className={strokeClass}
-            cx="18"
-            cy="18"
-            fill="none"
-            r="16"
-            strokeDasharray={`${item.percent}, 100`}
-            strokeLinecap="round"
-            strokeWidth="3"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Icon className={`h-5 w-5 ${iconClass}`} aria-hidden />
-        </div>
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-slate-900">{item.label}</p>
-        <p className="text-xs text-slate-500">
-          {item.current} / {item.target}
-        </p>
-      </div>
-      <span className="shrink-0 text-sm font-bold text-slate-700">{item.percent}%</span>
+    <div className="w-full min-w-0">
+      <svg
+        width="100%"
+        height={chartHeight}
+        className="block min-h-[150px] w-full max-w-none"
+        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+        preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label="График изменения веса"
+      >
+        <line x1={padX} x2={chartWidth - padX} y1={padTop + plotH} y2={padTop + plotH} stroke="#e2e8f0" />
+        <line x1={padX} x2={chartWidth - padX} y1={padTop} y2={padTop} stroke="#f1f5f9" />
+        {items.length > 1 ? (
+          <polyline points={polyline} fill="none" stroke="#15803d" strokeLinecap="round" strokeWidth="3" />
+        ) : null}
+        {points.map(({ x, y, item }, index) => (
+          <g key={item.id}>
+            <circle cx={x} cy={y} fill="#15803d" r="4" />
+            <text x={x} y={Math.max(12, y - 9)} fill="#334155" fontSize="11" fontWeight="700" textAnchor="middle">
+              {formatFixedRu(item.weight_kg, 1)}
+            </text>
+            {index === 0 || index === points.length - 1 || items.length <= 6 ? (
+              <text x={x} y={chartHeight - 10} fill="#94a3b8" fontSize="10" textAnchor="middle">
+                {formatWeightDateLabel(item.measured_at)}
+              </text>
+            ) : null}
+          </g>
+        ))}
+      </svg>
     </div>
   );
 }
@@ -166,11 +254,22 @@ function DailyGoalProgress({ item }: { item: DailyGoalItem }) {
 export function DiaryPage() {
   const navigate = useNavigate();
   const { user, validateSession, logout, getAccessToken } = useAuth();
+  const statsChartScrollRef = useRef<HTMLDivElement | null>(null);
   const [snapshot, setSnapshot] = useState<DiarySnapshot | null>(null);
   const [nutritionTarget, setNutritionTarget] = useState<NutritionTarget | null>(null);
   const [diaryPhase, setDiaryPhase] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [diaryError, setDiaryError] = useState<string | null>(null);
   const [statsPeriod, setStatsPeriod] = useState<"week" | "month">("week");
+  const [weightPeriod, setWeightPeriod] = useState<WeightMeasurementPeriod>("3m");
+  const [weightMeasurements, setWeightMeasurements] = useState<WeightMeasurementPoint[]>([]);
+  const [weightPhase, setWeightPhase] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [weightError, setWeightError] = useState<string | null>(null);
+  const [weightModalOpen, setWeightModalOpen] = useState(false);
+  const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [newWeightKg, setNewWeightKg] = useState("");
+  const [newWeightNotes, setNewWeightNotes] = useState("");
+  const [weightSaving, setWeightSaving] = useState(false);
+  const [weightSaveError, setWeightSaveError] = useState<string | null>(null);
 
   const loadDiary = useCallback(async () => {
     setDiaryPhase("loading");
@@ -206,6 +305,34 @@ export function DiaryPage() {
     }
   }, [getAccessToken, navigate, validateSession]);
 
+  const loadWeightMeasurements = useCallback(async () => {
+    setWeightPhase("loading");
+    setWeightError(null);
+    try {
+      const token = getAccessToken() ?? localStorage.getItem(MEAL_MENTOR_ACCESS_TOKEN_KEY);
+      if (!token) {
+        navigate("/login", { replace: true });
+        return;
+      }
+      const res = await getMyWeightMeasurements(token, weightPeriod);
+      setWeightMeasurements(res.items);
+      setWeightPhase("ready");
+    } catch (e) {
+      if (axios.isAxiosError(e) && e.response?.status === 401) {
+        navigate("/login", { replace: true });
+        return;
+      }
+      const message =
+        axios.isAxiosError(e) && e.response?.data?.detail != null
+          ? String(e.response.data.detail)
+          : e instanceof Error
+            ? e.message
+            : "Не удалось загрузить взвешивания";
+      setWeightError(message);
+      setWeightPhase("error");
+    }
+  }, [getAccessToken, navigate, weightPeriod]);
+
   useEffect(() => {
     void validateSession();
   }, [validateSession]);
@@ -214,6 +341,11 @@ export function DiaryPage() {
     if (!user) return;
     void loadDiary();
   }, [user?.id, loadDiary]);
+
+  useEffect(() => {
+    if (!user) return;
+    void loadWeightMeasurements();
+  }, [user?.id, loadWeightMeasurements]);
 
   const handleLogout = useCallback(async () => {
     await logout();
@@ -225,10 +357,72 @@ export function DiaryPage() {
 
   const webDiaryToken = getAccessToken() ?? localStorage.getItem(MEAL_MENTOR_ACCESS_TOKEN_KEY) ?? "";
 
-  const dailyGoals = useMemo(() => {
-    if (!snapshot || !nutritionTarget) return [];
-    return buildDailyGoals(nutritionTarget, snapshot.today);
-  }, [snapshot, nutritionTarget]);
+  const weightKg = snapshot?.weight.weight_kg ?? user?.weight_kg ?? null;
+
+  const activeStats = (statsPeriod === "week" ? snapshot?.week : snapshot?.month) ?? null;
+  const chartDays: ChartDay[] = (activeStats?.days ?? []) as ChartDay[];
+  const isMonth = statsPeriod === "month";
+
+  useEffect(() => {
+    if (!isMonth) return;
+
+    const scrollToLatestDays = () => {
+      const el = statsChartScrollRef.current;
+      if (!el) return;
+      el.scrollLeft = el.scrollWidth - el.clientWidth;
+    };
+
+    const frame = window.requestAnimationFrame(scrollToLatestDays);
+    return () => window.cancelAnimationFrame(frame);
+  }, [chartDays.length, isMonth]);
+
+  const closeWeightModal = useCallback(() => {
+    if (weightSaving) return;
+    setWeightModalOpen(false);
+    setWeightSaveError(null);
+  }, [weightSaving]);
+
+  const handleSaveWeight = useCallback(async () => {
+    const weight = Number(newWeightKg.replace(",", "."));
+    if (!Number.isFinite(weight) || weight <= 0) {
+      setWeightSaveError("Введите корректный вес.");
+      return;
+    }
+    const token = getAccessToken() ?? localStorage.getItem(MEAL_MENTOR_ACCESS_TOKEN_KEY);
+    if (!token) {
+      navigate("/login", { replace: true });
+      return;
+    }
+    setWeightSaving(true);
+    setWeightSaveError(null);
+    try {
+      await addMyWeightMeasurement(token, {
+        weight_kg: weight,
+        ...(newWeightNotes.trim() ? { notes: newWeightNotes.trim() } : {}),
+      });
+      setWeightModalOpen(false);
+      setNewWeightKg("");
+      setNewWeightNotes("");
+      await Promise.all([loadDiary(), loadWeightMeasurements()]);
+    } catch (e) {
+      const message =
+        axios.isAxiosError(e) && e.response?.data?.detail != null
+          ? String(e.response.data.detail)
+          : e instanceof Error
+            ? e.message
+            : "Не удалось сохранить взвешивание";
+      setWeightSaveError(message);
+    } finally {
+      setWeightSaving(false);
+    }
+  }, [
+    getAccessToken,
+    loadDiary,
+    loadWeightMeasurements,
+    navigate,
+    newWeightKg,
+    newWeightNotes,
+  ]);
 
   if (!user) {
     return (
@@ -256,19 +450,6 @@ export function DiaryPage() {
     );
   }
 
-  const weightKg = snapshot?.weight.weight_kg ?? user.weight_kg ?? null;
-  const deltaWeek = snapshot?.weight.delta_week_kg ?? null;
-
-  const activeStats = statsPeriod === "week" ? snapshot?.week : snapshot?.month;
-  const periodLength = statsPeriod === "week" ? 7 : (snapshot?.month.days.length ?? 0);
-  const chartDays: ChartDay[] = (activeStats?.days ?? []) as ChartDay[];
-  const isMonth = statsPeriod === "month";
-  const showAvgHint =
-    Boolean(activeStats) &&
-    periodLength > 0 &&
-    activeStats!.days_with_data > 0 &&
-    activeStats!.days_with_data < periodLength;
-
   return (
     <AppShell
       activeNav="diary"
@@ -277,14 +458,27 @@ export function DiaryPage() {
       onMealSaved={() => void loadDiary()}
     >
       {() => (
-        <div className="mx-auto max-w-7xl space-y-6 p-4 pb-8 lg:p-8">
-          {diaryPhase === "loading" && !snapshot ? (
-            <p className="text-center text-slate-500">Загружаем данные дневника…</p>
-          ) : null}
+        <div className="mx-auto w-full max-w-full overflow-x-hidden p-4 pb-8 lg:max-w-7xl lg:p-8">
+          <div className="min-w-0 space-y-6">
+            {diaryPhase === "loading" && !snapshot ? (
+              <p className="text-center text-slate-500">Загружаем данные дневника…</p>
+            ) : null}
 
-          <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:col-span-2">
-              <div className="mb-6 flex items-center justify-between gap-4">
+          <section className="rounded-xl border border-green-100 bg-green-50 p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
+                <Info className="h-5 w-5 text-green-600" aria-hidden />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-green-950">Совет ИИ</p>
+                <p className="mt-1 text-sm text-slate-600">Пейте больше воды сегодня!</p>
+              </div>
+            </div>
+          </section>
+
+          <section className="min-w-0">
+            <div className="relative min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50">
                     <BarChart3 className="h-5 w-5 text-green-600" aria-hidden />
@@ -319,47 +513,34 @@ export function DiaryPage() {
                 </div>
               </div>
 
-              <div
-                className={[
-                  "flex h-48 w-full items-end px-2",
-                  isMonth ? "justify-between gap-1 overflow-x-auto" : "justify-between gap-2",
-                ].join(" ")}
-              >
-                {chartDays.map((item) => (
-                  <div
-                    key={item.date}
-                    className={[
-                      "flex h-full min-h-0 flex-col items-stretch justify-end px-0.5",
-                      isMonth ? "min-w-[18px] flex-1" : "flex-1",
-                    ].join(" ")}
-                  >
-                    <div className="relative flex min-h-[120px] w-full flex-1 items-end rounded-t-lg bg-slate-100">
-                      <div
-                        className="w-full min-h-[2px] rounded-t-lg bg-green-400 transition-all"
-                        style={{ height: item.bar_percent > 0 ? `${item.bar_percent}%` : "2px" }}
-                      />
+              <div ref={statsChartScrollRef} className="-mx-2 min-w-0 overflow-x-auto overscroll-x-contain px-2">
+                <div
+                  className={[
+                    "flex h-48 items-end",
+                    isMonth ? "w-[620px] max-w-none justify-between gap-1 md:w-full" : "w-full justify-between gap-2",
+                  ].join(" ")}
+                >
+                  {chartDays.map((item) => (
+                    <div
+                      key={item.date}
+                      className={[
+                        "flex h-full min-h-0 flex-col items-stretch justify-end px-0.5",
+                        isMonth ? "min-w-[18px] flex-1" : "flex-1",
+                      ].join(" ")}
+                    >
+                      <div className="relative flex min-h-[120px] w-full flex-1 items-end rounded-t-lg bg-slate-100">
+                        <div
+                          className="w-full min-h-[2px] rounded-t-lg bg-green-400 transition-all"
+                          style={{ height: item.bar_percent > 0 ? `${item.bar_percent}%` : "2px" }}
+                        />
+                      </div>
+                      <span className="mt-2 block text-center text-xs text-slate-400">{chartDayLabel(item)}</span>
                     </div>
-                    <span className="mt-2 block text-center text-xs text-slate-400">{chartDayLabel(item)}</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
-              {showAvgHint ? (
-                <p className="mt-2 text-center text-xs text-slate-400">
-                  Средние посчитаны за {activeStats!.days_with_data}{" "}
-                  {activeStats!.days_with_data === 1
-                    ? "день"
-                    : activeStats!.days_with_data >= 2 && activeStats!.days_with_data <= 4
-                      ? "дня"
-                      : "дней"}{" "}
-                  с записями,{" "}
-                  {statsPeriod === "week"
-                    ? "а не за все 7 дней интервала"
-                    : "а не за все 30 дней интервала"}
-                </p>
-              ) : null}
-
-              <div className="mt-6 grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 text-center md:grid-cols-4">
+              <div className="mt-6 grid grid-cols-2 gap-4 border-t border-slate-100 pt-5 text-center md:grid-cols-4 xl:grid-cols-8">
                 <div>
                   <p className="text-xl font-bold text-green-700">{formatFixedRu(activeStats?.avg_calories ?? 0, 0)}</p>
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Средние ккал</p>
@@ -378,11 +559,50 @@ export function DiaryPage() {
                   <p className="text-xl font-bold text-slate-900">{formatFixedRu(activeStats?.avg_carbs_g ?? 0, 0)} г</p>
                   <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Углеводы</p>
                 </div>
+                <div>
+                  <p className="text-xl font-bold text-emerald-700">
+                    {formatFixedRu(activeStats?.avg_fiber_g ?? 0, 1)} г
+                  </p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Клетчатка</p>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-rose-700">{formatFixedRu(activeStats?.avg_sugar_g ?? 0, 1)} г</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Сахар</p>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-cyan-700">{formatFixedRu(activeStats?.avg_salt_g ?? 0, 2)} г</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Соль</p>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-amber-700">
+                    {formatFixedRu(activeStats?.avg_saturated_fat_g ?? 0, 1)} г
+                  </p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Насыщенные жиры</p>
+                </div>
+              </div>
+              <div className="mt-5 flex w-full justify-center px-1">
+                <button
+                  type="button"
+                  onClick={() => setAnalysisOpen(true)}
+                  className="w-full max-w-full rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-green-700"
+                >
+                  Нутриентный профиль
+                </button>
               </div>
             </div>
 
-            <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-3 flex items-center justify-between">
+          </section>
+
+          {webDiaryToken ? (
+            <MealHistoryDaySection
+              accessToken={webDiaryToken}
+              nutritionTarget={nutritionTarget}
+              onMealsChanged={() => void loadDiary()}
+            />
+          ) : null}
+
+          <section className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-slate-900">Текущий вес</h2>
                 <p className="mt-1 text-3xl font-bold text-green-700">
@@ -398,91 +618,163 @@ export function DiaryPage() {
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-green-50">
                 <Scale className="h-5 w-5 text-green-600" aria-hidden />
               </div>
-              </div>
-
-              <div className="flex flex-1 items-center justify-center py-4">
-              <svg className="h-28 w-full" viewBox="0 0 100 40" aria-hidden>
-                <path
-                  d="M0 35 Q 20 30, 40 32 T 80 15 T 100 10"
-                  fill="none"
-                  stroke="#15803d"
-                  strokeLinecap="round"
-                  strokeWidth="2.5"
-                />
-                <circle cx="100" cy="10" fill="#15803d" r="2.5" />
-              </svg>
-              </div>
-
-              <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Прогресс за неделю</span>
-                {deltaWeek != null ? (
-                  <span
-                    className={[
-                      "font-bold",
-                      deltaWeek <= 0 ? "text-green-700" : "text-amber-700",
-                    ].join(" ")}
-                  >
-                    {deltaWeek > 0 ? "+" : ""}
-                    {formatFixedRu(deltaWeek, 2)} кг
-                  </span>
-                ) : (
-                  <span className="font-medium text-slate-400">Нет взвешиваний</span>
-                )}
-              </div>
-              <div className="h-2 w-full rounded-full bg-slate-100">
-                <div
-                  className="h-full rounded-full bg-green-400"
-                  style={{
-                    width:
-                      deltaWeek == null
-                        ? "0%"
-                        : `${Math.min(100, Math.round((Math.abs(deltaWeek) / 2) * 100) || 35)}%`,
-                  }}
-                />
-              </div>
-              </div>
             </div>
-          </section>
 
-          {webDiaryToken ? (
-            <MealHistoryDaySection accessToken={webDiaryToken} onMealsChanged={() => void loadDiary()} />
-          ) : null}
+            <div className="mt-3 flex flex-wrap gap-2 text-sm">
+              {WEIGHT_PERIOD_OPTIONS.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => setWeightPeriod(item.value)}
+                  className={
+                    weightPeriod === item.value
+                      ? "rounded-full bg-green-100 px-3 py-1 font-medium text-green-700"
+                      : "rounded-full px-3 py-1 font-medium text-slate-400 transition hover:bg-slate-100"
+                  }
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
 
-          <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
-              <div className="mb-5 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50">
-                  <Target className="h-5 w-5 text-green-600" aria-hidden />
+            <div className="py-4">
+              {weightPhase === "error" && weightError ? (
+                <div className="flex h-36 items-center justify-center rounded-lg bg-red-50 px-4 text-center text-sm text-red-600">
+                  {weightError}
                 </div>
-                <h2 className="text-xl font-semibold text-slate-900">Дневные цели</h2>
-              </div>
-
-              {dailyGoals.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  Цели не рассчитаны. Заполните профиль (вес, цель, активность), чтобы появились нормы КБЖУ.
-                </p>
+              ) : weightPhase === "loading" && weightMeasurements.length === 0 ? (
+                <div className="flex h-36 items-center justify-center rounded-lg bg-slate-50 text-sm text-slate-400">
+                  Загружаем взвешивания…
+                </div>
               ) : (
-                <div className="space-y-5">
-                  {dailyGoals.map((item) => (
-                    <DailyGoalProgress key={item.id} item={item} />
-                  ))}
-                </div>
+                <WeightTrendChart items={weightMeasurements} />
               )}
             </div>
 
-            <div className="rounded-xl border border-green-100 bg-green-50 p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
-                  <Info className="h-5 w-5 text-green-600" aria-hidden />
+            <div>
+              <button
+                type="button"
+                onClick={() => {
+                  setNewWeightKg(weightKg != null ? weightKg.toFixed(1) : "");
+                  setWeightSaveError(null);
+                  setWeightModalOpen(true);
+                }}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-green-700 sm:w-auto"
+              >
+                <Plus className="h-4 w-4" aria-hidden />
+                Добавить взвешивание
+              </button>
+            </div>
+          </section>
+
+          {analysisOpen ? (
+            <div
+              className="fixed inset-0 z-[110] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="analysis-modal-title"
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget) setAnalysisOpen(false);
+              }}
+            >
+              <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 id="analysis-modal-title" className="text-xl font-semibold text-slate-900">
+                    Нутриентный профиль (средние суточные значения)
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setAnalysisOpen(false)}
+                    className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                    aria-label="Закрыть"
+                  >
+                    <X className="h-5 w-5" aria-hidden />
+                  </button>
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-green-950">Совет ИИ</p>
-                  <p className="mt-1 text-sm text-slate-600">Пейте больше воды сегодня!</p>
+                <div className="space-y-5">
+                  {ANALYSIS_GROUPS.map((group) => (
+                    <section key={group.title} className="rounded-xl border border-slate-200 p-4">
+                      <h3 className="mb-2 text-base font-semibold text-slate-900">{group.title}</h3>
+                      <div className="space-y-1">
+                        {group.items.map((item) => (
+                          <p key={item.key} className="text-sm text-slate-700">
+                            {item.label} -{" "}
+                            {formatFixedRu(nutrientProfileValue(activeStats, item.key), nutrientProfileFracDigits(item.key))}{" "}
+                            {item.unit}
+                          </p>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
                 </div>
               </div>
             </div>
-          </section>
+          ) : null}
+
+          {weightModalOpen ? (
+            <div
+              className="fixed inset-0 z-[100] flex items-end justify-center bg-black/45 p-0 sm:items-center sm:p-4"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="weight-modal-title"
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget) closeWeightModal();
+              }}
+            >
+              <div className="w-full max-w-md rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h2 id="weight-modal-title" className="text-xl font-semibold text-slate-900">
+                    Добавить взвешивание
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={closeWeightModal}
+                    className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+                    aria-label="Закрыть"
+                  >
+                    <X className="h-5 w-5" aria-hidden />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="flex flex-col gap-1">
+                    <span className="text-sm font-medium text-slate-600">Вес, кг</span>
+                    <input
+                      type="number"
+                      min={1}
+                      step="0.1"
+                      inputMode="decimal"
+                      value={newWeightKg}
+                      onChange={(e) => setNewWeightKg(e.target.value)}
+                      className="h-12 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-base outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100"
+                    />
+                  </label>
+
+                  <label className="flex flex-col gap-1">
+                    <span className="text-sm font-medium text-slate-600">Заметка</span>
+                    <textarea
+                      value={newWeightNotes}
+                      onChange={(e) => setNewWeightNotes(e.target.value)}
+                      rows={3}
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100"
+                    />
+                  </label>
+
+                  {weightSaveError ? <p className="text-sm text-red-600">{weightSaveError}</p> : null}
+
+                  <button
+                    type="button"
+                    onClick={() => void handleSaveWeight()}
+                    disabled={weightSaving}
+                    className="flex w-full items-center justify-center rounded-lg bg-green-600 px-4 py-3 font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
+                  >
+                    {weightSaving ? "Сохраняем..." : "Сохранить"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+          </div>
         </div>
       )}
     </AppShell>

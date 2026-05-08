@@ -6,13 +6,30 @@ from typing import Any
 
 import pandas as pd
 
-from app.core.config import FOOD_ALIASES_PATH, NUTRITION_CSV_PATH, NUTRITION_ENABLE_SEMANTIC
+from app.core.config import (
+    FOOD_ALIASES_PATH,
+    NUTRITION_CSV_PATH,
+    NUTRITION_ENABLE_SEMANTIC,
+    nutrition_debug_matching,
+)
 from app.infrastructure.nutrition.food_aliases import FoodAliasIndex
 from app.infrastructure.nutrition.ingredient_input import (
+    is_beer_like_ingredient,
+    is_beef_like_ingredient,
+    is_beef_patty_like_ingredient,
+    is_porridge_like_grain,
+    is_generic_grain_query,
     NormalizedIngredient,
+    is_banana_fruit_like,
+    is_cottage_cheese_like,
+    is_corn_like_ingredient,
     is_grain_like_ingredient,
     is_legume_like_ingredient,
     is_poultry_breast_query,
+    is_seafood_like_ingredient,
+    is_seed_kernel_query,
+    is_tea_drink_query,
+    is_tuna_like_ingredient,
     parse_ingredients_dict,
 )
 from app.infrastructure.nutrition.state_match import state_score
@@ -46,10 +63,13 @@ _SKIP_SCALE_KEYS = frozenset(
 )
 
 
-def _parse_cell_to_float(val: Any) -> float:
-    if val is None or (isinstance(val, float) and pd.isna(val)):
+def safe_float(value: Any) -> float:
+    """Convert values to float safely: None/empty/nan -> 0.0."""
+    if value is None:
         return 0.0
-    s = str(val).strip().lower()
+    if isinstance(value, float) and pd.isna(value):
+        return 0.0
+    s = str(value).strip().lower()
     if not s or s in ("nan", "none", "null"):
         return 0.0
     s = s.replace(",", "")
@@ -62,8 +82,41 @@ def _parse_cell_to_float(val: Any) -> float:
         return 0.0
 
 
+def _parse_cell_to_float(val: Any) -> float:
+    return safe_float(val)
+
+
+def scale_nutrient(value: Any, weight_g: Any) -> float:
+    return safe_float(value) * safe_float(weight_g) / 100.0
+
+
+def aggregate_nutrients(
+    ingredients: list[dict[str, Any]],
+    nutrition_rows: list[dict[str, Any]] | dict[str, dict[str, Any]],
+    field_map: dict[str, str],
+) -> dict[str, float]:
+    """
+    Aggregate per-100g nutrition rows into scaled nutrients.
+
+    `field_map` maps source row keys -> output keys.
+    """
+    totals: dict[str, float] = {dst: 0.0 for dst in field_map.values()}
+    if isinstance(nutrition_rows, dict):
+        rows_seq = list(nutrition_rows.values())
+    else:
+        rows_seq = nutrition_rows
+    for idx, row in enumerate(rows_seq):
+        if not isinstance(row, dict):
+            continue
+        ing = ingredients[idx] if idx < len(ingredients) and isinstance(ingredients[idx], dict) else {}
+        weight_g = ing.get("grams", ing.get("weight", 0))
+        for src, dst in field_map.items():
+            totals[dst] = totals.get(dst, 0.0) + scale_nutrient(row.get(src), weight_g)
+    return totals
+
+
 _INT_ROUND_KEYS = frozenset(
-    {"calories", "proteins", "fats", "carbohydrates", "fiber_g", "sugar_g", "sodium_mg"}
+    {"calories", "proteins", "fats", "carbohydrates", "sugar_g", "sodium_mg"}
 )
 
 
@@ -102,6 +155,15 @@ class NutritionService:
             return pd.Series([0.0] * len(df), index=df.index)
         return df[col].map(_parse_cell_to_float)
 
+    def _series_scaled(self, df: pd.DataFrame, col: str, *, multiplier: float) -> pd.Series:
+        return self._series(df, col).map(lambda v: v * multiplier)
+
+    def _series_first_available(self, df: pd.DataFrame, cols: tuple[str, ...]) -> pd.Series:
+        for col in cols:
+            if col in df.columns:
+                return self._series(df, col)
+        return pd.Series([0.0] * len(df), index=df.index)
+
     def _load_data(self) -> None:
         df = pd.read_csv(self._path)
         data = pd.DataFrame(index=df.index)
@@ -110,12 +172,20 @@ class NutritionService:
 
         data["calories"] = self._series(df, "calories")
         data["proteins"] = self._series(df, "protein")
-        data["fats"] = self._series(df, "total_fat")
+        data["fats"] = self._series_first_available(df, ("fat", "total_fat"))
+        data["total_fat_g"] = self._series_first_available(df, ("total_fat", "fat"))
         data["carbohydrates"] = self._series(df, "carbohydrate")
         data["fiber_g"] = self._series(df, "fiber")
         data["sugar_g"] = self._series(df, "sugars")
         data["saturated_fat_g"] = self._series(df, "saturated_fat")
+        data["saturated_fatty_acids_g"] = self._series_first_available(df, ("saturated_fatty_acids", "saturated_fat"))
+        data["monounsaturated_fatty_acids_g"] = self._series(df, "monounsaturated_fatty_acids")
+        data["polyunsaturated_fatty_acids_g"] = self._series(df, "polyunsaturated_fatty_acids")
+        data["fatty_acids_total_trans_mg"] = self._series(df, "fatty_acids_total_trans")
         data["sodium_mg"] = self._series(df, "sodium")
+        data["serving_size_g"] = self._series(df, "serving_size")
+        data["cholesterol_mg"] = self._series(df, "cholesterol")
+        data["folic_acid_mcg"] = self._series(df, "folic_acid")
         data["calcium_mg"] = self._series(df, "calcium")
         data["magnesium_mg"] = self._series(df, "magnesium")
         data["potassium_mg"] = self._series(df, "potassium")
@@ -125,13 +195,17 @@ class NutritionService:
         data["selenium_mcg"] = self._series(df, "selenium")
         data["copper_mg"] = self._series(df, "copper")
         data["manganese_mg"] = self._series(df, "manganese")
-        if "vitamin_a_rae" in df.columns:
-            data["vitamin_a_mcg"] = self._series(df, "vitamin_a_rae")
-        else:
-            data["vitamin_a_mcg"] = self._series(df, "vitamin_a")
+        data["vitamin_a_iu"] = self._series(df, "vitamin_a")
+        data["vitamin_a_rae_mcg"] = self._series(df, "vitamin_a_rae")
+        data["carotene_alpha_mcg"] = self._series(df, "carotene_alpha")
+        data["carotene_beta_mcg"] = self._series(df, "carotene_beta")
+        data["cryptoxanthin_beta_mcg"] = self._series(df, "cryptoxanthin_beta")
+        data["lutein_zeaxanthin_mcg"] = self._series(df, "lutein_zeaxanthin")
+        data["lycopene_mcg"] = self._series(df, "lycopene")
         data["vitamin_c_mg"] = self._series(df, "vitamin_c")
-        data["vitamin_d_mcg"] = self._series(df, "vitamin_d")
+        data["vitamin_d_iu"] = self._series(df, "vitamin_d")
         data["vitamin_e_mg"] = self._series(df, "vitamin_e")
+        data["tocopherol_alpha_mg"] = self._series(df, "tocopherol_alpha")
         data["vitamin_k_mcg"] = self._series(df, "vitamin_k")
         data["vitamin_b6_mg"] = self._series(df, "vitamin_b6")
         data["vitamin_b12_mcg"] = self._series(df, "vitamin_b12")
@@ -141,6 +215,36 @@ class NutritionService:
         data["niacin_mg"] = self._series(df, "niacin")
         data["pantothenic_acid_mg"] = self._series(df, "pantothenic_acid")
         data["choline_mg"] = self._series(df, "choline")
+        data["alanine_g"] = self._series(df, "alanine")
+        data["arginine_g"] = self._series(df, "arginine")
+        data["aspartic_acid_g"] = self._series(df, "aspartic_acid")
+        data["cystine_g"] = self._series(df, "cystine")
+        data["glutamic_acid_g"] = self._series(df, "glutamic_acid")
+        data["glycine_g"] = self._series(df, "glycine")
+        data["histidine_g"] = self._series(df, "histidine")
+        data["hydroxyproline_g"] = self._series(df, "hydroxyproline")
+        data["isoleucine_g"] = self._series(df, "isoleucine")
+        data["leucine_g"] = self._series(df, "leucine")
+        data["lysine_g"] = self._series(df, "lysine")
+        data["methionine_g"] = self._series(df, "methionine")
+        data["phenylalanine_g"] = self._series(df, "phenylalanine")
+        data["proline_g"] = self._series(df, "proline")
+        data["serine_g"] = self._series(df, "serine")
+        data["threonine_g"] = self._series(df, "threonine")
+        data["tryptophan_g"] = self._series(df, "tryptophan")
+        data["tyrosine_g"] = self._series(df, "tyrosine")
+        data["valine_g"] = self._series(df, "valine")
+        data["fructose_g"] = self._series(df, "fructose")
+        data["galactose_g"] = self._series(df, "galactose")
+        data["glucose_g"] = self._series(df, "glucose")
+        data["lactose_g"] = self._series(df, "lactose")
+        data["maltose_g"] = self._series(df, "maltose")
+        data["sucrose_g"] = self._series(df, "sucrose")
+        data["alcohol_g"] = self._series(df, "alcohol")
+        data["ash_g"] = self._series(df, "ash")
+        data["caffeine_mg"] = self._series(df, "caffeine")
+        data["theobromine_mg"] = self._series(df, "theobromine")
+        data["water_g"] = self._series(df, "water")
 
         dataset = data.set_index("name")
         self._data = dataset.to_dict("index")
@@ -226,6 +330,18 @@ class NutritionService:
         grain = is_grain_like_ingredient(ni)
         legume = is_legume_like_ingredient(ni)
         poultry_breast = is_poultry_breast_query(ni)
+        tuna_like = is_tuna_like_ingredient(ni)
+        seafood_like = is_seafood_like_ingredient(ni)
+        corn_like = is_corn_like_ingredient(ni)
+        beer_q = is_beer_like_ingredient(ni)
+        generic_grain_q = is_generic_grain_query(ni)
+        beef_q = is_beef_like_ingredient(ni)
+        beef_patty_q = is_beef_patty_like_ingredient(ni)
+        porridge_grain_q = is_porridge_like_grain(ni)
+        tea_drink = is_tea_drink_query(ni)
+        cottage = is_cottage_cheese_like(ni)
+        banana_f = is_banana_fruit_like(ni)
+        seed_q = is_seed_kernel_query(ni)
         out: list[NutritionCandidate] = []
         for name_key, text_score in raw_candidates:
             row = self._data.get(name_key) or {}
@@ -235,9 +351,23 @@ class NutritionService:
                 display,
                 query=ni.canonical_query,
                 ingredient_input=ni.input_name,
+                candidate_carbs_per100=float(row.get("carbohydrates") or 0),
+                categories=ni.categories,
                 is_grain_like=grain,
                 is_legume_like=legume,
                 is_poultry_breast_query=poultry_breast,
+                is_tuna_like=tuna_like,
+                seafood_like_q=seafood_like,
+                corn_like_q=corn_like,
+                beer_q=beer_q,
+                generic_grain_query=generic_grain_q,
+                beef_q=beef_q,
+                beef_patty_q=beef_patty_q,
+                porridge_like_grain_q=porridge_grain_q,
+                tea_drink_q=tea_drink,
+                cottage_cheese_q=cottage,
+                banana_fruit_q=banana_f,
+                seed_kernel_q=seed_q,
             )
             exact_bonus, exact_reasons = self._exact_row_bonus(ni.canonical_query, display)
             final = float(text_score) + float(st) + exact_bonus
@@ -266,14 +396,14 @@ class NutritionService:
         if not raw:
             raw = self._candidate_search(ni.input_name, limit=20)
         ranked = self._rerank_candidates(ni, raw)
-        if ni.input_name.strip().lower() == "milk tea":
+        if nutrition_debug_matching():
             detail = [
                 f"{c.display_name!r} final={c.final_score:.1f} text={c.text_score:.1f} "
-                f"state_adj={c.state_score:.1f} reasons={c.reasons[:10]}"
+                f"state_score={c.state_score:.1f} reasons={c.reasons[:12]}"
                 for c in ranked[:15]
             ]
             logger.info(
-                "nutrition_milk_tea_debug ingredient=%r state=%r canonical_query=%r "
+                "nutrition_match_debug ingredient=%r state=%r canonical_query=%r "
                 "grams=%s candidates=[%s] selected=%r",
                 ni.input_name,
                 ni.state,
@@ -324,16 +454,20 @@ class NutritionService:
         return scaled
 
     def _scale_row(self, nut: dict[str, Any], weight: Any) -> dict[str, Any]:
-        factor = (float(weight) / 100.0) if weight is not None else 0.0
+        weight_g = safe_float(weight)
         out: dict[str, Any] = {}
+        field_map: dict[str, str] = {}
         for k, v in nut.items():
             if k in _SKIP_SCALE_KEYS:
                 continue
             try:
-                base = float(v)
+                float(v)
             except (TypeError, ValueError):
                 continue
-            out[k] = _round_scaled(k, base * factor)
+            field_map[k] = k
+        scaled = aggregate_nutrients([{"grams": weight_g}], [nut], field_map)
+        for k, val in scaled.items():
+            out[k] = _round_scaled(k, val)
         return out
 
     def search(

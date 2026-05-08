@@ -19,9 +19,16 @@ def build_web_meal_day_row(meal: Meal, user: User) -> WebMealDayRow:
     tz = _resolve_tz(user)
     local = _utc_naive_to_local(_meal_naive_dt(meal), tz)
     tot = _sum_meal_nutrition(meal)
+    sugar_g = 0
+    sodium_mg = 0
+    saturated_fat_g = 0.0
     lines: list[WebMealDayItemLine] = []
     for it in meal.items:
         n = it.nutrition
+        if n is not None:
+            sugar_g += int(n.sugar_g or 0)
+            sodium_mg += int(n.sodium_mg or 0)
+            saturated_fat_g += float(n.saturated_fat_g or 0)
         lines.append(
             WebMealDayItemLine(
                 id=it.id,
@@ -31,6 +38,7 @@ def build_web_meal_day_row(meal: Meal, user: User) -> WebMealDayRow:
                 protein_g=n.protein_g if n else None,
                 fat_g=n.fat_g if n else None,
                 carbs_g=n.carbs_g if n else None,
+                fiber_g=float(n.fiber_g) if n and n.fiber_g is not None else None,
             )
         )
     return WebMealDayRow(
@@ -42,6 +50,14 @@ def build_web_meal_day_row(meal: Meal, user: User) -> WebMealDayRow:
         meal_type_label=_meal_type_label(meal.meal_type),
         composition=meal_composition_line(meal),
         calories=tot["calories"],
+        protein_g=tot["protein_g"],
+        fat_g=tot["fat_g"],
+        carbs_g=tot["carbs_g"],
+        fiber_g=float(tot["fiber_g"]),
+        sugar_g=sugar_g,
+        sodium_mg=sodium_mg,
+        saturated_fat_g=round(saturated_fat_g, 2),
+        water_g=float(tot.get("water_g", 0) or 0),
         meal_photo_large=meal.meal_photo_large,
         meal_photo_thumb=meal.meal_photo_thumb,
         meal_photo_large_url=_absolute_public_url(meal.meal_photo_large),

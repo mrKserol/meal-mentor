@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 
 import { InstallPwaHint } from "../components/InstallPwaHint";
 import { useAuth } from "../hooks/useAuth";
+import mentorLoginLogo from "../assets/meal-mentor-login-logo.png";
 
 export function LoginPage() {
   const { isAuthenticated } = useAuth();
@@ -74,16 +75,16 @@ export function LoginPage() {
 
       <main className="w-full max-w-[420px] z-10">
         <div className="flex flex-col items-center mb-xl">
-          <div className="w-20 h-20 mb-md bg-white rounded-xl shadow-[0_4px_12px_rgba(46,204,113,0.1)] flex items-center justify-center overflow-hidden border border-outline-variant/30">
+          <div className="w-32 h-32 mb-md bg-white rounded-2xl shadow-[0_8px_24px_rgba(46,204,113,0.18)] flex items-center justify-center overflow-hidden border border-outline-variant/30">
             <img
               alt="Robot Mentor Logo"
-              className="w-14 h-14 object-contain"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8WOAfIdFkP6JxE4-yLUCwNZUClMHp-ubhR60BO0RGHc8p1_eKq12LLwtcLdcdauu-cmAUKG76zKxoUh4KQUMxAwBVSGirpO84klfMnw0TeSQR1z_Zjb1UlNOSlCqT5XqdXJeq1oX-4Y0OL4qd5tnLTBzX4-oQkXbOioHSjEGbQZoRNpLkccddEF1kDEvf0_Deu-d8aSmkNV4aVqXsdx00D8BzdSIJcCwYgYrENsXrL0zkIHB8LWEQBRIR15rA9zI60TrH69WZgogn"
+              className="w-28 h-28 object-contain"
+              src={mentorLoginLogo}
             />
           </div>
           <h1 className="font-h1 text-h1 text-on-surface mb-xs">Вход в Meal Mentor</h1>
           <p className="font-body-md text-on-surface-variant text-center px-lg">
-            Войдите через Telegram — ваш персональный ИИ-диетолог
+            Войдите через Telegram — ваш персональный AI-нутрициолог
           </p>
         </div>
 
@@ -99,13 +100,8 @@ export function LoginPage() {
           </button>
 
           <div className="relative bg-secondary-container/30 p-md rounded-xl border border-secondary-container/50 flex gap-md items-start mt-lg">
-            <div className="shrink-0 text-primary-container">
-              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-                smart_toy
-              </span>
-            </div>
-            <p className="font-body-md text-label-sm text-on-secondary-container italic">
-              «Привет! Давай продолжим путь к твоему идеальному рациону сегодня.»
+            <p className="font-body-md text-label-sm text-on-secondary-container">
+              © 2026 Meal Mentor. Разработка: Алмаз Садыков Telegram: @KritBong
             </p>
           </div>
         </div>

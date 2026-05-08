@@ -34,9 +34,40 @@ Rules:
 * Ignore non-food objects (plates, utensils, packaging, etc.)
 * For salads, Greek salad, or vegetable salads: do NOT use one vague ingredient name "mixed vegetables".
   List separate, visible components in English (e.g. cucumber, tomato, bell pepper, red onion, feta cheese, olives; add olive oil only if clearly visible as a separate layer or dressing).
+* For cooked vegetable mixes (e.g. frozen mix, stir-fry mix) with visible components: do NOT use one vague ingredient name like "mixed vegetables".
+  Split into separate visible ingredients (e.g. corn, peas, green beans, carrot) and set state to "cooked" (or "canned" if it is clearly canned).
+* For alcoholic drinks, use specific beverage names in English: beer, wine, vodka, whiskey, cocktail.
+  For beer in a glass, use exactly "beer" with grams estimated from ml (1 ml ≈ 1 g), state "unknown".
+  Do NOT infer snacks or food from an alcoholic drink unless they are clearly visible as separate items.
+* Never use generic grain terms like: grains, cooked grains, cereals, mixed grains, grain mix.
+  Always specify the exact grain/starch when possible: oat groats, oats, rice, buckwheat, barley, quinoa, bulgur, couscous, pasta/spaghetti/macaroni.
+  If exact grain type is unclear, make the most likely guess by appearance.
+  For whole grain kernels in a bowl that look like cooked oats, prefer "oat groats" with state "cooked" (not "cooked grains").
+  For porridge-like oats, use "oatmeal" with state "cooked".
+  Do NOT output "cooked grains" unless there is absolutely no way to identify the grain; if forced, set lower confidence.
+  Example: cooked whole oat kernels in a bowl -> "oat groats": {"grams": 150, "state": "cooked"}.
+* For grain porridge, return a specific cooked porridge ingredient: oatmeal, buckwheat porridge, rice porridge, cornmeal porridge / polenta.
+  If food looks like cooked corn porridge or polenta, use "cornmeal porridge": {"grams": ..., "state": "cooked"}.
+  Do NOT use dry grain names for cooked porridge.
+  Do NOT use "cornmeal" alone unless it is clearly dry uncooked cornmeal.
 * For drinks with milk (e.g. milk tea, latte, tea or coffee with milk): do NOT use a single ingredient name like "milk tea".
   Split into separate English ingredients: tea or coffee (liquid part) and milk (estimate milk grams separately).
+  Keep the total weight of split liquid components close to the visible/mentioned drink volume.
+  Example for ~200 g drink: coffee 150 g + milk 50 g.
+  Example for very milky drink (~200 g): coffee 100 g + milk 100 g.
+  Do NOT output coffee 150 g + milk 150 g for a 200 g drink.
+  The sum of liquid components should approximately equal the total drink weight.
+  If drink volume is unknown, estimate total drink weight first, then split between coffee/tea and milk.
+  Default assumptions: coffee with a small amount of milk = 75% coffee / 25% milk; very milky coffee (latte-like) = 50% coffee / 50% milk; tea with milk = 75% tea / 25% milk.
   The brewed tea or coffee portion is very low in calories; do not assume sugar unless it is visible or explicitly mentioned.
+* For chicken and poultry, be specific when visible or described:
+  use "chicken breast" only if it is clearly breast/fillet.
+  use "chicken thigh", "chicken leg", "chicken drumstick" or "chicken wing" when visible.
+  add "with skin" if skin is visible.
+  use "meat only" only if skin and bone are not present.
+  if cut is unclear, use "chicken meat with skin" instead of generic "chicken".
+* If the chicken piece contains visible bone, estimate only edible meat grams.
+  Do not include bone weight in grams.
 
 STATE RULES:
 

@@ -103,7 +103,7 @@ async def handle_text_flow(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
         ingredients = data.get("ingredients") or {}
         confidence = data.get("confidence")
-        nutrition = data.get("nutrition")
+        nutrition = data.get("nutrition_full") or data.get("nutrition")
 
         if _needs_user_description(ingredients, confidence):
             await update.message.reply_text(

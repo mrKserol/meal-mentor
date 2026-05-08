@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from datetime import date, datetime
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.auth.profile import is_profile_completed
@@ -109,6 +110,11 @@ def calculate_macros(target_calories: int, weight_kg: float, goal: str | None) -
     return {"protein_g": protein_g, "fat_g": fat_g, "carbs_g": carbs_g}
 
 
+def calculate_target_fiber_g(target_calories: int) -> float:
+    """Fiber norm: 14 g per each 1000 kcal, rounded to 0.1 g."""
+    return round((float(target_calories) / 1000.0) * 14.0, 1)
+
+
 def get_active_nutrition_target(db: Session, *, user_id: int) -> NutritionTarget | None:
     return (
         db.query(NutritionTarget)
@@ -117,7 +123,55 @@ def get_active_nutrition_target(db: Session, *, user_id: int) -> NutritionTarget
     )
 
 
-def create_or_update_active_nutrition_target(db: Session, user: User) -> NutritionTarget | None:
+def get_nutrition_target_for_range(
+    db: Session,
+    *,
+    user_id: int,
+    range_start: datetime,
+    range_end: datetime,
+) -> NutritionTarget | None:
+    return (
+        db.query(NutritionTarget)
+        .filter(
+            NutritionTarget.user_id == user_id,
+            NutritionTarget.created_at < range_end,
+            or_(NutritionTarget.is_active.is_(True), NutritionTarget.updated_at >= range_start),
+        )
+        .order_by(NutritionTarget.created_at.desc())
+        .first()
+    )
+
+
+def _target_matches(
+    row: NutritionTarget,
+    *,
+    bmr_kcal: int,
+    tdee_kcal: int,
+    target_calories: int,
+    macros: dict[str, int],
+    user: User,
+) -> bool:
+    return (
+        row.bmr_kcal == bmr_kcal
+        and row.tdee_kcal == tdee_kcal
+        and row.target_calories == target_calories
+        and round(float(row.target_fiber_g or 0.0), 1) == calculate_target_fiber_g(target_calories)
+        and row.target_protein_g == macros["protein_g"]
+        and row.target_fat_g == macros["fat_g"]
+        and row.target_carbs_g == macros["carbs_g"]
+        and row.goal == user.goal
+        and row.activity_level == user.activity_level
+        and row.weight_kg == user.weight_kg
+        and row.target_weight_kg == user.target_weight_kg
+    )
+
+
+def create_or_update_active_nutrition_target(
+    db: Session,
+    user: User,
+    *,
+    force_new: bool = False,
+) -> NutritionTarget | None:
     if not is_profile_completed(user):
         return None
 
@@ -139,16 +193,32 @@ def create_or_update_active_nutrition_target(db: Session, user: User) -> Nutriti
     )
     tdee = calculate_tdee(bmr, user.activity_level)
     target_cal = calculate_target_calories(tdee, user.goal)
+    target_fiber_g = calculate_target_fiber_g(target_cal)
     macros = calculate_macros(target_cal, weight_kg, user.goal)
 
     now = datetime.utcnow()
     existing = get_active_nutrition_target(db, user_id=user.id)
 
-    row = existing if existing is not None else NutritionTarget(user_id=user.id)
+    if existing is not None:
+        if _target_matches(
+            existing,
+            bmr_kcal=bmr,
+            tdee_kcal=tdee,
+            target_calories=target_cal,
+            macros=macros,
+            user=user,
+        ) and not force_new:
+            return existing
+        existing.is_active = False
+        existing.updated_at = now
+        db.add(existing)
+
+    row = NutritionTarget(user_id=user.id)
 
     row.bmr_kcal = bmr
     row.tdee_kcal = tdee
     row.target_calories = target_cal
+    row.target_fiber_g = target_fiber_g
     row.target_protein_g = macros["protein_g"]
     row.target_fat_g = macros["fat_g"]
     row.target_carbs_g = macros["carbs_g"]
@@ -158,10 +228,8 @@ def create_or_update_active_nutrition_target(db: Session, user: User) -> Nutriti
     row.weight_kg = user.weight_kg
     row.target_weight_kg = user.target_weight_kg
     row.is_active = True
+    row.created_at = now
     row.updated_at = now
-    if existing is None:
-        row.created_at = now
 
     db.add(row)
     return row
-

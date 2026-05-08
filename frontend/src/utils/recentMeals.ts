@@ -5,10 +5,17 @@ export type MealHistoryItem = {
   mealType: string;
   time: string;
   calories: number;
+  protein_g: number;
+  fat_g: number;
+  carbs_g: number;
+  fiber_g: number;
+  sugar_g: number;
+  sodium_mg: number;
+  saturated_fat_g: number;
+  water_g: number;
   icon: "breakfast" | "lunch" | "snack";
   thumbUrl?: string | null;
   predictionLine: string;
-  composition: string;
 };
 
 function iconFromMealType(mt: string | null): MealHistoryItem["icon"] {
@@ -34,20 +41,34 @@ export function mapTodayMealsToHistory(snapshot: DiarySnapshot | null): MealHist
   return snapshot.today_meals.map((m) => {
     const pred = typeof m.prediction === "string" && m.prediction.trim() ? m.prediction.trim() : "";
     const predictionLine = pred || "—";
-    const composition = (m.composition && m.composition.trim()) || "—";
     return {
       id: String(m.id),
       mealType: m.meal_type_label,
       time: m.time_local,
       calories: m.calories,
+      protein_g: m.protein_g ?? 0,
+      fat_g: m.fat_g ?? 0,
+      carbs_g: m.carbs_g ?? 0,
+      fiber_g: m.fiber_g ?? 0,
+      sugar_g: m.sugar_g ?? 0,
+      sodium_mg: m.sodium_mg ?? 0,
+      saturated_fat_g: m.saturated_fat_g ?? 0,
+      water_g: m.water_g ?? 0,
       icon: iconFromMealType(m.meal_type),
       thumbUrl: mealThumbSrcForRecent(m) ?? null,
       predictionLine,
-      composition,
     };
   });
 }
 
 export function formatIntRu(n: number): string {
   return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(n);
+}
+
+/** Grams with ru-RU grouping; fractional part up to `maxFrac` (e.g. fiber 10,3). */
+export function formatMacroGramsRu(n: number, maxFrac = 2): string {
+  return new Intl.NumberFormat("ru-RU", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: maxFrac,
+  }).format(n);
 }

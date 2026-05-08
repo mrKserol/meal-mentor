@@ -64,6 +64,7 @@ class NutritionTargetResponse(BaseModel):
     bmr_kcal: int
     tdee_kcal: int
     target_calories: int
+    target_fiber_g: float
     target_protein_g: int
     target_fat_g: int
     target_carbs_g: int
@@ -105,6 +106,37 @@ class MyNutritionTargetResponse(BaseModel):
     nutrition_target: NutritionTargetResponse | None = None
 
 
+class WeightMeasurementCreateRequest(BaseModel):
+    weight_kg: float = Field(gt=0, le=500)
+    waist_cm: float | None = Field(default=None, gt=0, le=300)
+    body_fat_percent: float | None = Field(default=None, ge=0, le=80)
+    notes: str | None = Field(default=None, max_length=1000)
+
+
+class WeightMeasurementResponse(BaseModel):
+    id: int
+    measured_at: datetime
+    weight_kg: float
+    waist_cm: float | None = None
+    body_fat_percent: float | None = None
+    notes: str | None = None
+    nutrition_target: NutritionTargetResponse | None = None
+
+
+class WeightMeasurementPoint(BaseModel):
+    id: int
+    measured_at: datetime
+    weight_kg: float
+    waist_cm: float | None = None
+    body_fat_percent: float | None = None
+    notes: str | None = None
+
+
+class WeightMeasurementsResponse(BaseModel):
+    period: str
+    items: list[WeightMeasurementPoint]
+
+
 class TelegramAuthResponse(AuthTokenPair):
     user: UserMeResponse
     is_new_user: bool
@@ -142,6 +174,7 @@ class WebMealDayItemLine(BaseModel):
     protein_g: int | None = None
     fat_g: int | None = None
     carbs_g: int | None = None
+    fiber_g: float | None = None
 
 
 class WebMealDayRow(BaseModel):
@@ -153,6 +186,14 @@ class WebMealDayRow(BaseModel):
     meal_type_label: str
     composition: str
     calories: int
+    protein_g: int = 0
+    fat_g: int = 0
+    carbs_g: int = 0
+    fiber_g: float = 0.0
+    sugar_g: int = 0
+    sodium_mg: int = 0
+    saturated_fat_g: float = 0.0
+    water_g: float = 0.0
     meal_photo_thumb: str | None = None
     meal_photo_large: str | None = None
     meal_photo_thumb_url: str | None = None

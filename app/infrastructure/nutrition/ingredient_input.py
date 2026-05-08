@@ -8,6 +8,11 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.infrastructure.nutrition.food_aliases import AliasEntry, FoodAliasIndex
+from app.infrastructure.nutrition.nutrition_categories import (
+    IngredientCategoryInfo,
+    NutritionCategory,
+    detect_ingredient_categories,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +40,9 @@ class NormalizedIngredient:
     state: str
     alias_hit: bool
     alias_category: str | None
+    category_primary: str
+    categories: tuple[str, ...]
+    category_reasons: tuple[str, ...]
 
 
 def _coerce_grams(val: Any) -> int | None:
@@ -147,6 +155,8 @@ def parse_ingredients_dict(
         if is_dates_like_name(input_name) and state == "raw":
             state = "dry"
 
+        cat_info = detect_ingredient_categories(input_name, canonical, alias_category)
+
         out.append(
             NormalizedIngredient(
                 input_name=input_name,
@@ -155,16 +165,23 @@ def parse_ingredients_dict(
                 state=state,
                 alias_hit=alias_hit,
                 alias_category=alias_category,
+                category_primary=cat_info.primary.value,
+                categories=tuple(sorted(c.value for c in cat_info.all_categories)),
+                category_reasons=cat_info.reasons,
             )
         )
     return out
 
 
 def is_grain_like_ingredient(ni: NormalizedIngredient) -> bool:
+    if NutritionCategory.GRAIN.value in ni.categories:
+        return True
     return _is_grain_like(ni.input_name, ni.alias_category) or _is_grain_like(ni.canonical_query, ni.alias_category)
 
 
 def is_legume_like_ingredient(ni: NormalizedIngredient) -> bool:
+    if NutritionCategory.LEGUME.value in ni.categories:
+        return True
     if ni.alias_category == "legume":
         return True
     blob = f"{ni.input_name} {ni.canonical_query}".lower()
@@ -234,6 +251,225 @@ def is_egg_like_name(name: str) -> bool:
     if "egg" in n or "яйц" in n:
         return True
     return False
+
+
+def is_tea_drink_query(ni: NormalizedIngredient) -> bool:
+    """Plain tea / чай (not powder); excludes milk tea phrasing handled separately."""
+    if query_implies_beverage_powder_or_dry_mix(ni.input_name):
+        return False
+    il = ni.input_name.strip().lower()
+    if "milk" in il and "tea" in il:
+        return False
+    if "молок" in il and "чай" in il:
+        return False
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if "tea" not in blob and "чай" not in blob:
+        return False
+    return is_beverage_like_query(ni.input_name)
+
+
+def is_cottage_cheese_like(ni: NormalizedIngredient) -> bool:
+    if NutritionCategory.COTTAGE_CHEESE.value in ni.categories:
+        return True
+    if ni.alias_category == "cottage_cheese":
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if "творог" in blob:
+        return True
+    if re.search(r"\bcottage\s+cheese\b", blob):
+        return True
+    if "cottage" in blob and "cheese" in blob:
+        return True
+    if re.search(r"\bcurd\b", blob) and "cheesecake" not in blob:
+        return True
+    return False
+
+
+def is_banana_fruit_like(ni: NormalizedIngredient) -> bool:
+    if NutritionCategory.BANANA.value in ni.categories:
+        return True
+    if ni.alias_category == "fruit" and "banana" in ni.canonical_query.lower():
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if re.search(r"\b(bananas?|бананы?|банан)\b", blob):
+        return True
+    return False
+
+
+def is_seed_kernel_query(ni: NormalizedIngredient) -> bool:
+    if NutritionCategory.SEED.value in ni.categories:
+        return True
+    if ni.alias_category in ("seed", "seeds"):
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if "chia" in blob:
+        return True
+    if "pumpkin seed" in blob or "pepitas" in blob:
+        return True
+    if "тыкв" in blob and ("семеч" in blob or "семен" in blob):
+        return True
+    if "тыквенные" in blob:
+        return True
+    return False
+
+
+def is_tuna_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True for canned/fresh tuna queries (not generic fish)."""
+    if NutritionCategory.TUNA.value in ni.categories:
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if "тунец" in blob or "тунца" in blob or "тунцом" in blob:
+        return True
+    if "tuna" in blob:
+        return True
+    if ni.alias_category == "fish" and "tuna" in ni.canonical_query.lower():
+        return True
+    return False
+
+
+def is_seafood_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True for seafood-like queries (shrimp/prawn in EN/RU)."""
+    if NutritionCategory.SEAFOOD.value in ni.categories or NutritionCategory.SHRIMP.value in ni.categories:
+        return True
+    if ni.alias_category == "seafood":
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if re.search(r"\b(shrimp|shrimps|prawn|prawns)\b", blob):
+        return True
+    if re.search(r"\b(креветк[аеи]|креветка|креветки)\b", blob):
+        return True
+    return False
+
+
+def is_corn_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True for plain corn / sweet corn queries (not flour/starch/popcorn/snacks)."""
+    if NutritionCategory.CORN.value in ni.categories:
+        return True
+    if ni.alias_category == "vegetable" and "corn" in ni.canonical_query.lower():
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if "corn" not in blob and "кукуруз" not in blob:
+        return False
+    bad = ("cornmeal", "flour", "starch", "cereal", "snacks", "chips", "popcorn", "tortilla", "bread")
+    if any(b in blob for b in bad):
+        return False
+    if any(x in blob for x in ("corn", "sweet corn", "кукуруз")):
+        return True
+    return False
+
+
+def is_beer_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """
+    True for beer/alcoholic-beverage queries (beer/lager/ale, пиво),
+    but excludes food derivatives like beer bread/batter/cheese.
+    """
+    if NutritionCategory.BEER.value in ni.categories:
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if ni.alias_category == "alcoholic_beverage":
+        pass
+    elif not any(x in blob for x in ("beer", "lager", "ale", "пиво", "alcoholic beverage")):
+        return False
+    bad = ("beer bread", "beer batter", "beer cheese")
+    if any(x in blob for x in bad):
+        return False
+    return True
+
+
+def is_generic_grain_query(ni: NormalizedIngredient) -> bool:
+    """Detect vague grain queries ('cooked grains') but ignore specific grain names."""
+    if NutritionCategory.GENERIC_GRAIN.value in ni.categories:
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    specific = (
+        "buckwheat",
+        "rice",
+        "oat",
+        "oats",
+        "oat groats",
+        "oatmeal",
+        "barley",
+        "quinoa",
+        "bulgur",
+        "couscous",
+        "pasta",
+        "spaghetti",
+        "macaroni",
+        "millet",
+        "греч",
+        "рис",
+        "овес",
+        "овёс",
+        "овсян",
+        "перлов",
+        "киноа",
+        "булгур",
+        "кускус",
+        "макарон",
+        "пшено",
+    )
+    if any(s in blob for s in specific):
+        return False
+    generic = (
+        "grains",
+        "cooked grains",
+        "mixed grains",
+        "cereals",
+        "cereal grains",
+        "grain mix",
+        "злаки",
+        "зерна",
+        "зёрна",
+        "крупа",
+        "смесь круп",
+        "вареные злаки",
+        "варёные злаки",
+    )
+    return any(g in blob for g in generic)
+
+
+def is_beef_like_ingredient(ni: NormalizedIngredient) -> bool:
+    if NutritionCategory.BEEF.value in ni.categories:
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    return "beef" in blob or "говядин" in blob
+
+
+def is_beef_patty_like_ingredient(ni: NormalizedIngredient) -> bool:
+    if NutritionCategory.BEEF_PATTY.value in ni.categories:
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    keys = (
+        "beef patty",
+        "hamburger patty",
+        "burger patty",
+        "котлета для бургера",
+        "бургерная котлета",
+        "говяжья котлета",
+        "котлета из говядины",
+    )
+    return any(k in blob for k in keys)
+
+
+def is_porridge_like_grain(ni: NormalizedIngredient) -> bool:
+    """True for cooked porridge-like grain queries (cornmeal porridge/polenta/grits/mush/каша)."""
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if any(x in blob for x in ("dry", "flour", "мука", "сухая", "сухой")):
+        return False
+    keys = (
+        "porridge",
+        "polenta",
+        "grits",
+        "mush",
+        "cooked cereal",
+        "каша",
+        "мамалыга",
+        "полента",
+        "cornmeal porridge",
+        "corn porridge",
+        "кукурузная каша",
+    )
+    return any(k in blob for k in keys)
 
 
 def is_poultry_breast_query(ni: NormalizedIngredient) -> bool:

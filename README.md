@@ -68,6 +68,7 @@ meal-mentor/
 | `PROMPT_PATH`, `PROMPT2_PATH` | Промпты для фото и текста (по умолчанию `./data/promt.txt`, `promt2.txt`) |
 | `LOW_CONFIDENCE_THRESHOLD` | Порог уверенности 0–1; ниже — запрос текстового описания (по умолчанию `0.5`) |
 | `NUTRITION_CSV_PATH` | CSV нутриентов на 100 г (по умолчанию `./data/nutrition.csv`) |
+| `NUTRITION_DEBUG_MATCHING` | При `1` / `true` — подробные INFO-логи матчинга по каждому ингредиенту (кандидаты, scores, выбранная строка) |
 | `NUTRITION_ENABLE_SEMANTIC` | Семантический поиск (часто тяжёлый на Railway); по умолчанию выкл. |
 | `TELEGRAM_BOT_TOKEN`, `BASE_URL` | Для Telegram-бота |
 | `DATABASE_URL` | БД (по умолчанию SQLite `sqlite:///./meal_mentor.db`) |
@@ -114,9 +115,16 @@ alembic upgrade head
 
 ## Тесты nutrition matching
 
-В проекте есть **регрессионные и smoke-тесты** для подбора строк из `data/nutrition.csv` (через `NutritionService`, алиасы `data/food_aliases.json`, RapidFuzz и state-reranking). Они **не ходят в сеть**, не вызывают OpenAI, Telegram и API — только локальный CSV и JSON.
+В проекте есть **регрессионные и smoke-тесты** для подбора строк из `data/nutrition.csv` (через `NutritionService`, алиасы `data/food_aliases.json`, RapidFuzz, state-reranking и category-aware matching layer). Они **не ходят в сеть**, не вызывают OpenAI, Telegram и API — только локальный CSV и JSON.
 
-Зачем: ловить типичные ошибки матчинга, когда готовая еда попадает на сухой/сырой/порошковый или нерелевантный продукт (и наоборот), из-за чего **КБЖУ уезжают** (например, варёная гречка → сухая, `milk tea` → сухая смесь, варёное яйцо → почти нулевые калории, финики → «сырой» низкокалорийный ряд).
+Зачем: ловить типичные ошибки матчинга, когда готовая еда попадает на сухой/сырой/порошковый или нерелевантный продукт (и наоборот), из-за чего **КБЖУ уезжают** (например, варёная гречка → сухая, `milk tea` → сухая смесь, варёное яйцо → почти нулевые калории, финики → «сырой» низкокалорийный ряд, `beef rice beans salad` → mismatch между plain beef и beef dish row).
+
+Матчинг теперь учитывает:
+- aliases;
+- ingredient state;
+- ingredient category;
+- forbidden terms / category penalties;
+- regression fixtures.
 
 Фикстуры с «золотыми» сценариями (набор ингредиентов + ожидаемые диапазоны калорий и ограничения на выбранную строку `match`):
 
@@ -128,7 +136,18 @@ alembic upgrade head
 pytest tests/test_nutrition_matching.py
 ```
 
-Когда добавлять новые кейсы: после исправления бага в matching или алиасах добавьте объект в массив в `nutrition_matching_cases.json` (валидный JSON, без комментариев): `name`, `description`, `ingredients`, `expected` с полями вроде `calories_min` / `calories_max`, `required_matches`, `allowed_matches`, `required_contains_any`, `forbidden_match_contains`, `expected_states`. Логику матчинга в тестах не дублируйте — только ожидания на результат.
+Подробные **INFO**-логи по каждому ингредиенту (топ кандидатов, `final`/`text`/`state_adj`, причины, выбранная строка): переменная **`NUTRITION_DEBUG_MATCHING`** — см. таблицу выше и `nutrition_debug_matching()` в `app/core/config.py`.
+
+Когда добавлять новые кейсы: после исправления бага в matching или алиасах добавьте объект в массив в `nutrition_matching_cases.json` (валидный JSON, без комментариев): `name`, `description`, `ingredients`, `expected` с полями вроде `calories_min` / `calories_max`, `protein_min` (минимум суммарного белка по блюду), `min_aggregate_proteins` (то же назначение, альтернативное имя), `aggregate_macros` (диапазоны суммарных `proteins` / `fats` / `carbohydrates`: массив `[min, max]` на ключ), `required_matches`, `allowed_matches`, `required_contains_any`, `forbidden_match_contains`, `expected_states`. Логику матчинга в тестах не дублируйте — только ожидания на результат.
+
+Примечание по generic ingredients: формулировки вроде `"cooked grains"`, `"mixed vegetables"`, `"meat"`, `"fish"` опасны для CSV matching и часто дают нерелевантную строку. Если generic ингредиент сломал match:
+1. усилите промпты, чтобы LLM возвращал конкретный ингредиент;
+2. добавьте alias/fallback только если действительно нужно;
+3. закрепите регрессию fixture-кейсом;
+4. прогоните `pytest tests/test_nutrition_matching.py`.
+Пример: раньше `"cooked grains"` мог матчиться в высокобелковую/высокожировую строку; теперь это покрыто fixture и безопасно сводится к cooked oats/oat groats.
+
+Новые реальные ошибки matching нужно превращать в fixture case. Это дешевле и надёжнее, чем потом ловить регрессию вручную.
 
 ## API: веб-пользователь (Bearer)
 

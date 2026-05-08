@@ -1,46 +1,25 @@
-"""Column names on MealItemNutrition used when persisting CSV-derived rows (excluding id, meal_item_id, created_at)."""
+"""Extend meal_item_nutrition with detailed nutrients from nutrition.csv."""
 
-MEAL_ITEM_NUTRITION_KEYS: tuple[str, ...] = (
-    "calories",
-    "protein_g",
-    "fat_g",
-    "carbs_g",
-    "fiber_g",
-    "sugar_g",
+from alembic import op
+import sqlalchemy as sa
+
+revision = "012_meal_item_nutrients_ext"
+down_revision = "011_fiber_g_float"
+branch_labels = None
+depends_on = None
+
+
+NEW_COLUMNS: tuple[str, ...] = (
     "serving_size_g",
     "cholesterol_mg",
-    "saturated_fat_g",
     "folic_acid_mcg",
-    "sodium_mg",
-    "calcium_mg",
-    "magnesium_mg",
-    "potassium_mg",
-    "phosphorus_mg",
-    "iron_mg",
-    "zinc_mg",
-    "selenium_mcg",
-    "copper_mg",
-    "manganese_mg",
-    "vitamin_a_iu",
     "vitamin_a_rae_mcg",
     "carotene_alpha_mcg",
     "carotene_beta_mcg",
     "cryptoxanthin_beta_mcg",
     "lutein_zeaxanthin_mcg",
     "lycopene_mcg",
-    "vitamin_c_mg",
-    "vitamin_d_iu",
-    "vitamin_e_mg",
     "tocopherol_alpha_mg",
-    "vitamin_k_mcg",
-    "vitamin_b6_mg",
-    "vitamin_b12_mcg",
-    "folate_mcg",
-    "thiamin_mg",
-    "riboflavin_mg",
-    "niacin_mg",
-    "pantothenic_acid_mg",
-    "choline_mg",
     "alanine_g",
     "arginine_g",
     "aspartic_acid_g",
@@ -70,10 +49,20 @@ MEAL_ITEM_NUTRITION_KEYS: tuple[str, ...] = (
     "saturated_fatty_acids_g",
     "monounsaturated_fatty_acids_g",
     "polyunsaturated_fatty_acids_g",
-    "fatty_acids_total_trans_mg",
+    "fatty_acids_total_trans_g",
     "alcohol_g",
     "ash_g",
     "caffeine_mg",
     "theobromine_mg",
     "water_g",
 )
+
+
+def upgrade() -> None:
+    for col in NEW_COLUMNS:
+        op.add_column("meal_item_nutrition", sa.Column(col, sa.Float(), nullable=True))
+
+
+def downgrade() -> None:
+    for col in reversed(NEW_COLUMNS):
+        op.drop_column("meal_item_nutrition", col)

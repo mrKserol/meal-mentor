@@ -61,8 +61,10 @@ export const getMe = async (accessToken: string): Promise<User> => {
 
 export const getMyNutritionTarget = async (
   accessToken: string,
+  dateYmd?: string,
 ): Promise<MyNutritionTargetEnvelope> => {
   const response = await authClient.get<MyNutritionTargetEnvelope>("/users/me/nutrition-target", {
+    params: dateYmd ? { date: dateYmd } : undefined,
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   return response.data;

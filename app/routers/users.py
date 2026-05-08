@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
@@ -9,7 +9,7 @@ from app.auth.dependencies import get_current_user
 from app.auth.security import hash_password
 from app.auth.user_me_payload import serialize_user_me
 from app.db.models import Allergen, User
-from app.db.repository import create_meal, delete_meal_for_user, list_meals_for_user_local_date
+from app.db.repository import create_meal, delete_meal_for_user, list_meals_for_user_local_date, list_user_measurements
 from app.db.session import get_db
 from app.schemas.auth import (
     LabelAnalysisResponse,
@@ -17,6 +17,10 @@ from app.schemas.auth import (
     NutritionTargetResponse,
     ProfilePatchRequest,
     UserMeResponse,
+    WeightMeasurementCreateRequest,
+    WeightMeasurementPoint,
+    WeightMeasurementResponse,
+    WeightMeasurementsResponse,
     WebMealSaveRequest,
     WebMealSaveResponse,
     WebMealsDayResponse,
@@ -29,7 +33,9 @@ from app.services.ingredient_checker import analyze_label_from_image_bytes, form
 from app.services.nutrition_targets import (
     create_or_update_active_nutrition_target,
     get_active_nutrition_target,
+    get_nutrition_target_for_range,
 )
+from app.services.weight_measurements import record_weight_measurement
 
 ALLOWED_ALLERGEN_KEYS = frozenset(
     {
@@ -142,10 +148,96 @@ def delete_my_meal(
 
 
 @router.get("/me/nutrition-target", response_model=MyNutritionTargetResponse)
-def get_my_nutrition_target(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    active = get_active_nutrition_target(db, user_id=current_user.id)
-    nt = NutritionTargetResponse.model_validate(active, from_attributes=True) if active is not None else None
+def get_my_nutrition_target(
+    date_q: date | None = Query(default=None, alias="date"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if date_q is None:
+        target = get_active_nutrition_target(db, user_id=current_user.id)
+    else:
+        tz = _resolve_tz(current_user)
+        start_local = datetime.combine(date_q, datetime.min.time(), tzinfo=tz)
+        end_local = start_local + timedelta(days=1)
+        start_utc = start_local.astimezone(timezone.utc).replace(tzinfo=None)
+        end_utc = end_local.astimezone(timezone.utc).replace(tzinfo=None)
+        target = get_nutrition_target_for_range(
+            db,
+            user_id=current_user.id,
+            range_start=start_utc,
+            range_end=end_utc,
+        )
+    nt = NutritionTargetResponse.model_validate(target, from_attributes=True) if target is not None else None
     return {"nutrition_target": nt}
+
+
+def _weight_history_cutoff(period: str) -> datetime | None:
+    if period == "1m":
+        return datetime.utcnow() - timedelta(days=30)
+    if period == "3m":
+        return datetime.utcnow() - timedelta(days=90)
+    if period == "6m":
+        return datetime.utcnow() - timedelta(days=180)
+    if period == "1y":
+        return datetime.utcnow() - timedelta(days=365)
+    if period == "all":
+        return None
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail="period must be one of: 1m, 3m, 6m, 1y, all",
+    )
+
+
+@router.post("/me/measurements", response_model=WeightMeasurementResponse)
+def add_my_weight_measurement(
+    payload: WeightMeasurementCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    measurement, target = record_weight_measurement(
+        db,
+        current_user,
+        weight_kg=payload.weight_kg,
+        waist_cm=payload.waist_cm,
+        body_fat_percent=payload.body_fat_percent,
+        notes=payload.notes,
+    )
+    return WeightMeasurementResponse(
+        id=measurement.id,
+        measured_at=measurement.measured_at,
+        weight_kg=float(measurement.weight_kg),
+        waist_cm=measurement.waist_cm,
+        body_fat_percent=measurement.body_fat_percent,
+        notes=measurement.notes,
+        nutrition_target=NutritionTargetResponse.model_validate(target, from_attributes=True) if target else None,
+    )
+
+
+@router.get("/me/measurements", response_model=WeightMeasurementsResponse)
+def get_my_weight_measurements(
+    period: str = Query("3m"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    cutoff = _weight_history_cutoff(period)
+    rows = list_user_measurements(db, current_user.id, limit=1000)
+    points: list[WeightMeasurementPoint] = []
+    for row in reversed(rows):
+        if row.weight_kg is None:
+            continue
+        if cutoff is not None and row.measured_at < cutoff:
+            continue
+        points.append(
+            WeightMeasurementPoint(
+                id=row.id,
+                measured_at=row.measured_at,
+                weight_kg=float(row.weight_kg),
+                waist_cm=row.waist_cm,
+                body_fat_percent=row.body_fat_percent,
+                notes=row.notes,
+            )
+        )
+    return WeightMeasurementsResponse(period=period, items=points)
 
 
 @router.patch("/me/profile", response_model=UserMeResponse)

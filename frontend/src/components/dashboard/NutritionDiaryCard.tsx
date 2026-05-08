@@ -12,7 +12,7 @@ interface NutritionDiaryCardProps {
   todayTotals: DiaryTodayTotals | null;
 }
 
-const ZERO_TODAY: DiaryTodayTotals = { calories: 0, protein_g: 0, fat_g: 0, carbs_g: 0 };
+const ZERO_TODAY: DiaryTodayTotals = { calories: 0, protein_g: 0, fat_g: 0, carbs_g: 0, fiber_g: 0 };
 
 export function NutritionDiaryCard({ nutritionTarget, todayTotals }: NutritionDiaryCardProps) {
   const navigate = useNavigate();
@@ -52,6 +52,7 @@ export function NutritionDiaryCard({ nutritionTarget, todayTotals }: NutritionDi
   }
 
   const calTarget = nutritionTarget.target_calories;
+  const fiberTarget = nutritionTarget.target_fiber_g ?? 0;
   const t = todayTotals ?? ZERO_TODAY;
 
   return (
@@ -66,11 +67,19 @@ export function NutritionDiaryCard({ nutritionTarget, todayTotals }: NutritionDi
         <span className="capitalize font-label-sm text-label-sm text-on-surface-variant">{today}</span>
       </div>
 
-      <div className="mb-6 rounded-xl bg-surface-container-low px-5 py-4">
-        <p className="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Калории</p>
-        <p className="mt-1 font-h3 text-h3 text-on-surface">
-          {t.calories} kcal / {calTarget} kcal
-        </p>
+      <div className="mb-6 grid grid-cols-1 gap-3 rounded-xl bg-surface-container-low px-5 py-4 sm:grid-cols-2">
+        <div>
+          <p className="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Калории</p>
+          <p className="mt-1 font-h3 text-h3 text-on-surface">
+            {t.calories} kcal / {calTarget} kcal
+          </p>
+        </div>
+        <div>
+          <p className="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Клетчатка</p>
+          <p className="mt-1 font-h3 text-h3 text-on-surface">
+            {t.fiber_g ?? 0} г / {fiberTarget} г
+          </p>
+        </div>
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">

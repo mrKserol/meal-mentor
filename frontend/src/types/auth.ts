@@ -2,6 +2,7 @@ export interface NutritionTarget {
   bmr_kcal: number;
   tdee_kcal: number;
   target_calories: number;
+  target_fiber_g: number;
   target_protein_g: number;
   target_fat_g: number;
   target_carbs_g: number;

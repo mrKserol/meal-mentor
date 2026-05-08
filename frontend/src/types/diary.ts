@@ -5,6 +5,14 @@ export interface DiaryRecentMeal {
   meal_type_label: string;
   time_local: string;
   calories: number;
+  protein_g?: number;
+  fat_g?: number;
+  carbs_g?: number;
+  fiber_g?: number;
+  sugar_g?: number;
+  sodium_mg?: number;
+  saturated_fat_g?: number;
+  water_g?: number;
   recorded_at: string;
   prediction?: string | null;
   user_text?: string | null;
@@ -28,6 +36,11 @@ export interface DiaryWeekBlock {
   avg_protein_g: number;
   avg_fat_g: number;
   avg_carbs_g: number;
+  avg_fiber_g: number;
+  avg_sugar_g: number;
+  avg_salt_g: number;
+  avg_saturated_fat_g: number;
+  detailed_avg: Record<string, number>;
   days_with_data: number;
 }
 
@@ -36,6 +49,7 @@ export interface DiaryTodayTotals {
   protein_g: number;
   fat_g: number;
   carbs_g: number;
+  fiber_g: number;
 }
 
 export interface DiaryWeightCard {
@@ -56,6 +70,11 @@ export interface DiaryPeriodBlock {
   avg_protein_g: number;
   avg_fat_g: number;
   avg_carbs_g: number;
+  avg_fiber_g: number;
+  avg_sugar_g: number;
+  avg_salt_g: number;
+  avg_saturated_fat_g: number;
+  detailed_avg: Record<string, number>;
   days_with_data: number;
 }
 
@@ -65,4 +84,27 @@ export interface DiarySnapshot {
   month: DiaryPeriodBlock;
   today: DiaryTodayTotals;
   weight: DiaryWeightCard;
+}
+
+export type WeightMeasurementPeriod = "1m" | "3m" | "6m" | "1y" | "all";
+
+export interface WeightMeasurementPoint {
+  id: number;
+  measured_at: string;
+  weight_kg: number;
+  waist_cm?: number | null;
+  body_fat_percent?: number | null;
+  notes?: string | null;
+}
+
+export interface WeightMeasurementsResponse {
+  period: WeightMeasurementPeriod;
+  items: WeightMeasurementPoint[];
+}
+
+export interface CreateWeightMeasurementPayload {
+  weight_kg: number;
+  waist_cm?: number;
+  body_fat_percent?: number;
+  notes?: string;
 }
