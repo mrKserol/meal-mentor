@@ -25,7 +25,7 @@ export interface AdminPlan {
   period_days: number;
   is_active: boolean;
   sort_order: number;
-  created_at: string;
+  created_at: string | null;
   updated_at: string | null;
   features: AdminPlanFeature[];
 }

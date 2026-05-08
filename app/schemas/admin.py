@@ -34,7 +34,7 @@ class AdminPlanFeatureResponse(BaseModel):
     value_bool: bool | None = None
     value_int: int | None = None
     value_text: str | None = None
-    created_at: datetime
+    created_at: datetime | None = None
     updated_at: datetime | None = None
 
 
@@ -50,7 +50,7 @@ class AdminPlanResponse(BaseModel):
     period_days: int
     is_active: bool
     sort_order: int
-    created_at: datetime
+    created_at: datetime | None = None
     updated_at: datetime | None = None
     features: list[AdminPlanFeatureResponse] = Field(default_factory=list)
 
