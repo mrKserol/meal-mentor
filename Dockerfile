@@ -19,5 +19,4 @@ EXPOSE 8000
 
 # Railway will use this for the API service.
 # For the bot service, override Start Command to: python -m app.bot.telegram_bot
-CMD ["uvicorn", "service:app", "--host", "0.0.0.0", "--port", "8000"]
-
+CMD ["sh", "-c", "uvicorn service:app --host 0.0.0.0 --port ${PORT:-8000}"]
