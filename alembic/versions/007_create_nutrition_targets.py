@@ -13,7 +13,24 @@ branch_labels = None
 depends_on = None
 
 
+def _has_table(bind, table: str) -> bool:
+    return table in sa.inspect(bind).get_table_names()
+
+
+def _has_index(bind, table: str, index_name: str) -> bool:
+    insp = sa.inspect(bind)
+    if table not in insp.get_table_names():
+        return False
+    return any(i["name"] == index_name for i in insp.get_indexes(table))
+
+
 def upgrade() -> None:
+    bind = op.get_bind()
+    if _has_table(bind, "nutrition_targets"):
+        if not _has_index(bind, "nutrition_targets", "ix_nutrition_targets_user_id"):
+            op.create_index("ix_nutrition_targets_user_id", "nutrition_targets", ["user_id"], unique=False)
+        return
+
     op.create_table(
         "nutrition_targets",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True, nullable=False),

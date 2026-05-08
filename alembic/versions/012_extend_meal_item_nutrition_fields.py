@@ -58,9 +58,18 @@ NEW_COLUMNS: tuple[str, ...] = (
 )
 
 
+def _has_column(bind, table: str, column: str) -> bool:
+    insp = sa.inspect(bind)
+    if table not in insp.get_table_names():
+        return False
+    return any(c["name"] == column for c in insp.get_columns(table))
+
+
 def upgrade() -> None:
+    bind = op.get_bind()
     for col in NEW_COLUMNS:
-        op.add_column("meal_item_nutrition", sa.Column(col, sa.Float(), nullable=True))
+        if not _has_column(bind, "meal_item_nutrition", col):
+            op.add_column("meal_item_nutrition", sa.Column(col, sa.Float(), nullable=True))
 
 
 def downgrade() -> None:

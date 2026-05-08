@@ -25,6 +25,8 @@ def serialize_user_me(db: Session, user: User) -> dict:
         "target_weight_kg": user.target_weight_kg,
         "timezone": user.timezone,
         "telegram_id": user.telegram_id,
+        "role": user.role,
+        "status": user.status,
         "subscription_status": user.subscription_status,
         "created_at": user.created_at,
         "updated_at": user.updated_at,

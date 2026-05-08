@@ -43,7 +43,16 @@ export function TelegramCallbackPage() {
         }
       } catch (requestError) {
         if (axios.isAxiosError(requestError)) {
-          setError(requestError.response?.data?.detail ?? "Telegram login failed.");
+          const detail = requestError.response?.data?.detail;
+          if (detail) {
+            setError(String(detail));
+            return;
+          }
+          setError(
+            `Не удалось подключиться к API для завершения Telegram OAuth. Проверьте VITE_API_URL: ${
+              import.meta.env.VITE_API_URL || "не задан"
+            }.`,
+          );
         } else {
           setError("Telegram login failed.");
         }
@@ -68,4 +77,3 @@ export function TelegramCallbackPage() {
     </div>
   );
 }
-

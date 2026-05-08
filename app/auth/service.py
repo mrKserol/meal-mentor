@@ -17,7 +17,7 @@ from app.auth.security import (
 )
 from app.auth.telegram import verify_telegram_login
 from app.auth.profile import is_profile_completed
-from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES
+from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES, ADMIN_BOOTSTRAP_EMAILS
 from app.db.models import RefreshToken, User
 from app.schemas.auth import AuthTelegramCallbackRequest, AuthTelegramRequest, AuthTokenPair
 from app.core.config import TELEGRAM_CLIENT_ID, TELEGRAM_CLIENT_SECRET, TELEGRAM_REDIRECT_URI
@@ -25,6 +25,24 @@ from app.core.config import TELEGRAM_CLIENT_ID, TELEGRAM_CLIENT_SECRET, TELEGRAM
 logger = logging.getLogger(__name__)
 TELEGRAM_OIDC_ISSUER = "https://oauth.telegram.org"
 TELEGRAM_OIDC_JWKS_URL = "https://oauth.telegram.org/.well-known/jwks.json"
+
+
+def _admin_bootstrap_emails() -> set[str]:
+    return {email.strip().lower() for email in ADMIN_BOOTSTRAP_EMAILS.split(",") if email.strip()}
+
+
+def apply_admin_bootstrap(db: Session, user: User) -> User:
+    """Promote configured first admins by email after a real login."""
+    allowed_emails = _admin_bootstrap_emails()
+    user_email = (user.email or "").strip().lower()
+    if not allowed_emails or not user_email or user_email not in allowed_emails or user.role == "admin":
+        return user
+
+    user.role = "admin"
+    user.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 def _extract_telegram_id(claims: dict) -> int | None:
@@ -170,6 +188,7 @@ def login_user(db: Session, *, email: str, password: str) -> tuple[User, AuthTok
     user = db.query(User).filter(User.email == email).first()
     if not user or not user.hashed_password or not verify_password(password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    user = apply_admin_bootstrap(db, user)
     return user, _issue_token_pair(db, user)
 
 
@@ -185,6 +204,7 @@ def login_with_telegram(db: Session, payload: AuthTelegramRequest) -> tuple[User
         first_name=payload.first_name,
         timezone=payload.timezone,
     )
+    user = apply_admin_bootstrap(db, user)
 
     return user, _issue_token_pair(db, user)
 
@@ -238,6 +258,7 @@ def login_with_telegram_oauth(
 
     first_name = claims.get("name") or claims.get("given_name") or claims.get("first_name")
     username = claims.get("preferred_username") or claims.get("username")
+    email = claims.get("email") if isinstance(claims.get("email"), str) else None
 
     user, is_new_user = get_or_create_telegram_user(
         db,
@@ -246,6 +267,12 @@ def login_with_telegram_oauth(
         first_name=first_name,
         timezone=payload.timezone,
     )
+    if email and not user.email:
+        user.email = email
+        user.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(user)
+    user = apply_admin_bootstrap(db, user)
 
     profile_completed = is_profile_completed(user)
     logger.info("profile_completed value: %s", profile_completed)

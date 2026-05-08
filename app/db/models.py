@@ -28,6 +28,8 @@ class User(Base):
     hashed_password = Column(String(255), nullable=True)
     telegram_id = Column(BigInteger, unique=True, index=True, nullable=True)
     subscription_status = Column(String(32), nullable=False, default="Free")
+    role = Column(String(32), nullable=False, default="user", index=True)
+    status = Column(String(32), nullable=False, default="active", index=True)
     first_name = Column(String(255), nullable=True)
     sex = Column(String(20), nullable=True)
     birth_date = Column(Date, nullable=True)
@@ -42,7 +44,12 @@ class User(Base):
 
     meals = relationship("Meal", back_populates="user")
     measurements = relationship("UserMeasurement", back_populates="user")
-    subscriptions = relationship("Subscription", back_populates="user")
+    subscriptions = relationship("Subscription", back_populates="user", foreign_keys="Subscription.user_id")
+    feature_overrides = relationship(
+        "UserFeatureOverride",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
     refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
     nutrition_targets = relationship(
         "NutritionTarget",
@@ -92,6 +99,69 @@ class Allergen(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="allergens")
+
+
+class Plan(Base):
+    __tablename__ = "plans"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    code = Column(String(64), unique=True, nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    price_amount = Column(Integer, nullable=False, default=0)
+    currency = Column(String(8), nullable=False, default="RUB")
+    period_days = Column(Integer, nullable=False, default=30)
+    is_active = Column(Boolean, nullable=False, default=True)
+    sort_order = Column(Integer, nullable=False, default=100)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    features = relationship(
+        "PlanFeature",
+        back_populates="plan",
+        cascade="all, delete-orphan",
+    )
+    subscriptions = relationship("Subscription", back_populates="plan_ref")
+
+
+class PlanFeature(Base):
+    __tablename__ = "plan_features"
+    __table_args__ = (
+        UniqueConstraint("plan_id", "feature_key", name="uq_plan_features_plan_key"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    plan_id = Column(Integer, ForeignKey("plans.id", ondelete="CASCADE"), nullable=False, index=True)
+    feature_key = Column(String(64), nullable=False)
+    feature_name = Column(String(255), nullable=False)
+    value_type = Column(String(32), nullable=False, default="limit")
+    value_bool = Column(Boolean, nullable=True)
+    value_int = Column(Integer, nullable=True)
+    value_text = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    plan = relationship("Plan", back_populates="features")
+
+
+class UserFeatureOverride(Base):
+    __tablename__ = "user_feature_overrides"
+    __table_args__ = (
+        UniqueConstraint("user_id", "feature_key", name="uq_user_feature_overrides_user_key"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    feature_key = Column(String(64), nullable=False)
+    value_type = Column(String(32), nullable=False, default="limit")
+    value_bool = Column(Boolean, nullable=True)
+    value_int = Column(Integer, nullable=True)
+    value_text = Column(Text, nullable=True)
+    reason = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", back_populates="feature_overrides")
 
 
 class Meal(Base):
@@ -253,6 +323,8 @@ class Subscription(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(ForeignKey("users.id"), nullable=False, index=True)
+    plan_id = Column(Integer, ForeignKey("plans.id"), nullable=True, index=True)
+    activated_by_admin_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     plan = Column(String(64), nullable=False)
     status = Column(String(32), nullable=False, default="pending")
     provider = Column(String(32), nullable=False, default="robokassa")
@@ -263,7 +335,9 @@ class Subscription(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = relationship("User", back_populates="subscriptions")
+    user = relationship("User", back_populates="subscriptions", foreign_keys=[user_id])
+    plan_ref = relationship("Plan", back_populates="subscriptions")
+    activated_by_admin = relationship("User", foreign_keys=[activated_by_admin_id])
 
 
 class RecommendationsLog(Base):

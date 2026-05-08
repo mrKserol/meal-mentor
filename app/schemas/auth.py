@@ -94,6 +94,8 @@ class UserMeResponse(BaseModel):
     target_weight_kg: float | None
     timezone: str | None
     telegram_id: int | None
+    role: str
+    status: str
     subscription_status: str
     created_at: datetime
     updated_at: datetime | None

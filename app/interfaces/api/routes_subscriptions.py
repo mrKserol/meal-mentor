@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.config import SUBSCRIPTION_DEMO_AUTO
+from app.db.models import Plan
 from app.db.session import get_db
 from app.db.repository import (
     activate_subscription_for_demo,
@@ -49,14 +50,15 @@ def subscription_status(telegram_id: int = Query(...), db: Session = Depends(get
 
 @router.post("/order")
 def create_order(body: OrderBody, db: Session = Depends(get_db)):
-    if body.plan not in PLAN_DAYS:
+    plan = db.query(Plan).filter(Plan.code == body.plan).first()
+    days = plan.period_days if plan else PLAN_DAYS.get(body.plan)
+    if days is None:
         raise HTTPException(400, "unknown plan")
     user = get_user_by_telegram_id(db, body.telegram_id)
     if not user:
         raise HTTPException(404, "user not found")
-    row = create_subscription_stub(db, user.id, body.plan)
+    row = create_subscription_stub(db, user.id, body.plan, plan_id=plan.id if plan else None)
     if SUBSCRIPTION_DEMO_AUTO:
-        days = PLAN_DAYS[body.plan]
         activate_subscription_for_demo(db, row.id, days=days)
         db.refresh(row)
     return {

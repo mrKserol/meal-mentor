@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
+import { AdminRoute } from "../components/AdminRoute";
 import { ProtectedRoute } from "../components/ProtectedRoute";
+import { AdminPage } from "../pages/AdminPage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { DiaryPage } from "../pages/DiaryPage";
 import { LoginPage } from "../pages/LoginPage";
@@ -19,6 +21,9 @@ export function AppRouter() {
         <Route path="/onboarding/profile" element={<ProfileOnboardingPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/diary" element={<DiaryPage />} />
+        <Route element={<AdminRoute />}>
+          <Route path="/admin" element={<AdminPage />} />
+        </Route>
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

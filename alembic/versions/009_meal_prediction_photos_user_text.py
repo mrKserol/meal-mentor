@@ -13,11 +13,23 @@ branch_labels = None
 depends_on = None
 
 
+def _has_column(bind, table: str, column: str) -> bool:
+    insp = sa.inspect(bind)
+    if table not in insp.get_table_names():
+        return False
+    return any(c["name"] == column for c in insp.get_columns(table))
+
+
 def upgrade() -> None:
-    op.add_column("meals", sa.Column("prediction", sa.Text(), nullable=True))
-    op.add_column("meals", sa.Column("user_text", sa.Text(), nullable=True))
-    op.add_column("meals", sa.Column("meal_photo_large", sa.String(length=512), nullable=True))
-    op.add_column("meals", sa.Column("meal_photo_thumb", sa.String(length=512), nullable=True))
+    bind = op.get_bind()
+    for name, typ in (
+        ("prediction", sa.Text()),
+        ("user_text", sa.Text()),
+        ("meal_photo_large", sa.String(length=512)),
+        ("meal_photo_thumb", sa.String(length=512)),
+    ):
+        if not _has_column(bind, "meals", name):
+            op.add_column("meals", sa.Column(name, typ, nullable=True))
 
 
 def downgrade() -> None:
