@@ -35,6 +35,7 @@ from app.services.nutrition_targets import (
     get_active_nutrition_target,
     get_nutrition_target_for_range,
 )
+from app.services.entitlements import build_user_entitlements
 from app.services.weight_measurements import record_weight_measurement
 
 ALLOWED_ALLERGEN_KEYS = frozenset(
@@ -115,6 +116,11 @@ def save_my_meal(
 @router.get("/me", response_model=UserMeResponse)
 def get_me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return serialize_user_me(db, current_user)
+
+
+@router.get("/me/entitlements")
+def get_my_entitlements(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return build_user_entitlements(db, current_user)
 
 
 @router.get("/me/diary", response_model=DiarySnapshotResponse)

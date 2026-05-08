@@ -72,6 +72,8 @@ export interface User {
   target_weight_kg: number | null;
   timezone: string | null;
   telegram_id: number | null;
+  role: "user" | "admin";
+  status: "active" | "blocked";
   subscription_status: string;
   created_at: string;
   updated_at: string | null;

@@ -417,10 +417,13 @@ def create_subscription_stub(
     db: Session,
     user_id: int,
     plan: str,
+    *,
+    plan_id: int | None = None,
 ) -> Subscription:
     """Pending payment placeholder — flip to active when Robokassa webhook confirms."""
     row = Subscription(
         user_id=user_id,
+        plan_id=plan_id,
         plan=plan,
         status="pending",
         provider="robokassa",
