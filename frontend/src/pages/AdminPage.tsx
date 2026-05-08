@@ -1,6 +1,7 @@
 import { Shield, SlidersHorizontal, UsersRound } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 import {
   cancelSubscription,
@@ -65,6 +66,20 @@ function userLabel(user: AdminUser | AdminUserDetail) {
   return user.email || user.first_name || user.username || `ID ${user.id}`;
 }
 
+function errorMessage(err: unknown, fallback: string) {
+  if (axios.isAxiosError(err)) {
+    const detail = err.response?.data?.detail;
+    if (Array.isArray(detail)) {
+      return detail.map((item) => item?.msg ?? JSON.stringify(item)).join("; ");
+    }
+    if (detail) {
+      return String(detail);
+    }
+    return err.message || fallback;
+  }
+  return err instanceof Error ? err.message : fallback;
+}
+
 export function AdminPage() {
   const navigate = useNavigate();
   const { user, logout, validateSession, getAccessToken } = useAuth();
@@ -96,7 +111,7 @@ export function AdminPage() {
   const token = getAccessToken();
   const avatarFallback = user?.first_name?.[0] ?? user?.email?.[0] ?? "A";
   const selectedPlan = useMemo(
-    () => plans.find((plan) => plan.id === selectedPlanId) ?? plans[0] ?? null,
+    () => plans.find((plan) => plan.id === selectedPlanId) ?? null,
     [plans, selectedPlanId],
   );
 
@@ -134,7 +149,7 @@ export function AdminPage() {
         setError("Часть данных админки не загрузилась. Пользователи и тарифы показываются независимо от подписок.");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось загрузить админку");
+      setError(errorMessage(err, "Не удалось загрузить админку"));
     } finally {
       setLoading(false);
     }
@@ -166,7 +181,7 @@ export function AdminPage() {
       await action();
       await loadAdminData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось выполнить действие");
+      setError(errorMessage(err, "Не удалось выполнить действие"));
     } finally {
       setSaving(false);
     }
