@@ -53,11 +53,11 @@ export interface AdminSubscription {
   plan_id: number | null;
   plan_name: string | null;
   status: string;
-  provider: string;
-  payment_status: string;
+  provider: string | null;
+  payment_status: string | null;
   started_at: string | null;
   ends_at: string | null;
-  created_at: string;
+  created_at: string | null;
   updated_at: string | null;
   activated_by_admin_id: number | null;
 }

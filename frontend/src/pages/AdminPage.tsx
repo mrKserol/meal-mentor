@@ -110,16 +110,28 @@ export function AdminPage() {
       return;
     }
     try {
-      const [loadedUsers, loadedPlans, loadedSubscriptions] = await Promise.all([
+      const [usersResult, plansResult, subscriptionsResult] = await Promise.allSettled([
         getAdminUsers(currentToken, { q: query || undefined }),
         getAdminPlans(currentToken),
         getAdminSubscriptions(currentToken),
       ]);
-      setUsers(loadedUsers);
-      setPlans(loadedPlans);
-      setSubscriptions(loadedSubscriptions);
-      if (!selectedPlanId && loadedPlans.length > 0) {
-        setSelectedPlanId(loadedPlans[0].id);
+
+      if (usersResult.status === "fulfilled") {
+        setUsers(usersResult.value);
+      }
+      if (plansResult.status === "fulfilled") {
+        setPlans(plansResult.value);
+        if (!selectedPlanId && plansResult.value.length > 0) {
+          setSelectedPlanId(plansResult.value[0].id);
+        }
+      }
+      if (subscriptionsResult.status === "fulfilled") {
+        setSubscriptions(subscriptionsResult.value);
+      }
+
+      const failed = [usersResult, plansResult, subscriptionsResult].filter((result) => result.status === "rejected");
+      if (failed.length > 0) {
+        setError("Часть данных админки не загрузилась. Пользователи и тарифы показываются независимо от подписок.");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось загрузить админку");

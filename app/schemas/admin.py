@@ -97,11 +97,11 @@ class AdminSubscriptionResponse(BaseModel):
     plan_id: int | None = None
     plan_name: str | None = None
     status: str
-    provider: str
-    payment_status: str
+    provider: str | None = None
+    payment_status: str | None = None
     started_at: datetime | None = None
     ends_at: datetime | None = None
-    created_at: datetime
+    created_at: datetime | None = None
     updated_at: datetime | None = None
     activated_by_admin_id: int | None = None
 
