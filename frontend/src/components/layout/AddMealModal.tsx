@@ -13,6 +13,7 @@ import {
 
 import {
   analyzeMealImageBase64,
+  analyzeMealImageWithText,
   analyzeMealText,
   recalculateMealNutrition,
   saveMyMealToDiary,
@@ -238,9 +239,15 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
       setUi({ kind: "error", message: "Введите описание блюда." });
       return;
     }
-    setUi({ kind: "busy", message: "Анализирую описание…" });
+    setUi({
+      kind: "busy",
+      message: mode === "after_photo" ? "Анализирую фото и описание…" : "Анализирую описание…",
+    });
     try {
-      const raw = await analyzeMealText(trimmed);
+      const raw =
+        mode === "after_photo" && photoB64Ref.current
+          ? await analyzeMealImageWithText(photoB64Ref.current, trimmed)
+          : await analyzeMealText(trimmed);
       const parsed = parseAnalyzeResponse(raw);
       if (parsed.status !== "success") {
         setUi({ kind: "error", message: parsed.error || "Ошибка анализа текста." });
@@ -253,7 +260,7 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
           mode,
           hint:
             mode === "after_photo"
-              ? "Не получилось выделить еду. Переформулируй подробнее (продукты и граммы)."
+              ? "Не получилось выделить еду. Уточни подробнее: что на фото и примерные порции."
               : "По описанию мало данных. Добавь деталей: что именно и сколько примерно по весу.",
         });
         return;
@@ -262,11 +269,13 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
         ingredients,
         confidence,
         nutrition,
-        source_type: "text",
+        source_type: mode === "after_photo" ? "photo_text" : "text",
         telegram_file_id: null,
         prediction,
         user_text: trimmed,
-        ...(mode === "after_photo" && photoB64Ref.current ? { image_base64: photoB64Ref.current } : {}),
+        ...(mode === "after_photo" && photoB64Ref.current
+          ? { image_base64: photoB64Ref.current }
+          : {}),
       };
       if (mode === "after_photo") {
         setUi({ kind: "confirm", mealData });

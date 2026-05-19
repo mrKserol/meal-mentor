@@ -238,6 +238,16 @@ def analyze_meal_from_text(user_text: str) -> MealAnalysisResult:
     return _meal_result_from_vision_dict(raw)
 
 
+def analyze_meal_from_image_and_text(image_base64: str, user_text: str) -> MealAnalysisResult:
+    """
+    Analyze meal from original photo + user's correction/description.
+    This is used after user rejected initial photo recognition.
+    """
+    vision = _get_vision()
+    raw = vision.analyze_image_with_user_text(image_base64, user_text)
+    return _meal_result_from_vision_dict(raw)
+
+
 def recalculate_nutrition_from_ingredients(ingredients: dict[str, Any]) -> MealAnalysisResult:
     """Recalculate macros from an edited ingredients dict without OpenAI."""
     if not ingredients or not isinstance(ingredients, dict):

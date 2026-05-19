@@ -183,6 +183,77 @@ class OpenAIVisionService:
                 "error": str(e),
             }
 
+    def analyze_image_with_user_text(self, image_base64: str, user_text: str) -> dict[str, Any]:
+        """
+        Analyze food using both original photo and user's correction/description.
+        Used when initial photo recognition was wrong and user typed clarification.
+        """
+        try:
+            clean = image_base64.replace("\n", "").replace("\r", "")
+            url = f"data:image/jpeg;base64,{clean}"
+
+            prompt = f"""
+{self.photo_prompt}
+
+User clarification:
+"{user_text.strip()}"
+
+Important:
+- Use the user's clarification as the primary hint for identifying the dish and main ingredients.
+- Still use the image to estimate visible ingredients and their weights.
+- Estimate ONLY the food currently visible in the image.
+- Do NOT infer the original/full portion size.
+- Do NOT compensate for food that may have already been eaten.
+- If the user says the main protein is rabbit meat, tuna, beef, chicken, etc., prefer that identification unless the image clearly contradicts it.
+- Include visible vegetables, sauces, dressings and side ingredients from the image.
+- Return ONLY valid JSON in the same format:
+{{
+  "prediction": "short human-readable dish name in Russian",
+  "ingredients": {{
+    "ingredient_name": grams
+  }},
+  "confidence": 0.0
+}}
+""".strip()
+
+            resp = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": url}},
+                        ],
+                    }
+                ],
+                max_tokens=self.max_tokens,
+                temperature=self.temperature,
+            )
+
+            choice = resp.choices[0] if resp.choices else None
+            if not choice or not choice.message or not choice.message.content:
+                return {
+                    "status": "error",
+                    "ingredients": {},
+                    "confidence": None,
+                    "prediction": None,
+                    "result": {},
+                    "error": "Empty model response",
+                }
+
+            return self._parse_content(choice.message.content)
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "ingredients": {},
+                "confidence": None,
+                "prediction": None,
+                "result": {},
+                "error": str(e),
+            }
+
     def analyze_text(self, user_text: str) -> dict[str, Any]:
         """Same JSON shape as photo: ingredients + confidence."""
         try:

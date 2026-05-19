@@ -9,6 +9,7 @@ from app.core.schemas import MealLogRequest
 from app.core.use_cases.meal_analysis import (
     analyze_and_log_meal_legacy,
     analyze_meal_from_image_base64,
+    analyze_meal_from_image_and_text,
     analyze_meal_from_text,
     persist_meal_to_database,
     recalculate_nutrition_from_ingredients,
@@ -34,6 +35,11 @@ class AnalyzeBody(BaseModel):
 
 
 class AnalyzeTextBody(BaseModel):
+    text: str
+
+
+class AnalyzeImageTextBody(BaseModel):
+    image_base64: str
     text: str
 
 
@@ -86,6 +92,29 @@ def analyze_meal_text(body: AnalyzeTextBody):
     if not body.text or not body.text.strip():
         raise HTTPException(status_code=400, detail="text is required")
     return analyze_meal_from_text(body.text.strip()).to_api_dict()
+
+
+@router.post("/analyze-image-text")
+def analyze_meal_image_text(body: AnalyzeImageTextBody):
+    """
+    Analyze meal using original photo + user correction text.
+    Does not write to DB.
+    """
+    if not body.image_base64:
+        raise HTTPException(status_code=400, detail="image_base64 is required")
+
+    if not body.text or not body.text.strip():
+        raise HTTPException(status_code=400, detail="text is required")
+
+    try:
+        base64.b64decode(body.image_base64)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid base64: {e}") from e
+
+    return analyze_meal_from_image_and_text(
+        body.image_base64,
+        body.text.strip(),
+    ).to_api_dict()
 
 
 @router.post("/recalculate")
