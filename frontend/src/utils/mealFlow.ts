@@ -20,6 +20,32 @@ export type MealAnalyzePayload = {
   error?: string;
 };
 
+export function setIngredientGrams(
+  ingredients: Record<string, IngredientEntry>,
+  name: string,
+  grams: number,
+): Record<string, IngredientEntry> {
+  const prev = ingredients[name];
+  if (prev != null && typeof prev === "object" && !Array.isArray(prev) && "grams" in prev) {
+    return {
+      ...ingredients,
+      [name]: { ...prev, grams },
+    };
+  }
+  return { ...ingredients, [name]: grams };
+}
+
+export function ingredientEntryFromRow(
+  grams: number,
+  ingredientState?: string | null,
+): IngredientEntry {
+  const state = (ingredientState || "").trim().toLowerCase();
+  if (state && state !== "unknown") {
+    return { grams, state };
+  }
+  return grams;
+}
+
 export function ingredientGramsLabel(v: IngredientEntry): string {
   if (v != null && typeof v === "object" && !Array.isArray(v) && "grams" in v) {
     const g = (v as { grams: unknown }).grams;
@@ -128,7 +154,11 @@ export type MealCompositionState = {
 export function webMealRowToComposition(meal: {
   id: number;
   prediction: string | null;
-  items: Array<{ item_name: string | null; estimated_weight_g: number | null }>;
+  items: Array<{
+    item_name: string | null;
+    estimated_weight_g: number | null;
+    ingredient_state?: string | null;
+  }>;
   calories: number;
   protein_g?: number;
   fat_g?: number;
@@ -139,7 +169,9 @@ export function webMealRowToComposition(meal: {
   const ingredients: Record<string, IngredientEntry> = {};
   for (const it of meal.items) {
     const name = (it.item_name || "").trim();
-    if (name) ingredients[name] = it.estimated_weight_g ?? 0;
+    if (name) {
+      ingredients[name] = ingredientEntryFromRow(it.estimated_weight_g ?? 0, it.ingredient_state);
+    }
   }
   return {
     ingredients,

@@ -1,6 +1,7 @@
 export interface WebMealDayItemLine {
   id: number;
   item_name: string | null;
+  ingredient_state?: string | null;
   estimated_weight_g: number | null;
   calories: number | null;
   protein_g: number | null;

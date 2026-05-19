@@ -5,6 +5,7 @@ import { recalculateMealNutrition } from "../../api/mealsApi";
 import {
   ingredientGramsLabel,
   parseAnalyzeResponse,
+  setIngredientGrams,
   type IngredientEntry,
   type MealCompositionState,
 } from "../../utils/mealFlow";
@@ -156,10 +157,11 @@ export function MealCompositionForm({
               onChange={(e) =>
                 onMealDataChange({
                   ...mealData,
-                  ingredients: {
-                    ...mealData.ingredients,
-                    [name]: Number(e.target.value) || 0,
-                  },
+                  ingredients: setIngredientGrams(
+                    mealData.ingredients,
+                    name,
+                    Number(e.target.value) || 0,
+                  ),
                 })
               }
               onBlur={() => void recalcCurrentMealNutrition()}

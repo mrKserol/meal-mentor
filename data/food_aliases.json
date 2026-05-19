@@ -6274,6 +6274,21 @@
       "default_state": "cooked",
       "category": "legume"
     },
+    "millet porridge": {
+      "canonical": "Millet, cooked",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "пшенная каша": {
+      "canonical": "Millet, cooked",
+      "default_state": "cooked",
+      "category": "grain"
+    },
+    "пшено": {
+      "canonical": "Millet, cooked",
+      "default_state": "cooked",
+      "category": "grain"
+    },
     "cornmeal porridge": {
       "canonical": "Cereals, without salt, cooked with water, enriched, regular and quick, yellow, corn grits",
       "default_state": "cooked",

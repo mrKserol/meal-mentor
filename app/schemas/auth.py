@@ -183,6 +183,7 @@ class WebMealUpdateResponse(BaseModel):
 class WebMealDayItemLine(BaseModel):
     id: int
     item_name: str | None = None
+    ingredient_state: str | None = None
     estimated_weight_g: int | None = None
     calories: int | None = None
     protein_g: int | None = None
