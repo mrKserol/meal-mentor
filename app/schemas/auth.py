@@ -162,6 +162,7 @@ class WebMealSaveRequest(BaseModel):
     image_base64: str | None = None
     meal_photo_large: str | None = None
     meal_photo_thumb: str | None = None
+    meal_local_date: date | None = None
 
 
 class WebMealSaveResponse(BaseModel):

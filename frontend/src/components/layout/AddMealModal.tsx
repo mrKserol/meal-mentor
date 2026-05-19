@@ -53,9 +53,17 @@ interface AddMealModalProps {
   open: boolean;
   onClose: () => void;
   onMealSaved?: () => void;
+  /** YYYY-MM-DD: приём сохранится на этот день в 23:59 (часовой пояс профиля). */
+  mealLocalDate?: string | null;
 }
 
-export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) {
+function formatMealLocalDateHint(ymd: string): string {
+  const [y, mo, da] = ymd.split("-").map(Number);
+  const dt = new Date(y, mo - 1, da);
+  return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(dt);
+}
+
+export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddMealModalProps) {
   const { validateSession, getAccessToken } = useAuth();
   const [ui, setUi] = useState<UiState>({ kind: "menu" });
   const [textDraft, setTextDraft] = useState("");
@@ -215,6 +223,7 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
         prediction: ui.mealData.prediction,
         user_text: ui.mealData.user_text ?? undefined,
         image_base64: ui.mealData.image_base64 ?? undefined,
+        meal_local_date: mealLocalDate ?? undefined,
       });
       onMealSaved?.();
       setUi({ kind: "menu" });
@@ -261,6 +270,11 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           {ui.kind === "menu" ? (
             <div className="space-y-4">
+              {mealLocalDate ? (
+                <p className="rounded-xl border border-green-100 bg-green-50 px-3 py-2 text-center text-sm text-green-900">
+                  Приём будет записан на {formatMealLocalDateHint(mealLocalDate)}, 23:59
+                </p>
+              ) : null}
               <p className="text-center text-sm text-slate-600">
                 Сфотографируйте еду, загрузите снимок или опишите блюдо текстом
               </p>

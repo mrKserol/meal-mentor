@@ -463,9 +463,15 @@ interface MealHistoryDaySectionProps {
   accessToken: string;
   nutritionTarget: NutritionTarget | null;
   onMealsChanged?: () => void;
+  onAddMealForDay?: (dateYmd: string) => void;
 }
 
-export function MealHistoryDaySection({ accessToken, nutritionTarget, onMealsChanged }: MealHistoryDaySectionProps) {
+export function MealHistoryDaySection({
+  accessToken,
+  nutritionTarget,
+  onMealsChanged,
+  onAddMealForDay,
+}: MealHistoryDaySectionProps) {
   const [day, setDay] = useState(() => formatLocalYmd(new Date()));
   const [items, setItems] = useState<WebMealDayRow[]>([]);
   const [dayNutritionTarget, setDayNutritionTarget] = useState<NutritionTarget | null>(nutritionTarget);
@@ -546,6 +552,15 @@ export function MealHistoryDaySection({ accessToken, nutritionTarget, onMealsCha
                 <ChevronRight className="h-5 w-5" />
               </button>
             </div>
+            {onAddMealForDay ? (
+              <button
+                type="button"
+                onClick={() => onAddMealForDay(day)}
+                className="mt-3 w-full rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 sm:w-auto sm:min-w-[10rem]"
+              >
+                Добавить
+              </button>
+            ) : null}
           </div>
 
           <div className="w-full rounded-xl border border-slate-100 bg-slate-50/70 p-4 xl:max-w-2xl">

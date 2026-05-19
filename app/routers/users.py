@@ -28,7 +28,7 @@ from app.schemas.auth import (
     WebMealsDayResponse,
 )
 from app.schemas.diary import DiarySnapshotResponse
-from app.services.diary_snapshot import _resolve_tz, build_diary_snapshot
+from app.services.diary_snapshot import _resolve_tz, build_diary_snapshot, meal_datetime_for_local_date_end
 from app.services.web_meals_day import build_web_meal_day_row
 from app.core.use_cases.meal_analysis import build_meal_item_specs_from_ingredients, resolve_meal_photo_urls_for_save
 from app.core.use_cases.meal_update import update_meal_composition
@@ -102,6 +102,10 @@ def save_my_meal(
         meal_photo_large=body.meal_photo_large,
         meal_photo_thumb=body.meal_photo_thumb,
     )
+    meal_dt = datetime.utcnow()
+    if body.meal_local_date is not None:
+        meal_dt = meal_datetime_for_local_date_end(current_user, body.meal_local_date)
+
     create_meal(
         db,
         current_user.id,
@@ -112,6 +116,7 @@ def save_my_meal(
         meal_photo_large=lg,
         meal_photo_thumb=th,
         items=items,
+        meal_datetime=meal_dt,
     )
     return WebMealSaveResponse(status="success")
 
