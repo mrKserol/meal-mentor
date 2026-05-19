@@ -471,7 +471,7 @@ function MealDayRowContent({ meal }: { meal: WebMealDayRow }) {
       <div className="min-w-0 flex-1">
         <h3 className="text-base font-semibold leading-snug text-slate-900">{pred}</h3>
         <p className="mt-1 text-sm text-slate-600">Приём пищи в {meal.time_local}</p>
-        <p className="mt-2 text-sm leading-relaxed text-slate-700">
+        <p className="mt-2 hidden text-sm leading-relaxed text-slate-700 md:block">
           <span className="font-medium text-slate-800">Состав:</span> {meal.composition}
         </p>
       </div>
