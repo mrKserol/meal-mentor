@@ -33,6 +33,7 @@ def build_web_meal_day_row(meal: Meal, user: User) -> WebMealDayRow:
             WebMealDayItemLine(
                 id=it.id,
                 item_name=it.item_name,
+                ingredient_state=it.ingredient_state,
                 estimated_weight_g=it.estimated_weight_g,
                 calories=n.calories if n else None,
                 protein_g=n.protein_g if n else None,

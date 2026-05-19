@@ -23,12 +23,15 @@ from app.schemas.auth import (
     WeightMeasurementsResponse,
     WebMealSaveRequest,
     WebMealSaveResponse,
+    WebMealUpdateRequest,
+    WebMealUpdateResponse,
     WebMealsDayResponse,
 )
 from app.schemas.diary import DiarySnapshotResponse
-from app.services.diary_snapshot import _resolve_tz, build_diary_snapshot
+from app.services.diary_snapshot import _resolve_tz, build_diary_snapshot, meal_datetime_for_local_date_end
 from app.services.web_meals_day import build_web_meal_day_row
 from app.core.use_cases.meal_analysis import build_meal_item_specs_from_ingredients, resolve_meal_photo_urls_for_save
+from app.core.use_cases.meal_update import update_meal_composition
 from app.services.ingredient_checker import analyze_label_from_image_bytes, format_label_result_for_telegram
 from app.services.nutrition_targets import (
     create_or_update_active_nutrition_target,
@@ -99,6 +102,10 @@ def save_my_meal(
         meal_photo_large=body.meal_photo_large,
         meal_photo_thumb=body.meal_photo_thumb,
     )
+    meal_dt = datetime.utcnow()
+    if body.meal_local_date is not None:
+        meal_dt = meal_datetime_for_local_date_end(current_user, body.meal_local_date)
+
     create_meal(
         db,
         current_user.id,
@@ -109,6 +116,7 @@ def save_my_meal(
         meal_photo_large=lg,
         meal_photo_thumb=th,
         items=items,
+        meal_datetime=meal_dt,
     )
     return WebMealSaveResponse(status="success")
 
@@ -140,6 +148,29 @@ def get_my_meals_for_day(
     meals = list_meals_for_user_local_date(db, current_user.id, date_q, tz)
     rows = [build_web_meal_day_row(m, current_user) for m in meals]
     return WebMealsDayResponse(date=date_q, items=rows)
+
+
+@router.patch("/me/meals/{meal_id}", response_model=WebMealUpdateResponse)
+def patch_my_meal(
+    meal_id: int,
+    body: WebMealUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Обновить состав и название существующего приёма."""
+    out = update_meal_composition(
+        db,
+        current_user.id,
+        meal_id,
+        body.ingredients or {},
+        prediction=body.prediction,
+    )
+    if out.get("status") != "ok":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=out.get("error") or "update failed",
+        )
+    return WebMealUpdateResponse(status="success")
 
 
 @router.delete("/me/meals/{meal_id}", status_code=status.HTTP_204_NO_CONTENT)

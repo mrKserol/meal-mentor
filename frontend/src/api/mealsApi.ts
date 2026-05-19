@@ -52,6 +52,7 @@ export async function saveMyMealToDiary(
     prediction?: string | null;
     user_text?: string | null;
     image_base64?: string | null;
+    meal_local_date?: string | null;
   },
 ): Promise<void> {
   await authClient.post("/users/me/meals/save", payload, {

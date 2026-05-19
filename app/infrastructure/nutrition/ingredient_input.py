@@ -132,6 +132,7 @@ def parse_ingredients_dict(
         alias_category = entry.category if entry else None
         if state == "unknown" and entry and entry.default_state and entry.default_state != "unknown":
             state = entry.default_state
+        state = infer_state_for_porridge_query(input_name, state)
         if (
             state == "dry"
             and entry
@@ -451,8 +452,46 @@ def is_beef_patty_like_ingredient(ni: NormalizedIngredient) -> bool:
     return any(k in blob for k in keys)
 
 
+def is_porridge_like_query(name: str) -> bool:
+    """True for cooked porridge-like grain names (before normalization)."""
+    blob = name.lower()
+    if any(x in blob for x in ("dry", "flour", "мука", "сухая", "сухой", "uncooked", "unprepared")):
+        return False
+    keys = (
+        "porridge",
+        "polenta",
+        "grits",
+        "mush",
+        "cooked cereal",
+        "каша",
+        "мамалыга",
+        "полента",
+        "cornmeal porridge",
+        "corn porridge",
+        "кукурузная каша",
+        "millet porridge",
+        "пшенная каша",
+        "пшено",
+        "buckwheat porridge",
+        "rice porridge",
+        "oatmeal",
+    )
+    return any(k in blob for k in keys)
+
+
+def infer_state_for_porridge_query(input_name: str, state: str) -> str:
+    """Plain-weight recalc must still treat porridge as cooked, not dry grain."""
+    if state != "unknown":
+        return state
+    if is_porridge_like_query(input_name):
+        return "cooked"
+    return state
+
+
 def is_porridge_like_grain(ni: NormalizedIngredient) -> bool:
     """True for cooked porridge-like grain queries (cornmeal porridge/polenta/grits/mush/каша)."""
+    if is_porridge_like_query(ni.input_name) or is_porridge_like_query(ni.canonical_query):
+        return True
     blob = f"{ni.input_name} {ni.canonical_query}".lower()
     if any(x in blob for x in ("dry", "flour", "мука", "сухая", "сухой")):
         return False
@@ -468,6 +507,8 @@ def is_porridge_like_grain(ni: NormalizedIngredient) -> bool:
         "cornmeal porridge",
         "corn porridge",
         "кукурузная каша",
+        "millet porridge",
+        "пшенная каша",
     )
     return any(k in blob for k in keys)
 

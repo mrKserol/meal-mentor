@@ -457,7 +457,7 @@ export function DiaryPage() {
       onLogout={handleLogout}
       onMealSaved={() => void loadDiary()}
     >
-      {() => (
+      {({ openAddMealForDate }) => (
         <div className="mx-auto w-full max-w-full overflow-x-hidden p-4 pb-8 lg:max-w-7xl lg:p-8">
           <div className="min-w-0 space-y-6">
             {diaryPhase === "loading" && !snapshot ? (
@@ -598,6 +598,7 @@ export function DiaryPage() {
               accessToken={webDiaryToken}
               nutritionTarget={nutritionTarget}
               onMealsChanged={() => void loadDiary()}
+              onAddMealForDay={openAddMealForDate}
             />
           ) : null}
 

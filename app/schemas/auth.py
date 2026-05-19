@@ -162,15 +162,28 @@ class WebMealSaveRequest(BaseModel):
     image_base64: str | None = None
     meal_photo_large: str | None = None
     meal_photo_thumb: str | None = None
+    meal_local_date: date | None = None
 
 
 class WebMealSaveResponse(BaseModel):
     status: str
 
 
+class WebMealUpdateRequest(BaseModel):
+    """Обновление состава существующего приёма (JWT)."""
+
+    ingredients: dict[str, Any]
+    prediction: str | None = None
+
+
+class WebMealUpdateResponse(BaseModel):
+    status: str
+
+
 class WebMealDayItemLine(BaseModel):
     id: int
     item_name: str | None = None
+    ingredient_state: str | None = None
     estimated_weight_g: int | None = None
     calories: int | None = None
     protein_g: int | None = None

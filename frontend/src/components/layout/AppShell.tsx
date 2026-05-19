@@ -11,6 +11,8 @@ import { CompositionLabelModal } from "./CompositionLabelModal";
 
 export type AppShellActions = {
   openAddMeal: () => void;
+  /** Открыть «Добавить приём» с записью на выбранный календарный день (23:59). */
+  openAddMealForDate: (dateYmd: string) => void;
 };
 
 type AppShellChildren = ReactNode | ((actions: AppShellActions) => ReactNode);
@@ -35,12 +37,23 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const [addMealOpen, setAddMealOpen] = useState(false);
-  const openAddMeal = useCallback(() => setAddMealOpen(true), []);
-  const closeAddMeal = useCallback(() => setAddMealOpen(false), []);
+  const [mealLocalDate, setMealLocalDate] = useState<string | null>(null);
+  const openAddMeal = useCallback(() => {
+    setMealLocalDate(null);
+    setAddMealOpen(true);
+  }, []);
+  const openAddMealForDate = useCallback((dateYmd: string) => {
+    setMealLocalDate(dateYmd);
+    setAddMealOpen(true);
+  }, []);
+  const closeAddMeal = useCallback(() => {
+    setAddMealOpen(false);
+    setMealLocalDate(null);
+  }, []);
 
   const renderChildren = () => {
     if (typeof children === "function") {
-      return (children as (actions: AppShellActions) => ReactNode)({ openAddMeal });
+      return (children as (actions: AppShellActions) => ReactNode)({ openAddMeal, openAddMealForDate });
     }
     return children;
   };
@@ -81,7 +94,12 @@ export function AppShell({
 
       <CompositionLabelModal open={compositionOpen} onClose={closeComposition} />
 
-      <AddMealModal open={addMealOpen} onClose={closeAddMeal} onMealSaved={onMealSaved} />
+      <AddMealModal
+        open={addMealOpen}
+        onClose={closeAddMeal}
+        onMealSaved={onMealSaved}
+        mealLocalDate={mealLocalDate}
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { Apple, Beef, ChevronLeft, ChevronRight, Coffee, EggFried, Flame, Leaf, 
 
 import { getMyNutritionTarget } from "../../api/authApi";
 import { deleteMyMeal, getMyMealsForDay } from "../../api/diaryApi";
+import { EditMealModal } from "../layout/EditMealModal";
 import { MealMacroInline, MealMacroLines } from "../meals/MealMacroLines";
 import type { NutritionTarget } from "../../types/auth";
 import type { WebMealDayItemLine, WebMealDayRow } from "../../types/mealsDay";
@@ -328,10 +329,13 @@ function itemLineMacros(it: WebMealDayItemLine): { p: number; f: number; c: numb
 function MealDayDetailModal({
   meal,
   onClose,
+  onEdit,
 }: {
   meal: WebMealDayRow;
   onClose: () => void;
+  onEdit: () => void;
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const large = meal.meal_photo_large_url || meal.meal_photo_thumb_url;
   const pred = predictionHeading(meal);
   const totM = mealTotalsMacros(meal);
@@ -340,6 +344,9 @@ function MealDayDetailModal({
   const totalSalt = sodiumMgToSaltG(meal.sodium_mg ?? 0);
   const totalSatFat = meal.saturated_fat_g ?? 0;
   const totalWater = meal.water_g ?? 0;
+  useEffect(() => {
+    setDetailsOpen(false);
+  }, [meal.id]);
 
   return (
     <div
@@ -373,51 +380,71 @@ function MealDayDetailModal({
           <h2 id="meal-detail-title" className="text-xl font-semibold leading-snug text-slate-900">
             {pred}
           </h2>
-          <p className="text-sm text-slate-600">
-            Приём пищи в {meal.time_local}
-            {meal.meal_type_label ? ` · ${meal.meal_type_label}` : ""}
-          </p>
+          <p className="text-sm text-slate-600">Приём пищи в {meal.time_local}</p>
           <p className="text-sm leading-relaxed text-slate-800">
             <span className="font-medium text-slate-900">Состав:</span> {meal.composition}
           </p>
           <div className="space-y-1">
             <p className="text-sm font-semibold text-slate-900">{formatIntRu(meal.calories)} kcal</p>
             <MealMacroInline proteinG={totM.p} fatG={totM.f} carbsG={totM.c} className="text-sm font-normal" />
-            <p className="text-sm text-slate-600">
-              Клетчатка: {formatMacroGramsRu(totalFiber)} г · Сахар: {formatMacroGramsRu(totalSugar)} г · Соль:{" "}
-              {formatMacroGramsRu(totalSalt)} г · Насыщенные жиры: {formatMacroGramsRu(totalSatFat)} г · Вода:{" "}
-              {formatMacroGramsRu(totalWater)} г
-            </p>
           </div>
-          {meal.items.length > 0 ? (
-            <ul className="divide-y divide-slate-100 rounded-lg border border-slate-100 text-sm">
-              {meal.items.map((it) => {
-                const im = itemLineMacros(it);
-                return (
-                  <li key={it.id} className="flex flex-wrap items-start justify-between gap-2 px-3 py-2">
-                    <div className="min-w-0 flex-1">
-                      <span className="text-slate-800">
-                        {it.item_name || "—"}
-                        {it.estimated_weight_g != null ? ` · ${it.estimated_weight_g} г` : ""}
-                      </span>
-                      <MealMacroInline
-                        proteinG={im.p}
-                        fatG={im.f}
-                        carbsG={im.c}
-                        fiberG={im.fiber}
-                        className="mt-1 block text-xs text-slate-500"
-                      />
-                    </div>
-                    <div className="shrink-0 text-right text-slate-500">
-                      {it.calories != null ? (
-                        <span className="block whitespace-nowrap">{formatIntRu(it.calories)} kcal</span>
-                      ) : null}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : null}
+
+          <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setDetailsOpen((open) => !open)}
+                aria-expanded={detailsOpen}
+                className="flex w-full items-center gap-2 rounded-lg border border-dashed border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                {detailsOpen ? "− Подробнее" : "+ Подробнее"}
+              </button>
+              {detailsOpen ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-slate-600">
+                    Клетчатка: {formatMacroGramsRu(totalFiber)} г · Сахар: {formatMacroGramsRu(totalSugar)} г · Соль:{" "}
+                    {formatMacroGramsRu(totalSalt)} г · Насыщенные жиры: {formatMacroGramsRu(totalSatFat)} г · Вода:{" "}
+                    {formatMacroGramsRu(totalWater)} г
+                  </p>
+                  {meal.items.length > 0 ? (
+                  <ul className="divide-y divide-slate-100 rounded-lg border border-slate-100 text-sm">
+                    {meal.items.map((it) => {
+                      const im = itemLineMacros(it);
+                      return (
+                        <li key={it.id} className="flex flex-wrap items-start justify-between gap-2 px-3 py-2">
+                          <div className="min-w-0 flex-1">
+                            <span className="text-slate-800">
+                              {it.item_name || "—"}
+                              {it.estimated_weight_g != null ? ` · ${it.estimated_weight_g} г` : ""}
+                            </span>
+                            <MealMacroInline
+                              proteinG={im.p}
+                              fatG={im.f}
+                              carbsG={im.c}
+                              fiberG={im.fiber}
+                              className="mt-1 block text-xs text-slate-500"
+                            />
+                          </div>
+                          <div className="shrink-0 text-right text-slate-500">
+                            {it.calories != null ? (
+                              <span className="block whitespace-nowrap">{formatIntRu(it.calories)} kcal</span>
+                            ) : null}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+
+          <button
+            type="button"
+            onClick={onEdit}
+            className="w-full rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700"
+          >
+            Редактировать
+          </button>
         </div>
       </div>
     </div>
@@ -456,15 +483,22 @@ interface MealHistoryDaySectionProps {
   accessToken: string;
   nutritionTarget: NutritionTarget | null;
   onMealsChanged?: () => void;
+  onAddMealForDay?: (dateYmd: string) => void;
 }
 
-export function MealHistoryDaySection({ accessToken, nutritionTarget, onMealsChanged }: MealHistoryDaySectionProps) {
+export function MealHistoryDaySection({
+  accessToken,
+  nutritionTarget,
+  onMealsChanged,
+  onAddMealForDay,
+}: MealHistoryDaySectionProps) {
   const [day, setDay] = useState(() => formatLocalYmd(new Date()));
   const [items, setItems] = useState<WebMealDayRow[]>([]);
   const [dayNutritionTarget, setDayNutritionTarget] = useState<NutritionTarget | null>(nutritionTarget);
   const [phase, setPhase] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<WebMealDayRow | null>(null);
+  const [editingMeal, setEditingMeal] = useState<WebMealDayRow | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
@@ -488,8 +522,14 @@ export function MealHistoryDaySection({ accessToken, nutritionTarget, onMealsCha
     void load();
   }, [load]);
 
+  const todayYmd = useMemo(() => formatLocalYmd(new Date()), []);
+  const isToday = day === todayYmd;
   const dateLabel = useMemo(() => ymdToRuLong(day), [day]);
   const dayGoals = useMemo(() => buildDayGoals(dayNutritionTarget, items), [dayNutritionTarget, items]);
+
+  useEffect(() => {
+    if (day > todayYmd) setDay(todayYmd);
+  }, [day, todayYmd]);
 
   const handleDelete = async (id: number) => {
     if (deletingId != null) return;
@@ -523,21 +563,39 @@ export function MealHistoryDaySection({ accessToken, nutritionTarget, onMealsCha
               <input
                 type="date"
                 value={day}
+                max={todayYmd}
                 onChange={(e) => {
                   const v = e.target.value;
-                  if (v) setDay(v);
+                  if (!v) return;
+                  setDay(v > todayYmd ? todayYmd : v);
                 }}
                 className="min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-800"
               />
               <button
                 type="button"
-                onClick={() => setDay((d) => addDaysYmd(d, 1))}
-                className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
+                onClick={() => setDay((d) => (addDaysYmd(d, 1) > todayYmd ? d : addDaysYmd(d, 1)))}
+                disabled={isToday}
+                className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Следующий день"
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
             </div>
+            {onAddMealForDay ? (
+              <button
+                type="button"
+                onClick={() => onAddMealForDay(day)}
+                disabled={isToday}
+                title={
+                  isToday
+                    ? "Для сегодняшнего дня используйте кнопку «+» в меню"
+                    : "Добавить приём за выбранный день (23:59)"
+                }
+                className="mt-3 w-full rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:bg-slate-300 sm:w-auto sm:min-w-[10rem]"
+              >
+                Добавить
+              </button>
+            ) : null}
           </div>
 
           <div className="w-full rounded-xl border border-slate-100 bg-slate-50/70 p-4 xl:max-w-2xl">
@@ -588,7 +646,27 @@ export function MealHistoryDaySection({ accessToken, nutritionTarget, onMealsCha
         ))}
       </div>
 
-      {detail ? <MealDayDetailModal meal={detail} onClose={() => setDetail(null)} /> : null}
+      {detail ? (
+        <MealDayDetailModal
+          meal={detail}
+          onClose={() => setDetail(null)}
+          onEdit={() => {
+            setEditingMeal(detail);
+            setDetail(null);
+          }}
+        />
+      ) : null}
+
+      <EditMealModal
+        open={editingMeal != null}
+        meal={editingMeal}
+        accessToken={accessToken}
+        onClose={() => setEditingMeal(null)}
+        onSaved={() => {
+          void load();
+          onMealsChanged?.();
+        }}
+      />
     </section>
   );
 }

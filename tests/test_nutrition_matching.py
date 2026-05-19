@@ -504,6 +504,21 @@ def test_beef_patty_not_fat(nutrition_svc: NutritionService) -> None:
     assert cb <= 5.0, f"beef patty 150g carbs {cb}"
 
 
+def test_millet_porridge_plain_weight_not_dry(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"millet porridge": 150})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "millet" in m
+    assert "cooked" in m
+    for bad in ("raw", "flour", "puffed", "unprepared", "uncooked"):
+        assert bad not in m
+    cal = int(data.get("calories") or 0)
+    assert 120 <= cal <= 280, f"millet porridge 150g plain weight calories {cal}"
+
+
 def test_cornmeal_porridge_cooked_not_dry(nutrition_svc: NutritionService) -> None:
     if not nutrition_svc.aliases.is_loaded:
         pytest.skip("food_aliases.json not loaded")

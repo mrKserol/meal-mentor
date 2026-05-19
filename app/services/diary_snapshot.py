@@ -94,6 +94,15 @@ def _utc_naive_to_local(dt: datetime, tz: zoneinfo.ZoneInfo) -> datetime:
     return utc.astimezone(tz)
 
 
+def meal_datetime_for_local_date_end(user: User, d: date) -> datetime:
+    """End of calendar day `d` in user timezone (23:59:59), as UTC-naive for DB."""
+    from datetime import time
+
+    tz = _resolve_tz(user)
+    local_end = datetime.combine(d, time(23, 59, 59), tzinfo=tz)
+    return local_end.astimezone(timezone.utc).replace(tzinfo=None)
+
+
 def _rolling_7_days_utc_naive(user: User) -> tuple[datetime, datetime, date, date, zoneinfo.ZoneInfo]:
     """Последние 7 календарных дней включая сегодня (локаль TZ профиля)."""
     tz = _resolve_tz(user)

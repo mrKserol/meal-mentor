@@ -20,6 +20,32 @@ export type MealAnalyzePayload = {
   error?: string;
 };
 
+export function setIngredientGrams(
+  ingredients: Record<string, IngredientEntry>,
+  name: string,
+  grams: number,
+): Record<string, IngredientEntry> {
+  const prev = ingredients[name];
+  if (prev != null && typeof prev === "object" && !Array.isArray(prev) && "grams" in prev) {
+    return {
+      ...ingredients,
+      [name]: { ...prev, grams },
+    };
+  }
+  return { ...ingredients, [name]: grams };
+}
+
+export function ingredientEntryFromRow(
+  grams: number,
+  ingredientState?: string | null,
+): IngredientEntry {
+  const state = (ingredientState || "").trim().toLowerCase();
+  if (state && state !== "unknown") {
+    return { grams, state };
+  }
+  return grams;
+}
+
 export function ingredientGramsLabel(v: IngredientEntry): string {
   if (v != null && typeof v === "object" && !Array.isArray(v) && "grams" in v) {
     const g = (v as { grams: unknown }).grams;
@@ -77,13 +103,11 @@ export function formatRecognitionQuestion(
     lines.push("");
   }
 
-  lines.push("Примерный состав и вес:");
+  lines.push("Примерный состав:");
   const keys = Object.keys(ingredients);
 
   if (keys.length) {
-    for (const name of keys) {
-      lines.push(`• ${name}: ${ingredientGramsLabel(ingredients[name])} г`);
-    }
+    lines.push(keys.join(" • "));
   } else {
     lines.push("—");
   }
@@ -117,6 +141,49 @@ export function formatMealAnalyzedDetail(
   lines.push("");
   lines.push("Записать прием пищи в дневник?");
   return lines.join("\n");
+}
+
+export type MealCompositionState = {
+  ingredients: Record<string, IngredientEntry>;
+  nutrition: MealNutrition | null;
+  prediction: string | null;
+  image_base64?: string | null;
+  image_url?: string | null;
+};
+
+export function webMealRowToComposition(meal: {
+  id: number;
+  prediction: string | null;
+  items: Array<{
+    item_name: string | null;
+    estimated_weight_g: number | null;
+    ingredient_state?: string | null;
+  }>;
+  calories: number;
+  protein_g?: number;
+  fat_g?: number;
+  carbs_g?: number;
+  meal_photo_large_url?: string | null;
+  meal_photo_thumb_url?: string | null;
+}): MealCompositionState {
+  const ingredients: Record<string, IngredientEntry> = {};
+  for (const it of meal.items) {
+    const name = (it.item_name || "").trim();
+    if (name) {
+      ingredients[name] = ingredientEntryFromRow(it.estimated_weight_g ?? 0, it.ingredient_state);
+    }
+  }
+  return {
+    ingredients,
+    nutrition: {
+      calories: meal.calories,
+      proteins: meal.protein_g ?? 0,
+      fats: meal.fat_g ?? 0,
+      carbohydrates: meal.carbs_g ?? 0,
+    },
+    prediction: meal.prediction,
+    image_url: meal.meal_photo_large_url || meal.meal_photo_thumb_url || null,
+  };
 }
 
 export function fileToBase64(file: File): Promise<string> {
