@@ -7,6 +7,7 @@ import {
   FileUp,
   Loader2,
   PenLine,
+  Minus,
   Plus,
   X,
 } from "lucide-react";
@@ -99,6 +100,7 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const photoB64Ref = useRef<string | null>(null);
+  const addIngredientRef = useRef<HTMLDivElement>(null);
 
   const reset = useCallback(() => {
     setUi({ kind: "menu" });
@@ -176,6 +178,36 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
     [ui, recalcNutritionForIngredients],
   );
 
+  const closeAddIngredientPanel = useCallback((clearDraft: boolean) => {
+    setShowAddIngredient(false);
+    setAddIngredientError(null);
+    if (clearDraft) {
+      setNewIngredientText("");
+    }
+  }, []);
+
+  const toggleAddIngredient = () => {
+    if (showAddIngredient) {
+      closeAddIngredientPanel(!newIngredientText.trim());
+    } else {
+      setAddIngredientError(null);
+      setShowAddIngredient(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!showAddIngredient || ui.kind !== "confirm") return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (addIngredientRef.current?.contains(target)) return;
+      closeAddIngredientPanel(!newIngredientText.trim());
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [showAddIngredient, newIngredientText, ui.kind, closeAddIngredientPanel]);
+
   const addIngredientFromText = async () => {
     const parsed = parseIngredientName(newIngredientText);
     if (!parsed) {
@@ -195,9 +227,7 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
     });
     if (!ok) return;
 
-    setAddIngredientError(null);
-    setNewIngredientText("");
-    setShowAddIngredient(false);
+    closeAddIngredientPanel(true);
   };
 
   useEffect(() => {
@@ -475,7 +505,7 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
                   }}
                   className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
                 >
-                  Нет, напишу вручную
+                  Нет, коррекция
                 </button>
               </div>
             </div>
@@ -559,20 +589,23 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
                 ))}
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setAddIngredientError(null);
-                  setShowAddIngredient(true);
-                }}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                <Plus className="h-4 w-4" aria-hidden />
-                Добавить ингредиент
-              </button>
+              <div ref={addIngredientRef} className="space-y-2">
+                <button
+                  type="button"
+                  onClick={toggleAddIngredient}
+                  aria-expanded={showAddIngredient}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  {showAddIngredient ? (
+                    <Minus className="h-4 w-4" aria-hidden />
+                  ) : (
+                    <Plus className="h-4 w-4" aria-hidden />
+                  )}
+                  Добавить ингредиент
+                </button>
 
-              {showAddIngredient ? (
-                <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                {showAddIngredient ? (
+                  <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
                   <input
                     value={newIngredientText}
                     onChange={(e) => {
@@ -592,8 +625,9 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
                   >
                     Добавить
                   </button>
-                </div>
-              ) : null}
+                  </div>
+                ) : null}
+              </div>
 
               {ui.mealData.nutrition ? (
                 <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-800">

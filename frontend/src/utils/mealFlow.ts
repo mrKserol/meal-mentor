@@ -77,13 +77,11 @@ export function formatRecognitionQuestion(
     lines.push("");
   }
 
-  lines.push("Примерный состав и вес:");
+  lines.push("Примерный состав:");
   const keys = Object.keys(ingredients);
 
   if (keys.length) {
-    for (const name of keys) {
-      lines.push(`• ${name}: ${ingredientGramsLabel(ingredients[name])} г`);
-    }
+    lines.push(keys.join(" • "));
   } else {
     lines.push("—");
   }
