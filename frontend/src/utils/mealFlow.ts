@@ -99,7 +99,7 @@ export function formatRecognitionQuestion(
   const p = typeof prediction === "string" && prediction.trim() ? prediction.trim() : "";
 
   if (p) {
-    lines.push(`Это похоже на: ${p}`);
+    lines.push(`Похоже, что это: ${p}`);
     lines.push("");
   }
 

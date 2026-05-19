@@ -14,7 +14,6 @@ import { MealCompositionForm } from "../meals/MealCompositionForm";
 import { MealPhotoPreview } from "../meals/MealPhotoPreview";
 import {
   fileToBase64,
-  formatRecognitionQuestion,
   needsUserDescription,
   parseAnalyzeResponse,
   type IngredientEntry,
@@ -336,9 +335,23 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
           {ui.kind === "recognition" ? (
             <div className="space-y-4">
               <MealPhotoPreview imageBase64={ui.mealData.image_base64} />
-              <p className="whitespace-pre-wrap text-center text-sm leading-relaxed text-slate-800">
-                {formatRecognitionQuestion(ui.mealData.ingredients, ui.mealData.prediction)}
-              </p>
+              <div className="space-y-3 text-center text-sm leading-relaxed text-slate-800">
+                {ui.mealData.prediction?.trim() ? (
+                  <p>
+                    Похоже, что это:{" "}
+                    <span className="text-[15px] font-bold leading-snug text-slate-900">
+                      {ui.mealData.prediction.trim()}
+                    </span>
+                  </p>
+                ) : null}
+                <p className="font-medium text-slate-900">Примерный состав:</p>
+                <p>
+                  {Object.keys(ui.mealData.ingredients).length
+                    ? Object.keys(ui.mealData.ingredients).join(" • ")
+                    : "—"}
+                </p>
+                <p>Я верно определил?</p>
+              </div>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <button
                   type="button"
