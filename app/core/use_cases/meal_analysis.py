@@ -238,13 +238,23 @@ def analyze_meal_from_text(user_text: str) -> MealAnalysisResult:
     return _meal_result_from_vision_dict(raw)
 
 
-def analyze_meal_from_image_and_text(image_base64: str, user_text: str) -> MealAnalysisResult:
+def analyze_meal_from_image_and_text(
+    image_base64: str,
+    user_text: str,
+    previous_ingredients: dict[str, Any] | None = None,
+    previous_prediction: str | None = None,
+) -> MealAnalysisResult:
     """
     Analyze meal from original photo + user's correction/description.
     This is used after user rejected initial photo recognition.
     """
     vision = _get_vision()
-    raw = vision.analyze_image_with_user_text(image_base64, user_text)
+    raw = vision.analyze_image_with_user_text(
+        image_base64,
+        user_text,
+        previous_ingredients=previous_ingredients,
+        previous_prediction=previous_prediction,
+    )
     return _meal_result_from_vision_dict(raw)
 
 

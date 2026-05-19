@@ -47,7 +47,12 @@ type UiState =
       kind: "recognition";
       mealData: MealData;
     }
-  | { kind: "text"; mode: "standalone" | "after_photo"; hint?: string }
+  | {
+      kind: "text";
+      mode: "standalone" | "after_photo";
+      hint?: string;
+      previousMealData?: MealData | null;
+    }
   | { kind: "confirm"; mealData: MealData }
   | { kind: "error"; message: string };
 
@@ -250,6 +255,7 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
 
   const runAnalyzeText = async (text: string, mode: "standalone" | "after_photo") => {
     const trimmed = text.trim();
+    const previousMealData = ui.kind === "text" ? ui.previousMealData : null;
     if (!trimmed) {
       setUi({ kind: "error", message: "Введите описание блюда." });
       return;
@@ -261,7 +267,12 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
     try {
       const raw =
         mode === "after_photo" && photoB64Ref.current
-          ? await analyzeMealImageWithText(photoB64Ref.current, trimmed)
+          ? await analyzeMealImageWithText(
+              photoB64Ref.current,
+              trimmed,
+              previousMealData?.ingredients ?? null,
+              previousMealData?.prediction ?? null,
+            )
           : await analyzeMealText(trimmed);
       const parsed = parseAnalyzeResponse(raw);
       if (parsed.status !== "success") {
@@ -277,6 +288,7 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
             mode === "after_photo"
               ? "Не получилось выделить еду. Уточни подробнее: что на фото и примерные порции."
               : "По описанию мало данных. Добавь деталей: что именно и сколько примерно по весу.",
+          previousMealData,
         });
         return;
       }
@@ -454,7 +466,12 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
                   type="button"
                   onClick={() => {
                     setTextDraft("");
-                    setUi({ kind: "text", mode: "after_photo", hint: "Опиши блюдо на фото и примерные порции." });
+                    setUi({
+                      kind: "text",
+                      mode: "after_photo",
+                      hint: "Опиши блюдо на фото и примерные порции.",
+                      previousMealData: ui.mealData,
+                    });
                   }}
                   className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
                 >

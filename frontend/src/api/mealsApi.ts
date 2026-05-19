@@ -22,10 +22,14 @@ export async function analyzeMealText(text: string): Promise<Record<string, unkn
 export async function analyzeMealImageWithText(
   image_base64: string,
   text: string,
+  previous_ingredients?: Record<string, IngredientEntry> | null,
+  previous_prediction?: string | null,
 ): Promise<Record<string, unknown>> {
   const { data } = await axios.post<Record<string, unknown>>(`${API_URL}/meals/analyze-image-text`, {
     image_base64,
     text,
+    previous_ingredients,
+    previous_prediction,
   });
   return data;
 }

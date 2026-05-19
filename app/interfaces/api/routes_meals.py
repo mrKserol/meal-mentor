@@ -41,6 +41,8 @@ class AnalyzeTextBody(BaseModel):
 class AnalyzeImageTextBody(BaseModel):
     image_base64: str
     text: str
+    previous_ingredients: dict[str, Any] | None = None
+    previous_prediction: str | None = None
 
 
 class RecalculateNutritionBody(BaseModel):
@@ -114,6 +116,8 @@ def analyze_meal_image_text(body: AnalyzeImageTextBody):
     return analyze_meal_from_image_and_text(
         body.image_base64,
         body.text.strip(),
+        previous_ingredients=body.previous_ingredients,
+        previous_prediction=body.previous_prediction,
     ).to_api_dict()
 
 
