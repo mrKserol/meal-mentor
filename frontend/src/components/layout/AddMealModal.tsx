@@ -1,32 +1,24 @@
 import axios from "axios";
 import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Camera,
-  CircleMinus,
-  FileUp,
-  Loader2,
-  PenLine,
-  Minus,
-  Plus,
-  X,
-} from "lucide-react";
+import { Camera, FileUp, Loader2, PenLine, X } from "lucide-react";
 
 import {
   analyzeMealImageBase64,
   analyzeMealImageWithText,
   analyzeMealText,
-  recalculateMealNutrition,
   saveMyMealToDiary,
 } from "../../api/mealsApi";
 import { useAuth } from "../../hooks/useAuth";
+import { MealCompositionForm } from "../meals/MealCompositionForm";
+import { MealPhotoPreview } from "../meals/MealPhotoPreview";
 import {
   fileToBase64,
   formatRecognitionQuestion,
-  ingredientGramsLabel,
   needsUserDescription,
   parseAnalyzeResponse,
   type IngredientEntry,
+  type MealCompositionState,
   type MealNutrition,
 } from "../../utils/mealFlow";
 
@@ -63,51 +55,17 @@ interface AddMealModalProps {
   onMealSaved?: () => void;
 }
 
-function MealPhotoPreview({ imageBase64 }: { imageBase64?: string | null }) {
-  if (!imageBase64) return null;
-
-  return (
-    <img
-      src={`data:image/jpeg;base64,${imageBase64}`}
-      alt="Фото блюда"
-      className="max-h-64 w-full rounded-xl object-cover"
-    />
-  );
-}
-
-function parseIngredientName(input: string): { name: string; grams: number } | null {
-  const trimmed = input.trim();
-  if (!trimmed) return null;
-
-  const withWeight = trimmed.match(/^(.+?)\s+(\d+(?:[.,]\d+)?)$/);
-  if (withWeight) {
-    const name = withWeight[1].trim();
-    const grams = Math.round(Number(withWeight[2].replace(",", ".")));
-    if (!name || !Number.isFinite(grams) || grams < 0) return null;
-    return { name, grams };
-  }
-
-  return { name: trimmed, grams: 0 };
-}
-
 export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) {
   const { validateSession, getAccessToken } = useAuth();
   const [ui, setUi] = useState<UiState>({ kind: "menu" });
   const [textDraft, setTextDraft] = useState("");
-  const [showAddIngredient, setShowAddIngredient] = useState(false);
-  const [newIngredientText, setNewIngredientText] = useState("");
-  const [addIngredientError, setAddIngredientError] = useState<string | null>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const photoB64Ref = useRef<string | null>(null);
-  const addIngredientRef = useRef<HTMLDivElement>(null);
 
   const reset = useCallback(() => {
     setUi({ kind: "menu" });
     setTextDraft("");
-    setShowAddIngredient(false);
-    setNewIngredientText("");
-    setAddIngredientError(null);
     photoB64Ref.current = null;
   }, []);
 
@@ -117,118 +75,6 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
       return { kind: "confirm", mealData: updater(prev.mealData) };
     });
   }, []);
-
-  const recalcNutritionForIngredients = useCallback(
-    async (
-      nextIngredients: Record<string, IngredientEntry>,
-      options?: { onError?: (message: string) => void },
-    ) => {
-      try {
-        const raw = await recalculateMealNutrition(nextIngredients);
-        const parsed = parseAnalyzeResponse(raw);
-
-        if (parsed.status !== "success") {
-          throw new Error(parsed.error || "Не удалось пересчитать БЖУ.");
-        }
-
-        updateConfirmMealData((mealData) => ({
-          ...mealData,
-          ingredients: nextIngredients,
-          nutrition: parsed.nutrition,
-        }));
-        return true;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Не удалось пересчитать БЖУ.";
-        if (options?.onError) {
-          options.onError(message);
-        } else {
-          setUi({ kind: "error", message });
-        }
-        return false;
-      }
-    },
-    [updateConfirmMealData],
-  );
-
-  const recalcCurrentMealNutrition = useCallback(async () => {
-    if (ui.kind !== "confirm") return;
-    await recalcNutritionForIngredients(ui.mealData.ingredients);
-  }, [ui, recalcNutritionForIngredients]);
-
-  const updateIngredientWeight = useCallback(
-    (name: string, value: string) => {
-      updateConfirmMealData((mealData) => ({
-        ...mealData,
-        ingredients: {
-          ...mealData.ingredients,
-          [name]: Number(value) || 0,
-        },
-      }));
-    },
-    [updateConfirmMealData],
-  );
-
-  const removeIngredient = useCallback(
-    (name: string) => {
-      if (ui.kind !== "confirm") return;
-      const nextIngredients = { ...ui.mealData.ingredients };
-      delete nextIngredients[name];
-      void recalcNutritionForIngredients(nextIngredients);
-    },
-    [ui, recalcNutritionForIngredients],
-  );
-
-  const closeAddIngredientPanel = useCallback((clearDraft: boolean) => {
-    setShowAddIngredient(false);
-    setAddIngredientError(null);
-    if (clearDraft) {
-      setNewIngredientText("");
-    }
-  }, []);
-
-  const toggleAddIngredient = () => {
-    if (showAddIngredient) {
-      closeAddIngredientPanel(!newIngredientText.trim());
-    } else {
-      setAddIngredientError(null);
-      setShowAddIngredient(true);
-    }
-  };
-
-  useEffect(() => {
-    if (!showAddIngredient || ui.kind !== "confirm") return;
-
-    const onPointerDown = (event: PointerEvent) => {
-      const target = event.target as Node;
-      if (addIngredientRef.current?.contains(target)) return;
-      closeAddIngredientPanel(!newIngredientText.trim());
-    };
-
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [showAddIngredient, newIngredientText, ui.kind, closeAddIngredientPanel]);
-
-  const addIngredientFromText = async () => {
-    const parsed = parseIngredientName(newIngredientText);
-    if (!parsed) {
-      setAddIngredientError("Введите название ингредиента");
-      return;
-    }
-
-    if (ui.kind !== "confirm") return;
-
-    const nextIngredients = {
-      ...ui.mealData.ingredients,
-      [parsed.name]: parsed.grams,
-    };
-
-    const ok = await recalcNutritionForIngredients(nextIngredients, {
-      onError: (message) => setAddIngredientError(message),
-    });
-    if (!ok) return;
-
-    closeAddIngredientPanel(true);
-  };
 
   useEffect(() => {
     if (open) reset();
@@ -545,123 +391,32 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
           ) : null}
 
           {ui.kind === "confirm" ? (
-            <div className="space-y-4">
-              <MealPhotoPreview imageBase64={ui.mealData.image_base64} />
-
-              {ui.mealData.prediction ? (
-                <p className="text-sm font-semibold text-slate-900">{ui.mealData.prediction}</p>
-              ) : null}
-
-              <p className="text-sm font-semibold text-slate-900">Состав и вес (г):</p>
-
-              <div className="space-y-2">
-                {Object.entries(ui.mealData.ingredients).map(([name, entry]) => (
-                  <div
-                    key={name}
-                    className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
-                  >
-                    <span className="min-w-0 flex-1 truncate text-sm text-slate-800">{name}</span>
-
-                    <input
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={ingredientGramsLabel(entry)}
-                      onChange={(e) => updateIngredientWeight(name, e.target.value)}
-                      onBlur={() => void recalcCurrentMealNutrition()}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.currentTarget.blur();
-                        }
-                      }}
-                      className="w-20 rounded-lg border border-slate-200 bg-white px-2 py-1 text-right text-sm outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100"
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() => removeIngredient(name)}
-                      className="rounded-lg p-2 text-red-600 transition hover:bg-red-50"
-                      aria-label={`Удалить ${name}`}
-                    >
-                      <CircleMinus className="h-5 w-5" aria-hidden />
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <div ref={addIngredientRef} className="space-y-2">
-                <button
-                  type="button"
-                  onClick={toggleAddIngredient}
-                  aria-expanded={showAddIngredient}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  {showAddIngredient ? (
-                    <Minus className="h-4 w-4" aria-hidden />
-                  ) : (
-                    <Plus className="h-4 w-4" aria-hidden />
-                  )}
-                  Добавить ингредиент
-                </button>
-
-                {showAddIngredient ? (
-                  <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <input
-                    value={newIngredientText}
-                    onChange={(e) => {
-                      setNewIngredientText(e.target.value);
-                      if (addIngredientError) setAddIngredientError(null);
-                    }}
-                    placeholder="Например: potato"
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100"
-                  />
-                  {addIngredientError ? (
-                    <p className="text-sm text-red-600">{addIngredientError}</p>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => void addIngredientFromText()}
-                    className="rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
-                  >
-                    Добавить
-                  </button>
-                  </div>
-                ) : null}
-              </div>
-
-              {ui.mealData.nutrition ? (
-                <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-800">
-                  <p className="font-semibold">БЖУ (оценка):</p>
-                  <p>
-                    Калории: {ui.mealData.nutrition.calories} ккал | Б: {ui.mealData.nutrition.proteins} г | Ж:{" "}
-                    {ui.mealData.nutrition.fats} г | У: {ui.mealData.nutrition.carbohydrates} г
-                  </p>
-                </div>
-              ) : null}
-
-              <p className="text-sm font-medium text-slate-700">Записать прием пищи в дневник?</p>
-
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={() => void confirmSave()}
-                  className="flex-1 rounded-xl bg-green-600 py-3 text-sm font-semibold text-white transition hover:bg-green-700"
-                >
-                  Да, записать
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    reset();
-                    onClose();
-                  }}
-                  className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
-                >
-                  Отмена
-                </button>
-              </div>
-            </div>
+            <MealCompositionForm
+              mealData={{
+                ingredients: ui.mealData.ingredients,
+                nutrition: ui.mealData.nutrition,
+                prediction: ui.mealData.prediction,
+                image_base64: ui.mealData.image_base64,
+              }}
+              onMealDataChange={(comp: MealCompositionState) =>
+                updateConfirmMealData((md) => ({
+                  ...md,
+                  ingredients: comp.ingredients,
+                  nutrition: comp.nutrition,
+                  prediction: comp.prediction,
+                }))
+              }
+              savePrompt="Записать прием пищи в дневник?"
+              primaryLabel="Да, записать"
+              secondaryLabel="Отмена"
+              onPrimary={() => void confirmSave()}
+              onSecondary={() => {
+                reset();
+                onClose();
+              }}
+            />
           ) : null}
+
 
           {ui.kind === "error" ? (
             <div className="space-y-4">

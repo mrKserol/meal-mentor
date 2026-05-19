@@ -117,6 +117,43 @@ export function formatMealAnalyzedDetail(
   return lines.join("\n");
 }
 
+export type MealCompositionState = {
+  ingredients: Record<string, IngredientEntry>;
+  nutrition: MealNutrition | null;
+  prediction: string | null;
+  image_base64?: string | null;
+  image_url?: string | null;
+};
+
+export function webMealRowToComposition(meal: {
+  id: number;
+  prediction: string | null;
+  items: Array<{ item_name: string | null; estimated_weight_g: number | null }>;
+  calories: number;
+  protein_g?: number;
+  fat_g?: number;
+  carbs_g?: number;
+  meal_photo_large_url?: string | null;
+  meal_photo_thumb_url?: string | null;
+}): MealCompositionState {
+  const ingredients: Record<string, IngredientEntry> = {};
+  for (const it of meal.items) {
+    const name = (it.item_name || "").trim();
+    if (name) ingredients[name] = it.estimated_weight_g ?? 0;
+  }
+  return {
+    ingredients,
+    nutrition: {
+      calories: meal.calories,
+      proteins: meal.protein_g ?? 0,
+      fats: meal.fat_g ?? 0,
+      carbohydrates: meal.carbs_g ?? 0,
+    },
+    prediction: meal.prediction,
+    image_url: meal.meal_photo_large_url || meal.meal_photo_thumb_url || null,
+  };
+}
+
 export function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

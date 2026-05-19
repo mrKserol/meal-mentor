@@ -168,6 +168,17 @@ class WebMealSaveResponse(BaseModel):
     status: str
 
 
+class WebMealUpdateRequest(BaseModel):
+    """Обновление состава существующего приёма (JWT)."""
+
+    ingredients: dict[str, Any]
+    prediction: str | None = None
+
+
+class WebMealUpdateResponse(BaseModel):
+    status: str
+
+
 class WebMealDayItemLine(BaseModel):
     id: int
     item_name: str | None = None

@@ -3,6 +3,7 @@ import { Apple, Beef, ChevronLeft, ChevronRight, Coffee, EggFried, Flame, Leaf, 
 
 import { getMyNutritionTarget } from "../../api/authApi";
 import { deleteMyMeal, getMyMealsForDay } from "../../api/diaryApi";
+import { EditMealModal } from "../layout/EditMealModal";
 import { MealMacroInline, MealMacroLines } from "../meals/MealMacroLines";
 import type { NutritionTarget } from "../../types/auth";
 import type { WebMealDayItemLine, WebMealDayRow } from "../../types/mealsDay";
@@ -328,9 +329,11 @@ function itemLineMacros(it: WebMealDayItemLine): { p: number; f: number; c: numb
 function MealDayDetailModal({
   meal,
   onClose,
+  onEdit,
 }: {
   meal: WebMealDayRow;
   onClose: () => void;
+  onEdit: () => void;
 }) {
   const large = meal.meal_photo_large_url || meal.meal_photo_thumb_url;
   const pred = predictionHeading(meal);
@@ -373,10 +376,7 @@ function MealDayDetailModal({
           <h2 id="meal-detail-title" className="text-xl font-semibold leading-snug text-slate-900">
             {pred}
           </h2>
-          <p className="text-sm text-slate-600">
-            Приём пищи в {meal.time_local}
-            {meal.meal_type_label ? ` · ${meal.meal_type_label}` : ""}
-          </p>
+          <p className="text-sm text-slate-600">Приём пищи в {meal.time_local}</p>
           <p className="text-sm leading-relaxed text-slate-800">
             <span className="font-medium text-slate-900">Состав:</span> {meal.composition}
           </p>
@@ -418,6 +418,13 @@ function MealDayDetailModal({
               })}
             </ul>
           ) : null}
+          <button
+            type="button"
+            onClick={onEdit}
+            className="w-full rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700"
+          >
+            Редактировать
+          </button>
         </div>
       </div>
     </div>
@@ -465,6 +472,7 @@ export function MealHistoryDaySection({ accessToken, nutritionTarget, onMealsCha
   const [phase, setPhase] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<WebMealDayRow | null>(null);
+  const [editingMeal, setEditingMeal] = useState<WebMealDayRow | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
@@ -588,7 +596,27 @@ export function MealHistoryDaySection({ accessToken, nutritionTarget, onMealsCha
         ))}
       </div>
 
-      {detail ? <MealDayDetailModal meal={detail} onClose={() => setDetail(null)} /> : null}
+      {detail ? (
+        <MealDayDetailModal
+          meal={detail}
+          onClose={() => setDetail(null)}
+          onEdit={() => {
+            setEditingMeal(detail);
+            setDetail(null);
+          }}
+        />
+      ) : null}
+
+      <EditMealModal
+        open={editingMeal != null}
+        meal={editingMeal}
+        accessToken={accessToken}
+        onClose={() => setEditingMeal(null)}
+        onSaved={() => {
+          void load();
+          onMealsChanged?.();
+        }}
+      />
     </section>
   );
 }

@@ -6,6 +6,7 @@ import type {
   WeightMeasurementPoint,
   WeightMeasurementsResponse,
 } from "../types/diary";
+import type { IngredientEntry } from "../utils/mealFlow";
 import type { WebMealsDayResponse } from "../types/mealsDay";
 
 export async function getMyDiary(accessToken: string): Promise<DiarySnapshot> {
@@ -27,6 +28,24 @@ export async function deleteMyMeal(accessToken: string, mealId: number): Promise
   await authClient.delete(`/users/me/meals/${mealId}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+}
+
+export async function updateMyMeal(
+  accessToken: string,
+  mealId: number,
+  payload: {
+    ingredients: Record<string, IngredientEntry>;
+    prediction?: string | null;
+  },
+): Promise<void> {
+  await authClient.patch(
+    `/users/me/meals/${mealId}`,
+    {
+      ingredients: payload.ingredients,
+      prediction: payload.prediction,
+    },
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
 }
 
 export async function getMyWeightMeasurements(

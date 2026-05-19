@@ -230,6 +230,55 @@ def delete_meal_item_for_user(db: Session, meal_id: int, user_id: int, item_id: 
     return True
 
 
+def replace_meal_items_for_user(
+    db: Session,
+    meal_id: int,
+    user_id: int,
+    items: list[dict[str, Any]],
+    *,
+    prediction: str | None = None,
+) -> bool:
+    """Replace all line items on a meal and optionally update prediction."""
+    meal = (
+        db.query(Meal)
+        .options(joinedload(Meal.items).joinedload(MealItem.nutrition))
+        .filter(Meal.id == meal_id, Meal.user_id == user_id)
+        .first()
+    )
+    if not meal:
+        return False
+
+    for item in list(meal.items):
+        db.delete(item)
+    db.flush()
+
+    for spec in items or []:
+        name = spec.get("item_name")
+        if not name:
+            continue
+        row = MealItem(
+            meal_id=meal.id,
+            item_name=name,
+            ingredient_state=spec.get("ingredient_state"),
+            estimated_weight_g=spec.get("estimated_weight_g"),
+            quantity=spec.get("quantity"),
+            confidence=spec.get("confidence"),
+            raw_recognition_text=spec.get("raw_recognition_text"),
+        )
+        db.add(row)
+        db.flush()
+        nut = spec.get("nutrition") or {}
+        payload = {k: nut[k] for k in MEAL_ITEM_NUTRITION_KEYS if k in nut and nut[k] is not None}
+        if payload:
+            db.add(MealItemNutrition(meal_item_id=row.id, **payload))
+
+    if prediction is not None:
+        meal.prediction = prediction
+
+    db.commit()
+    return True
+
+
 def append_meal_item_rows(
     db: Session,
     meal_id: int,
