@@ -395,7 +395,7 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
                 value={textDraft}
                 onChange={(e) => setTextDraft(e.target.value)}
                 rows={5}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none ring-green-100 focus:border-green-600 focus:ring-2"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-base outline-none ring-green-100 focus:border-green-600 focus:ring-2 sm:text-sm"
                 placeholder="Например: гречка с курицей 300 г, салат из огурцов 150 г"
               />
               <div className="flex flex-col gap-2 sm:flex-row">

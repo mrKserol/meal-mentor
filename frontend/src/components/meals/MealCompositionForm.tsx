@@ -168,7 +168,7 @@ export function MealCompositionForm({
               onKeyDown={(e) => {
                 if (e.key === "Enter") e.currentTarget.blur();
               }}
-              className="w-20 rounded-lg border border-slate-200 bg-white px-2 py-1 text-right text-sm outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100"
+              className="w-24 shrink-0 rounded-lg border border-slate-200 bg-white px-2 py-1 text-right text-base outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 sm:w-20 sm:text-sm"
             />
             <button
               type="button"
@@ -205,7 +205,7 @@ export function MealCompositionForm({
                 if (addIngredientError) setAddIngredientError(null);
               }}
               placeholder="Например: potato"
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 sm:text-sm"
             />
             {addIngredientError ? <p className="text-sm text-red-600">{addIngredientError}</p> : null}
             <button
