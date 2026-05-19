@@ -69,17 +69,19 @@ function MealPhotoPreview({ imageBase64 }: { imageBase64?: string | null }) {
   );
 }
 
-function parseIngredientLine(input: string): { name: string; grams: number } | null {
+function parseIngredientName(input: string): { name: string; grams: number } | null {
   const trimmed = input.trim();
-  const match = trimmed.match(/^(.+?)\s+(\d+(?:[.,]\d+)?)$/);
-  if (!match) return null;
+  if (!trimmed) return null;
 
-  const name = match[1].trim();
-  const grams = Math.round(Number(match[2].replace(",", ".")));
+  const withWeight = trimmed.match(/^(.+?)\s+(\d+(?:[.,]\d+)?)$/);
+  if (withWeight) {
+    const name = withWeight[1].trim();
+    const grams = Math.round(Number(withWeight[2].replace(",", ".")));
+    if (!name || !Number.isFinite(grams) || grams < 0) return null;
+    return { name, grams };
+  }
 
-  if (!name || !Number.isFinite(grams) || grams <= 0) return null;
-
-  return { name, grams };
+  return { name: trimmed, grams: 0 };
 }
 
 export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) {
@@ -88,6 +90,7 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
   const [textDraft, setTextDraft] = useState("");
   const [showAddIngredient, setShowAddIngredient] = useState(false);
   const [newIngredientText, setNewIngredientText] = useState("");
+  const [addIngredientError, setAddIngredientError] = useState<string | null>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const photoB64Ref = useRef<string | null>(null);
@@ -97,6 +100,7 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
     setTextDraft("");
     setShowAddIngredient(false);
     setNewIngredientText("");
+    setAddIngredientError(null);
     photoB64Ref.current = null;
   }, []);
 
@@ -108,7 +112,10 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
   }, []);
 
   const recalcNutritionForIngredients = useCallback(
-    async (nextIngredients: Record<string, IngredientEntry>) => {
+    async (
+      nextIngredients: Record<string, IngredientEntry>,
+      options?: { onError?: (message: string) => void },
+    ) => {
       try {
         const raw = await recalculateMealNutrition(nextIngredients);
         const parsed = parseAnalyzeResponse(raw);
@@ -122,11 +129,15 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
           ingredients: nextIngredients,
           nutrition: parsed.nutrition,
         }));
+        return true;
       } catch (err) {
-        setUi({
-          kind: "error",
-          message: err instanceof Error ? err.message : "Не удалось пересчитать БЖУ.",
-        });
+        const message = err instanceof Error ? err.message : "Не удалось пересчитать БЖУ.";
+        if (options?.onError) {
+          options.onError(message);
+        } else {
+          setUi({ kind: "error", message });
+        }
+        return false;
       }
     },
     [updateConfirmMealData],
@@ -161,9 +172,9 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
   );
 
   const addIngredientFromText = async () => {
-    const parsed = parseIngredientLine(newIngredientText);
+    const parsed = parseIngredientName(newIngredientText);
     if (!parsed) {
-      setUi({ kind: "error", message: "Введите ингредиент в формате: potato 50" });
+      setAddIngredientError("Введите название ингредиента");
       return;
     }
 
@@ -174,10 +185,14 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
       [parsed.name]: parsed.grams,
     };
 
+    const ok = await recalcNutritionForIngredients(nextIngredients, {
+      onError: (message) => setAddIngredientError(message),
+    });
+    if (!ok) return;
+
+    setAddIngredientError(null);
     setNewIngredientText("");
     setShowAddIngredient(false);
-
-    await recalcNutritionForIngredients(nextIngredients);
   };
 
   useEffect(() => {
@@ -529,7 +544,10 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
 
               <button
                 type="button"
-                onClick={() => setShowAddIngredient(true)}
+                onClick={() => {
+                  setAddIngredientError(null);
+                  setShowAddIngredient(true);
+                }}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 <Plus className="h-4 w-4" aria-hidden />
@@ -540,10 +558,16 @@ export function AddMealModal({ open, onClose, onMealSaved }: AddMealModalProps) 
                 <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
                   <input
                     value={newIngredientText}
-                    onChange={(e) => setNewIngredientText(e.target.value)}
-                    placeholder="Например: potato 50"
+                    onChange={(e) => {
+                      setNewIngredientText(e.target.value);
+                      if (addIngredientError) setAddIngredientError(null);
+                    }}
+                    placeholder="Например: potato"
                     className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100"
                   />
+                  {addIngredientError ? (
+                    <p className="text-sm text-red-600">{addIngredientError}</p>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => void addIngredientFromText()}
