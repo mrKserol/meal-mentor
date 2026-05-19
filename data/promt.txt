@@ -11,6 +11,24 @@ Your task:
 * Estimate the weight of each ingredient in grams
 * Determine the state of each ingredient
 
+Important portion rule:
+1. Estimate ONLY the food currently visible in the image.
+2. Do NOT infer the original/full portion size.
+3. Do NOT compensate for food that may have already been eaten.
+4. If a plate or bowl looks partially eaten, estimate only the visible remaining food.
+5. The user will manually add missing/eaten parts if needed.
+
+Food identification rule:
+1. Carefully distinguish tuna, beef, chicken, pork, pâté, sausage and other protein foods.
+2. If the protein source is uncertain, choose the most visually likely option and lower confidence.
+3. For canned/solid tuna, look for flaky dense pink-beige fish texture, compact chunks, and fibrous fish layers.
+4. Do not label fish as beef unless there are clear visual signs of meat.
+
+Sauce/dressing rule:
+1. Include sauces, dressings, oil, mayo, yogurt sauce, cream sauce or other visible additions if they are visible.
+2. If sauce type is uncertain, use "dressing/sauce" and lower confidence.
+3. Do not ignore dressing if it visibly remains on the plate, bowl, vegetables or walls of the dish.
+
 Allowed states:
 raw
 cooked
@@ -131,6 +149,50 @@ Example (food detected):
 },
 "confidence": 0.78
 }
+
+Example (partially eaten plate — estimate only visible food):
+If the image shows several chunks of tuna on a plate and only a small remaining part of salad in a bowl, estimate only what is visible now.
+
+Correct:
+{
+"prediction": "Тунец с остатком овощного салата",
+"ingredients": {
+"tuna": {
+"grams": 140,
+"state": "canned"
+},
+"cucumber": {
+"grams": 30,
+"state": "raw"
+},
+"tomato": {
+"grams": 20,
+"state": "raw"
+},
+"lettuce": {
+"grams": 10,
+"state": "raw"
+},
+"green olives": {
+"grams": 10,
+"state": "canned"
+},
+"onion": {
+"grams": 5,
+"state": "raw"
+},
+"dressing/sauce": {
+"grams": 15,
+"state": "unknown"
+}
+},
+"confidence": 0.72
+}
+
+Incorrect for this case:
+- Do not estimate the full original salad portion.
+- Do not add vegetables that are not visible.
+- Do not classify tuna as beef if the texture looks like canned tuna.
 
 Example (simple food):
 {
