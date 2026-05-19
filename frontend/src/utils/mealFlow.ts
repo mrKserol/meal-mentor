@@ -65,8 +65,19 @@ export function parseAnalyzeResponse(raw: Record<string, unknown>): MealAnalyzeP
   };
 }
 
-export function formatRecognitionQuestion(ingredients: Record<string, IngredientEntry>): string {
-  const lines: string[] = ["Примерный состав и вес:"];
+export function formatRecognitionQuestion(
+  ingredients: Record<string, IngredientEntry>,
+  prediction?: string | null,
+): string {
+  const lines: string[] = [];
+  const p = typeof prediction === "string" && prediction.trim() ? prediction.trim() : "";
+
+  if (p) {
+    lines.push(`Это похоже на: ${p}`);
+    lines.push("");
+  }
+
+  lines.push("Примерный состав и вес:");
   const keys = Object.keys(ingredients);
 
   if (keys.length) {
