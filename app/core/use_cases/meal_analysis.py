@@ -238,6 +238,39 @@ def analyze_meal_from_text(user_text: str) -> MealAnalysisResult:
     return _meal_result_from_vision_dict(raw)
 
 
+def recalculate_nutrition_from_ingredients(ingredients: dict[str, Any]) -> MealAnalysisResult:
+    """Recalculate macros from an edited ingredients dict without OpenAI."""
+    if not ingredients or not isinstance(ingredients, dict):
+        return MealAnalysisResult(
+            status="success",
+            ingredients={},
+            confidence=None,
+            prediction=None,
+            nutrition=MacroTotals(),
+            error="",
+        )
+
+    nutrition_svc = _get_nutrition()
+    nutrition = None
+    nutrition_full: dict[str, float] | None = None
+
+    if nutrition_svc.is_available:
+        agg = nutrition_svc.aggregate_nutrition(ingredients)
+        nutrition_full = nutrition_svc.aggregate_nutrition_full(ingredients)
+        if agg is not None:
+            nutrition = MacroTotals(**agg)
+
+    return MealAnalysisResult(
+        status="success",
+        ingredients=ingredients,
+        confidence=None,
+        nutrition=nutrition,
+        nutrition_full=nutrition_full,
+        prediction=None,
+        error="",
+    )
+
+
 def resolve_meal_photo_urls_for_save(
     user_id: int,
     *,

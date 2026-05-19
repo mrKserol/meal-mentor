@@ -65,24 +65,22 @@ export function parseAnalyzeResponse(raw: Record<string, unknown>): MealAnalyzeP
   };
 }
 
-export function formatRecognitionQuestion(
-  prediction: string | null | undefined,
-  ingredients: Record<string, IngredientEntry>,
-): string {
-  const p = typeof prediction === "string" && prediction.trim() ? prediction.trim() : "";
-  if (p) {
-    return `Это похоже на: ${p}.\n\nЯ верно определил?`;
-  }
+export function formatRecognitionQuestion(ingredients: Record<string, IngredientEntry>): string {
+  const lines: string[] = ["Примерный состав и вес:"];
   const keys = Object.keys(ingredients);
-  if (keys.length === 0) {
-    return "Я не смог выделить блюдо. Опиши текстом или попробуй другое фото.";
+
+  if (keys.length) {
+    for (const name of keys) {
+      lines.push(`• ${name}: ${ingredientGramsLabel(ingredients[name])} г`);
+    }
+  } else {
+    lines.push("—");
   }
-  const parts = keys.map((name) => `${name} (${ingredientGramsLabel(ingredients[name])} г)`);
-  let tail: string;
-  if (parts.length === 1) tail = parts[0];
-  else if (parts.length === 2) tail = `${parts[0]} и ${parts[1]}`;
-  else tail = `${parts.slice(0, -1).join(", ")} и ${parts[parts.length - 1]}`;
-  return `Это похоже на: ${tail}.\n\nЯ верно определил?`;
+
+  lines.push("");
+  lines.push("Я верно определил?");
+
+  return lines.join("\n");
 }
 
 export function formatMealAnalyzedDetail(

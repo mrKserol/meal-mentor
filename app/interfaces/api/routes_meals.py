@@ -11,6 +11,7 @@ from app.core.use_cases.meal_analysis import (
     analyze_meal_from_image_base64,
     analyze_meal_from_text,
     persist_meal_to_database,
+    recalculate_nutrition_from_ingredients,
 )
 from app.db.session import get_db
 from app.db.repository import (
@@ -34,6 +35,10 @@ class AnalyzeBody(BaseModel):
 
 class AnalyzeTextBody(BaseModel):
     text: str
+
+
+class RecalculateNutritionBody(BaseModel):
+    ingredients: dict[str, Any]
 
 
 class SaveMealBody(BaseModel):
@@ -81,6 +86,27 @@ def analyze_meal_text(body: AnalyzeTextBody):
     if not body.text or not body.text.strip():
         raise HTTPException(status_code=400, detail="text is required")
     return analyze_meal_from_text(body.text.strip()).to_api_dict()
+
+
+@router.post("/recalculate")
+def recalculate_meal_nutrition(body: RecalculateNutritionBody):
+    """
+    Recalculate nutrition from edited ingredients without AI request.
+    Used by web add-meal confirmation UI.
+    """
+    if not body.ingredients:
+        return {
+            "status": "success",
+            "ingredients": {},
+            "nutrition": {
+                "calories": 0,
+                "proteins": 0,
+                "fats": 0,
+                "carbohydrates": 0,
+            },
+        }
+
+    return recalculate_nutrition_from_ingredients(body.ingredients).to_api_dict()
 
 
 @router.post("/save")
