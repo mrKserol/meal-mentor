@@ -183,6 +183,134 @@ class OpenAIVisionService:
                 "error": str(e),
             }
 
+    def analyze_image_with_user_text(
+        self,
+        image_base64: str,
+        user_text: str,
+        previous_ingredients: dict[str, Any] | None = None,
+        previous_prediction: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Analyze food using both original photo and user's correction/description.
+        Used when initial photo recognition was wrong and user typed clarification.
+        """
+        try:
+            clean = image_base64.replace("\n", "").replace("\r", "")
+            url = f"data:image/jpeg;base64,{clean}"
+
+            previous_block = ""
+            if previous_prediction or previous_ingredients:
+                previous_block = f"""
+Previous AI recognition:
+prediction: {previous_prediction or ""}
+
+previous_ingredients:
+{json.dumps(previous_ingredients or {}, ensure_ascii=False, indent=2)}
+""".strip()
+
+            prompt = f"""
+{self.photo_prompt}
+
+{previous_block}
+
+User clarification:
+"{user_text.strip()}"
+
+Important correction mode:
+- The user is correcting the previous AI recognition, not necessarily describing every visible item from scratch.
+- Use the user's clarification as the primary hint for the items they mention.
+- Keep previously detected ingredients if they are still visible in the image and the user did not explicitly remove or deny them.
+- Replace only the ingredients that the user's clarification clearly corrects.
+- If the user says "это пшенная каша и орехи фундук", then replace wrong grain/nut identifications, but do not remove visible eggs, cheese, dates, chocolate, sauces or other side items.
+- Still use the image to estimate visible ingredients and their weights.
+- Estimate ONLY the food currently visible in the image.
+- Do NOT infer the original/full portion size.
+- Do NOT compensate for food that may have already been eaten.
+- Include visible vegetables, fruits, nuts, sweets, sauces, dressings and side ingredients from the image.
+- If an item is visible but uncertain, include it with the most likely name and lower confidence.
+- Return ONLY valid JSON in the same format:
+{{
+  "prediction": "short human-readable dish name in Russian",
+  "ingredients": {{
+    "ingredient_name": grams
+  }},
+  "confidence": 0.0
+}}
+
+Example:
+Previous AI recognition:
+prediction: "Кус-кус с яйцами и сыром"
+previous_ingredients:
+{{
+  "couscous": 150,
+  "boiled egg": 100,
+  "cheese": 30,
+  "almonds": 20,
+  "dates": 40,
+  "chocolate truffle": 15
+}}
+
+User clarification:
+"это пшеная каша и орехи фундук"
+
+Correct output:
+{{
+  "prediction": "Пшенная каша с яйцами, сыром, фундуком, финиками и шоколадным трюфелем",
+  "ingredients": {{
+    "millet porridge": 150,
+    "boiled egg": 100,
+    "cheese": 30,
+    "hazelnuts": 20,
+    "dates": 40,
+    "chocolate truffle": 15
+  }},
+  "confidence": 0.82
+}}
+
+Incorrect:
+- Do not remove "chocolate truffle" just because the user did not mention it.
+- Do not remove dates, eggs or cheese if they are still visible.
+- Do not start the ingredient list from scratch unless the user explicitly says the previous list is completely wrong.
+""".strip()
+
+            resp = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": url}},
+                        ],
+                    }
+                ],
+                max_tokens=self.max_tokens,
+                temperature=self.temperature,
+            )
+
+            choice = resp.choices[0] if resp.choices else None
+            if not choice or not choice.message or not choice.message.content:
+                return {
+                    "status": "error",
+                    "ingredients": {},
+                    "confidence": None,
+                    "prediction": None,
+                    "result": {},
+                    "error": "Empty model response",
+                }
+
+            return self._parse_content(choice.message.content)
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "ingredients": {},
+                "confidence": None,
+                "prediction": None,
+                "result": {},
+                "error": str(e),
+            }
+
     def analyze_text(self, user_text: str) -> dict[str, Any]:
         """Same JSON shape as photo: ingredients + confidence."""
         try:

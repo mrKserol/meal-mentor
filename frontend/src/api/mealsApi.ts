@@ -19,6 +19,30 @@ export async function analyzeMealText(text: string): Promise<Record<string, unkn
   return data;
 }
 
+export async function analyzeMealImageWithText(
+  image_base64: string,
+  text: string,
+  previous_ingredients?: Record<string, IngredientEntry> | null,
+  previous_prediction?: string | null,
+): Promise<Record<string, unknown>> {
+  const { data } = await axios.post<Record<string, unknown>>(`${API_URL}/meals/analyze-image-text`, {
+    image_base64,
+    text,
+    previous_ingredients,
+    previous_prediction,
+  });
+  return data;
+}
+
+export async function recalculateMealNutrition(
+  ingredients: Record<string, IngredientEntry>,
+): Promise<Record<string, unknown>> {
+  const { data } = await axios.post<Record<string, unknown>>(`${API_URL}/meals/recalculate`, {
+    ingredients,
+  });
+  return data;
+}
+
 export async function saveMyMealToDiary(
   accessToken: string,
   payload: {
