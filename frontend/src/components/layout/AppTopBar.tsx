@@ -1,6 +1,7 @@
-import { Bell, ChevronDown, HelpCircle, LogOut, User, UserRound } from "lucide-react";
+import { Bell, ChevronDown, HelpCircle, LogOut, Shield, User, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 
 interface AppTopBarProps {
   title?: string;
@@ -10,9 +11,11 @@ interface AppTopBarProps {
 
 export function AppTopBar({ title = "Meal Mentor", avatarFallback, onLogout }: AppTopBarProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const letter = avatarFallback.trim().slice(0, 1).toUpperCase() || "?";
+  const isAdmin = user?.role === "admin";
 
   useEffect(() => {
     if (!profileMenuOpen) return;
@@ -104,6 +107,21 @@ export function AppTopBar({ title = "Meal Mentor", avatarFallback, onLogout }: A
                 <UserRound className="h-4 w-4 text-slate-500" aria-hidden />
                 Мой профиль
               </button>
+
+              {isAdmin ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    navigate("/admin");
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  <Shield className="h-4 w-4 text-slate-500" aria-hidden />
+                  Администрирование
+                </button>
+              ) : null}
 
               <button
                 type="button"
