@@ -12,6 +12,13 @@ export function YandexCallbackPage() {
 
   useEffect(() => {
     const run = async () => {
+      const oauthError = params.get("error");
+      if (oauthError) {
+        const description = params.get("error_description");
+        setError(description ? `${oauthError}: ${description}` : oauthError);
+        return;
+      }
+
       const code = params.get("code");
       const state = params.get("state");
       const savedState = sessionStorage.getItem("yandex_oauth_state");

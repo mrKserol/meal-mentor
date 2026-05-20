@@ -12,6 +12,7 @@ export function LoginPage() {
   const telegramRedirectUri = import.meta.env.VITE_TELEGRAM_REDIRECT_URI ?? "";
   const yandexClientId = import.meta.env.VITE_YANDEX_CLIENT_ID ?? "";
   const yandexRedirectUri = import.meta.env.VITE_YANDEX_REDIRECT_URI ?? "";
+  const yandexScopes = (import.meta.env.VITE_YANDEX_SCOPES ?? "").trim();
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -60,6 +61,10 @@ export function LoginPage() {
       setError("Яндекс OAuth не настроен. Проверьте VITE_YANDEX_CLIENT_ID и VITE_YANDEX_REDIRECT_URI.");
       return;
     }
+    if (!yandexScopes) {
+      setError("Яндекс OAuth не настроен. Задайте VITE_YANDEX_SCOPES (например: login:info login:email login:avatar login:birthday).");
+      return;
+    }
     setError(null);
     const state = crypto.randomUUID();
     sessionStorage.setItem("yandex_oauth_state", state);
@@ -68,7 +73,7 @@ export function LoginPage() {
       response_type: "code",
       client_id: yandexClientId,
       redirect_uri: yandexRedirectUri,
-      scope: "login:info login:email login:avatar",
+      scope: yandexScopes,
       state,
     });
 

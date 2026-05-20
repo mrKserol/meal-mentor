@@ -123,6 +123,34 @@ def _decode_and_validate_telegram_id_token(id_token: str) -> dict:
     return claims
 
 
+def _parse_yandex_birth_date(value: object) -> date | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+
+    raw = value.strip()
+
+    try:
+        return date.fromisoformat(raw)
+    except ValueError:
+        logger.warning("Unsupported Yandex birthday format: %s", raw)
+        return None
+
+
+def _normalize_yandex_sex(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+
+    raw = value.strip().lower()
+
+    if raw in {"male", "m", "man", "мужской"}:
+        return "male"
+    if raw in {"female", "f", "woman", "женский"}:
+        return "female"
+
+    logger.warning("Unsupported Yandex sex value: %s", raw)
+    return None
+
+
 def get_user_by_identity(
     db: Session,
     *,
@@ -441,6 +469,8 @@ def login_with_yandex_oauth(
             detail="Yandex userinfo response invalid",
         )
 
+    logger.info("yandex userinfo keys: %s", sorted(profile.keys()))
+
     def _as_str(v: object) -> str | None:
         return v.strip() if isinstance(v, str) and v.strip() else None
 
@@ -466,6 +496,9 @@ def login_with_yandex_oauth(
     avatar_id = profile.get("default_avatar_id")
     if isinstance(avatar_id, str) and avatar_id:
         avatar_url = f"https://avatars.yandex.net/get-yapic/{avatar_id}/islands-200"
+
+    birth_date = _parse_yandex_birth_date(profile.get("birthday"))
+    sex = _normalize_yandex_sex(profile.get("sex"))
 
     user = get_user_by_identity(
         db,
@@ -497,6 +530,12 @@ def login_with_yandex_oauth(
         if first_name and not user.first_name:
             user.first_name = first_name
             changed = True
+        if sex and not user.sex:
+            user.sex = sex
+            changed = True
+        if birth_date and not user.birth_date:
+            user.birth_date = birth_date
+            changed = True
         if payload.timezone and not user.timezone:
             user.timezone = payload.timezone
             changed = True
@@ -509,6 +548,8 @@ def login_with_yandex_oauth(
             email=email,
             username=username,
             first_name=first_name or display_name,
+            sex=sex,
+            birth_date=birth_date,
             timezone=payload.timezone or "UTC",
             subscription_status="Free",
             hashed_password=None,
