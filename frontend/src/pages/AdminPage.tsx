@@ -6,6 +6,8 @@ import axios from "axios";
 import {
   cancelSubscription,
   createAdminPlan,
+  deleteAdminPlan,
+  deleteAdminUser,
   deletePlanFeature,
   getAdminPlans,
   getAdminSubscriptions,
@@ -30,6 +32,8 @@ import {
   featureOptionLabel,
   getDefaultFeaturePayload,
 } from "../admin/featurePresets";
+import { AdminConfirmDialog } from "../components/admin/AdminConfirmDialog";
+import { SwipeableUserRow } from "../components/admin/SwipeableUserRow";
 import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
 
@@ -72,6 +76,8 @@ export function AdminPage() {
   const [subscriptions, setSubscriptions] = useState<AdminSubscription[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [planFormMode, setPlanFormMode] = useState<"create" | "edit">("create");
+  const [deleteConfirmUser, setDeleteConfirmUser] = useState<AdminUser | null>(null);
+  const [deleteConfirmPlan, setDeleteConfirmPlan] = useState(false);
   const [featureForm, setFeatureForm] = useState<AdminPlanFeaturePayload>(emptyFeature);
   const [overrideForm, setOverrideForm] = useState<AdminUserOverridePayload>(emptyOverride);
   const [grantPlanId, setGrantPlanId] = useState<number | "">("");
@@ -214,6 +220,38 @@ export function AdminPage() {
     });
   };
 
+  const confirmDeleteUser = () => {
+    if (!deleteConfirmUser) return;
+    const target = deleteConfirmUser;
+    void runAction(async () => {
+      if (!token) return;
+      await deleteAdminUser(token, target.id);
+      if (selectedUser?.id === target.id) {
+        setSelectedUser(null);
+      }
+      setDeleteConfirmUser(null);
+    });
+  };
+
+  const confirmDeletePlan = () => {
+    if (!selectedPlanId) return;
+    const planId = selectedPlanId;
+    void runAction(async () => {
+      if (!token) return;
+      const result = await deleteAdminPlan(token, planId);
+      const fullyDeleted =
+        result !== null &&
+        typeof result === "object" &&
+        "deleted" in result &&
+        Boolean((result as { deleted?: boolean }).deleted);
+      if (!fullyDeleted) {
+        setError("Тариф привязан к подпискам и был деактивирован вместо удаления.");
+      }
+      resetPlanForm();
+      setDeleteConfirmPlan(false);
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6">
@@ -289,47 +327,68 @@ export function AdminPage() {
                   </thead>
                   <tbody>
                     {users.map((adminUser) => (
-                      <tr key={adminUser.id} className="border-t border-slate-100">
-                        <td className="px-2 py-3 md:px-3">
-                          <button type="button" onClick={() => selectUser(adminUser)} className="max-w-full truncate text-left font-semibold text-green-700">
-                            {userLabel(adminUser)}
-                          </button>
-                          <p className="truncate text-xs text-slate-500">{adminUser.email || "—"}</p>
-                          <p className="text-[11px] text-slate-400">ID {adminUser.id}</p>
-                        </td>
-                        <td className="hidden truncate px-2 py-3 md:table-cell md:px-3">{adminUser.provider || "—"}</td>
-                        <td className="hidden px-2 py-3 md:table-cell md:px-3">{adminUser.role}</td>
-                        <td className="hidden px-2 py-3 md:table-cell md:px-3">{adminUser.status}</td>
-                        <td className="truncate px-2 py-3 md:px-3">{adminUser.subscription_status}</td>
-                        <td className="px-2 py-3 md:px-3">
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              disabled={saving}
-                              onClick={() =>
-                                void runAction(async () => {
-                                  if (!token) return;
-                                  await updateAdminUser(token, adminUser.id, { role: adminUser.role === "admin" ? "user" : "admin" });
-                                })
-                              }
-                              className="rounded-full border border-green-200 px-3 py-1 text-xs font-semibold text-green-700 hover:bg-green-50"
-                            >
-                              {adminUser.role === "admin" ? "Сделать user" : "Сделать admin"}
-                            </button>
-                            <button
-                              type="button"
-                              disabled={saving}
-                              onClick={() =>
-                                void runAction(async () => {
-                                  if (!token) return;
-                                  await updateAdminUser(token, adminUser.id, { status: adminUser.status === "blocked" ? "active" : "blocked" });
-                                })
-                              }
-                              className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                            >
-                              {adminUser.status === "blocked" ? "Разблокировать" : "Заблокировать"}
-                            </button>
-                          </div>
+                      <tr key={adminUser.id}>
+                        <td colSpan={6} className="p-0">
+                          <SwipeableUserRow
+                            disabled={saving || adminUser.role === "admin" || adminUser.id === user?.id}
+                            onDeleteRequest={() => setDeleteConfirmUser(adminUser)}
+                          >
+                            <div className="flex w-full text-left text-sm">
+                              <div className="w-[38%] shrink-0 px-2 py-3 md:px-3">
+                                <button
+                                  type="button"
+                                  onClick={() => selectUser(adminUser)}
+                                  className="max-w-full truncate text-left font-semibold text-green-700"
+                                >
+                                  {userLabel(adminUser)}
+                                </button>
+                                <p className="truncate text-xs text-slate-500">{adminUser.email || "—"}</p>
+                                <p className="text-[11px] text-slate-400">ID {adminUser.id}</p>
+                              </div>
+                              <div className="hidden w-[14%] truncate px-2 py-3 md:block md:px-3">
+                                {adminUser.provider || "—"}
+                              </div>
+                              <div className="hidden w-[10%] px-2 py-3 md:block md:px-3">{adminUser.role}</div>
+                              <div className="hidden w-[10%] px-2 py-3 md:block md:px-3">{adminUser.status}</div>
+                              <div className="w-[22%] truncate px-2 py-3 md:w-[14%] md:px-3">
+                                {adminUser.subscription_status}
+                              </div>
+                              <div className="w-[40%] px-2 py-3 md:w-[14%] md:px-3">
+                                <div className="flex flex-wrap gap-2">
+                                  <button
+                                    type="button"
+                                    disabled={saving}
+                                    onClick={() =>
+                                      void runAction(async () => {
+                                        if (!token) return;
+                                        await updateAdminUser(token, adminUser.id, {
+                                          role: adminUser.role === "admin" ? "user" : "admin",
+                                        });
+                                      })
+                                    }
+                                    className="rounded-full border border-green-200 px-3 py-1 text-xs font-semibold text-green-700 hover:bg-green-50"
+                                  >
+                                    {adminUser.role === "admin" ? "Сделать user" : "Сделать admin"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={saving}
+                                    onClick={() =>
+                                      void runAction(async () => {
+                                        if (!token) return;
+                                        await updateAdminUser(token, adminUser.id, {
+                                          status: adminUser.status === "blocked" ? "active" : "blocked",
+                                        });
+                                      })
+                                    }
+                                    className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                  >
+                                    {adminUser.status === "blocked" ? "Разблокировать" : "Заблокировать"}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </SwipeableUserRow>
                         </td>
                       </tr>
                     ))}
@@ -494,6 +553,16 @@ export function AdminPage() {
                 <button type="button" disabled={saving || !planForm.code || !planForm.name} onClick={savePlan} className="rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50">
                   Сохранить тариф
                 </button>
+                {planFormMode === "edit" && selectedPlanId ? (
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => setDeleteConfirmPlan(true)}
+                    className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
+                  >
+                    Удалить тариф
+                  </button>
+                ) : null}
               </div>
 
               {selectedPlan ? (
@@ -608,6 +677,28 @@ export function AdminPage() {
           </section>
         ) : null}
       </div>
+
+      <AdminConfirmDialog
+        open={deleteConfirmUser !== null}
+        title="Удаление пользователя"
+        message="Вы уверены, что хотите удалить пользователя?"
+        onConfirm={confirmDeleteUser}
+        onCancel={() => setDeleteConfirmUser(null)}
+        loading={saving}
+      />
+
+      <AdminConfirmDialog
+        open={deleteConfirmPlan}
+        title="Удаление тарифа"
+        message={
+          selectedPlan
+            ? `Удалить тариф «${selectedPlan.name}»? Если есть подписки, тариф будет только деактивирован.`
+            : "Удалить выбранный тариф?"
+        }
+        onConfirm={confirmDeletePlan}
+        onCancel={() => setDeleteConfirmPlan(false)}
+        loading={saving}
+      />
     </AppShell>
   );
 }

@@ -5,7 +5,19 @@ from sqlalchemy import String, cast, or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth.dependencies import require_admin
-from app.db.models import Plan, PlanFeature, Subscription, User, UserFeatureOverride
+from app.db.models import (
+    DailySummary,
+    FeatureUsage,
+    Meal,
+    Plan,
+    PlanFeature,
+    RecommendationsLog,
+    RefreshToken,
+    Subscription,
+    User,
+    UserFeatureOverride,
+    UserMeasurement,
+)
 from app.db.repository import get_active_subscription
 from app.db.session import get_db
 from app.schemas.admin import (
@@ -201,6 +213,43 @@ def unblock_user(user_id: int, admin: User = Depends(require_admin), db: Session
     db.commit()
     db.refresh(user)
     return _serialize_user_list_item(db, user)
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(
+    user_id: int,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    if user_id == admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Нельзя удалить свою учётную запись",
+        )
+
+    user = _get_user_or_404(db, user_id)
+    if user.role == "admin":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Нельзя удалить пользователя с ролью admin",
+        )
+
+    for meal in db.query(Meal).filter(Meal.user_id == user_id).all():
+        db.delete(meal)
+
+    db.query(DailySummary).filter(DailySummary.user_id == user_id).delete(synchronize_session=False)
+    db.query(Subscription).filter(Subscription.user_id == user_id).delete(synchronize_session=False)
+    db.query(Subscription).filter(Subscription.activated_by_admin_id == user_id).update(
+        {Subscription.activated_by_admin_id: None},
+        synchronize_session=False,
+    )
+    db.query(RecommendationsLog).filter(RecommendationsLog.user_id == user_id).delete(synchronize_session=False)
+    db.query(UserMeasurement).filter(UserMeasurement.user_id == user_id).delete(synchronize_session=False)
+    db.query(FeatureUsage).filter(FeatureUsage.user_id == user_id).delete(synchronize_session=False)
+    db.query(RefreshToken).filter(RefreshToken.user_id == user_id).delete(synchronize_session=False)
+
+    db.delete(user)
+    db.commit()
 
 
 @router.get("/plans", response_model=list[AdminPlanResponse])

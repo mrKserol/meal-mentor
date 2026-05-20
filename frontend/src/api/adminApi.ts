@@ -129,6 +129,10 @@ export const updateAdminUser = async (token: string, userId: number, payload: Ad
   return response.data;
 };
 
+export const deleteAdminUser = async (token: string, userId: number): Promise<void> => {
+  await authClient.delete(`/admin/users/${userId}`, { headers: authHeaders(token) });
+};
+
 export const getAdminPlans = async (token: string) => {
   const response = await authClient.get<AdminPlan[]>("/admin/plans", { headers: authHeaders(token) });
   return response.data;
