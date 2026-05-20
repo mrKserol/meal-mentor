@@ -185,4 +185,4 @@ cython_debug/
 meal_mentor.db
 
 # User-uploaded meal images (local dev)
-data/uploads/
+data/uploads/.DS_Store
