@@ -346,6 +346,30 @@ class DailySummary(Base):
     user = relationship("User")
 
 
+class FeatureUsage(Base):
+    __tablename__ = "feature_usage"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "feature_key",
+            "period_type",
+            "period_start",
+            name="uq_feature_usage_period",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    feature_key = Column(String(64), nullable=False, index=True)
+    period_type = Column(String(16), nullable=False)
+    period_start = Column(Date, nullable=False, index=True)
+    used_count = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User")
+
+
 class Subscription(Base):
     __tablename__ = "subscriptions"
 

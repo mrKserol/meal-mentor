@@ -33,6 +33,7 @@ export interface AdminPlan {
 export interface AdminUser {
   id: number;
   email: string | null;
+  provider: string | null;
   telegram_id: number | null;
   username: string | null;
   first_name: string | null;
@@ -126,6 +127,10 @@ export const getAdminUser = async (token: string, userId: number) => {
 export const updateAdminUser = async (token: string, userId: number, payload: AdminUserUpdatePayload) => {
   const response = await authClient.patch<AdminUser>(`/admin/users/${userId}`, payload, { headers: authHeaders(token) });
   return response.data;
+};
+
+export const deleteAdminUser = async (token: string, userId: number): Promise<void> => {
+  await authClient.delete(`/admin/users/${userId}`, { headers: authHeaders(token) });
 };
 
 export const getAdminPlans = async (token: string) => {

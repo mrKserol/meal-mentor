@@ -99,9 +99,15 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
   const runAnalyzeImage = async (file: File) => {
     setUi({ kind: "busy", message: "Анализирую фото…" });
     try {
+      const sessionOk = await validateSession();
+      const token = getAccessToken();
+      if (!sessionOk || !token) {
+        setUi({ kind: "error", message: "Сессия истекла. Войдите снова." });
+        return;
+      }
       const b64 = await fileToBase64(file);
       photoB64Ref.current = b64;
-      const raw = await analyzeMealImageBase64(b64);
+      const raw = await analyzeMealImageBase64(token, b64);
       const parsed = parseAnalyzeResponse(raw);
       if (parsed.status !== "success") {
         setUi({ kind: "error", message: parsed.error || "Не удалось разобрать еду на фото." });
@@ -148,15 +154,22 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
       message: mode === "after_photo" ? "Анализирую фото и описание…" : "Анализирую описание…",
     });
     try {
+      const sessionOk = await validateSession();
+      const token = getAccessToken();
+      if (!sessionOk || !token) {
+        setUi({ kind: "error", message: "Сессия истекла. Войдите снова." });
+        return;
+      }
       const raw =
         mode === "after_photo" && photoB64Ref.current
           ? await analyzeMealImageWithText(
+              token,
               photoB64Ref.current,
               trimmed,
               previousMealData?.ingredients ?? null,
               previousMealData?.prediction ?? null,
             )
-          : await analyzeMealText(trimmed);
+          : await analyzeMealText(token, trimmed);
       const parsed = parseAnalyzeResponse(raw);
       if (parsed.status !== "success") {
         setUi({ kind: "error", message: parsed.error || "Ошибка анализа текста." });

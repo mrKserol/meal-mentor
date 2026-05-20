@@ -6,6 +6,8 @@ import axios from "axios";
 import {
   cancelSubscription,
   createAdminPlan,
+  deleteAdminPlan,
+  deleteAdminUser,
   deletePlanFeature,
   getAdminPlans,
   getAdminSubscriptions,
@@ -23,39 +25,19 @@ import {
   type AdminUserDetail,
   type AdminUserOverridePayload,
 } from "../api/adminApi";
+import {
+  emptyFeature,
+  emptyOverride,
+  FEATURE_PRESETS,
+  featureOptionLabel,
+  getDefaultFeaturePayload,
+} from "../admin/featurePresets";
+import { AdminConfirmDialog } from "../components/admin/AdminConfirmDialog";
+import { SwipeableUserRow } from "../components/admin/SwipeableUserRow";
 import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
 
-const FEATURE_PRESETS = [
-  "ai_chat_enabled",
-  "food_photo_recognition_enabled",
-  "label_analysis_enabled",
-  "daily_ai_requests_limit",
-  "monthly_photo_recognition_limit",
-  "monthly_label_analysis_limit",
-  "nutrition_diary_enabled",
-  "advanced_nutrients_enabled",
-];
-
 type TabKey = "users" | "plans" | "subscriptions";
-
-const emptyFeature: AdminPlanFeaturePayload = {
-  feature_key: "ai_chat_enabled",
-  feature_name: "ИИ-чат",
-  value_type: "boolean",
-  value_bool: true,
-  value_int: null,
-  value_text: null,
-};
-
-const emptyOverride: AdminUserOverridePayload = {
-  feature_key: "ai_chat_enabled",
-  value_type: "boolean",
-  value_bool: true,
-  value_int: null,
-  value_text: null,
-  reason: "",
-};
 
 function formatDate(value: string | null | undefined) {
   if (!value) return "—";
@@ -93,6 +75,9 @@ export function AdminPage() {
   const [plans, setPlans] = useState<AdminPlan[]>([]);
   const [subscriptions, setSubscriptions] = useState<AdminSubscription[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+  const [planFormMode, setPlanFormMode] = useState<"create" | "edit">("create");
+  const [deleteConfirmUser, setDeleteConfirmUser] = useState<AdminUser | null>(null);
+  const [deleteConfirmPlan, setDeleteConfirmPlan] = useState(false);
   const [featureForm, setFeatureForm] = useState<AdminPlanFeaturePayload>(emptyFeature);
   const [overrideForm, setOverrideForm] = useState<AdminUserOverridePayload>(emptyOverride);
   const [grantPlanId, setGrantPlanId] = useState<number | "">("");
@@ -111,8 +96,9 @@ export function AdminPage() {
   const token = getAccessToken();
   const avatarFallback = user?.first_name?.[0] ?? user?.email?.[0] ?? "A";
   const selectedPlan = useMemo(
-    () => plans.find((plan) => plan.id === selectedPlanId) ?? null,
-    [plans, selectedPlanId],
+    () =>
+      planFormMode === "edit" ? (plans.find((plan) => plan.id === selectedPlanId) ?? null) : null,
+    [plans, selectedPlanId, planFormMode],
   );
 
   const loadAdminData = useCallback(async () => {
@@ -136,9 +122,6 @@ export function AdminPage() {
       }
       if (plansResult.status === "fulfilled") {
         setPlans(plansResult.value);
-        if (!selectedPlanId && plansResult.value.length > 0) {
-          setSelectedPlanId(plansResult.value[0].id);
-        }
       }
       if (subscriptionsResult.status === "fulfilled") {
         setSubscriptions(subscriptionsResult.value);
@@ -153,7 +136,7 @@ export function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [getAccessToken, navigate, query, selectedPlanId, validateSession]);
+  }, [getAccessToken, navigate, query, validateSession]);
 
   useEffect(() => {
     void loadAdminData();
@@ -197,15 +180,18 @@ export function AdminPage() {
   const savePlan = () => {
     void runAction(async () => {
       if (!token) return;
-      if (selectedPlan) {
-        await updateAdminPlan(token, selectedPlan.id, planForm);
+      if (planFormMode === "edit" && selectedPlanId) {
+        await updateAdminPlan(token, selectedPlanId, planForm);
       } else {
-        await createAdminPlan(token, planForm);
+        const created = await createAdminPlan(token, planForm);
+        setPlanFormMode("edit");
+        setSelectedPlanId(created.id);
       }
     });
   };
 
   const editPlan = (plan: AdminPlan) => {
+    setPlanFormMode("edit");
     setSelectedPlanId(plan.id);
     setPlanForm({
       code: plan.code,
@@ -220,6 +206,7 @@ export function AdminPage() {
   };
 
   const resetPlanForm = () => {
+    setPlanFormMode("create");
     setSelectedPlanId(null);
     setPlanForm({
       code: "",
@@ -230,6 +217,38 @@ export function AdminPage() {
       period_days: 30,
       is_active: true,
       sort_order: 100,
+    });
+  };
+
+  const confirmDeleteUser = () => {
+    if (!deleteConfirmUser) return;
+    const target = deleteConfirmUser;
+    void runAction(async () => {
+      if (!token) return;
+      await deleteAdminUser(token, target.id);
+      if (selectedUser?.id === target.id) {
+        setSelectedUser(null);
+      }
+      setDeleteConfirmUser(null);
+    });
+  };
+
+  const confirmDeletePlan = () => {
+    if (!selectedPlanId) return;
+    const planId = selectedPlanId;
+    void runAction(async () => {
+      if (!token) return;
+      const result = await deleteAdminPlan(token, planId);
+      const fullyDeleted =
+        result !== null &&
+        typeof result === "object" &&
+        "deleted" in result &&
+        Boolean((result as { deleted?: boolean }).deleted);
+      if (!fullyDeleted) {
+        setError("Тариф привязан к подпискам и был деактивирован вместо удаления.");
+      }
+      resetPlanForm();
+      setDeleteConfirmPlan(false);
     });
   };
 
@@ -283,7 +302,7 @@ export function AdminPage() {
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Поиск: email, username, Telegram ID"
+                  placeholder="Поиск: email, имя, username, provider"
                   className="min-w-0 flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-green-500"
                 />
                 <button
@@ -294,64 +313,82 @@ export function AdminPage() {
                   Найти
                 </button>
               </div>
-              <div className="mt-4 overflow-x-auto">
-                <table className="min-w-[760px] w-full text-left text-sm">
+              <div className="mt-4 md:overflow-visible">
+                <table className="w-full table-fixed text-left text-sm">
                   <thead className="text-xs uppercase text-slate-500">
                     <tr>
-                      <th className="px-3 py-2">ID</th>
-                      <th className="px-3 py-2">Имя/email</th>
-                      <th className="px-3 py-2">Telegram ID</th>
-                      <th className="px-3 py-2">Роль</th>
-                      <th className="px-3 py-2">Статус</th>
-                      <th className="px-3 py-2">Подписка</th>
-                      <th className="px-3 py-2">Создан</th>
-                      <th className="px-3 py-2">Действия</th>
+                      <th className="w-[38%] px-2 py-2 md:px-3">Пользователь</th>
+                      <th className="hidden w-[14%] px-2 py-2 md:table-cell md:px-3">Provider</th>
+                      <th className="hidden w-[10%] px-2 py-2 md:table-cell md:px-3">Роль</th>
+                      <th className="hidden w-[10%] px-2 py-2 md:table-cell md:px-3">Статус</th>
+                      <th className="w-[22%] px-2 py-2 md:w-[14%] md:px-3">Подписка</th>
+                      <th className="w-[40%] px-2 py-2 md:w-[14%] md:px-3">Действия</th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.map((adminUser) => (
-                      <tr key={adminUser.id} className="border-t border-slate-100">
-                        <td className="px-3 py-3 font-medium text-slate-900">{adminUser.id}</td>
-                        <td className="px-3 py-3">
-                          <button type="button" onClick={() => selectUser(adminUser)} className="text-left font-semibold text-green-700">
-                            {userLabel(adminUser)}
-                          </button>
-                          <p className="text-xs text-slate-500">{adminUser.username || "—"}</p>
-                        </td>
-                        <td className="px-3 py-3">{adminUser.telegram_id || "—"}</td>
-                        <td className="px-3 py-3">{adminUser.role}</td>
-                        <td className="px-3 py-3">{adminUser.status}</td>
-                        <td className="px-3 py-3">{adminUser.subscription_status}</td>
-                        <td className="px-3 py-3">{formatDate(adminUser.created_at)}</td>
-                        <td className="px-3 py-3">
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              disabled={saving}
-                              onClick={() =>
-                                void runAction(async () => {
-                                  if (!token) return;
-                                  await updateAdminUser(token, adminUser.id, { role: adminUser.role === "admin" ? "user" : "admin" });
-                                })
-                              }
-                              className="rounded-full border border-green-200 px-3 py-1 text-xs font-semibold text-green-700 hover:bg-green-50"
-                            >
-                              {adminUser.role === "admin" ? "Сделать user" : "Сделать admin"}
-                            </button>
-                            <button
-                              type="button"
-                              disabled={saving}
-                              onClick={() =>
-                                void runAction(async () => {
-                                  if (!token) return;
-                                  await updateAdminUser(token, adminUser.id, { status: adminUser.status === "blocked" ? "active" : "blocked" });
-                                })
-                              }
-                              className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                            >
-                              {adminUser.status === "blocked" ? "Разблокировать" : "Заблокировать"}
-                            </button>
-                          </div>
+                      <tr key={adminUser.id}>
+                        <td colSpan={6} className="p-0">
+                          <SwipeableUserRow
+                            disabled={saving || adminUser.role === "admin" || adminUser.id === user?.id}
+                            onDeleteRequest={() => setDeleteConfirmUser(adminUser)}
+                          >
+                            <div className="flex w-full text-left text-sm">
+                              <div className="w-[38%] shrink-0 px-2 py-3 md:px-3">
+                                <button
+                                  type="button"
+                                  onClick={() => selectUser(adminUser)}
+                                  className="max-w-full truncate text-left font-semibold text-green-700"
+                                >
+                                  {userLabel(adminUser)}
+                                </button>
+                                <p className="truncate text-xs text-slate-500">{adminUser.email || "—"}</p>
+                                <p className="text-[11px] text-slate-400">ID {adminUser.id}</p>
+                              </div>
+                              <div className="hidden w-[14%] truncate px-2 py-3 md:block md:px-3">
+                                {adminUser.provider || "—"}
+                              </div>
+                              <div className="hidden w-[10%] px-2 py-3 md:block md:px-3">{adminUser.role}</div>
+                              <div className="hidden w-[10%] px-2 py-3 md:block md:px-3">{adminUser.status}</div>
+                              <div className="w-[22%] truncate px-2 py-3 md:w-[14%] md:px-3">
+                                {adminUser.subscription_status}
+                              </div>
+                              <div className="w-[40%] px-2 py-3 md:w-[14%] md:px-3">
+                                <div className="flex flex-wrap gap-2">
+                                  <button
+                                    type="button"
+                                    disabled={saving}
+                                    onClick={() =>
+                                      void runAction(async () => {
+                                        if (!token) return;
+                                        await updateAdminUser(token, adminUser.id, {
+                                          role: adminUser.role === "admin" ? "user" : "admin",
+                                        });
+                                      })
+                                    }
+                                    className="rounded-full border border-green-200 px-3 py-1 text-xs font-semibold text-green-700 hover:bg-green-50"
+                                  >
+                                    {adminUser.role === "admin" ? "Сделать user" : "Сделать admin"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={saving}
+                                    onClick={() =>
+                                      void runAction(async () => {
+                                        if (!token) return;
+                                        await updateAdminUser(token, adminUser.id, {
+                                          status: adminUser.status === "blocked" ? "active" : "blocked",
+                                        });
+                                      })
+                                    }
+                                    className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                  >
+                                    {adminUser.status === "blocked" ? "Разблокировать" : "Заблокировать"}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </SwipeableUserRow>
                         </td>
                       </tr>
                     ))}
@@ -371,7 +408,7 @@ export function AdminPage() {
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <Info label="Роль" value={selectedUser.role} />
                     <Info label="Статус" value={selectedUser.status} />
-                    <Info label="Telegram" value={selectedUser.telegram_id || "—"} />
+                    <Info label="Provider" value={selectedUser.provider || "—"} />
                     <Info label="Подписка" value={selectedUser.subscription_status} />
                     <Info label="Создан" value={formatDate(selectedUser.created_at)} />
                     <Info label="Активна до" value={formatDate(selectedUser.active_subscription_ends_at)} />
@@ -452,36 +489,51 @@ export function AdminPage() {
 
         {tab === "plans" ? (
           <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
               {plans.map((plan) => (
                 <button
                   key={plan.id}
                   type="button"
                   onClick={() => editPlan(plan)}
-                  className="rounded-3xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-green-200 hover:shadow-md"
+                  className={`rounded-2xl border bg-white p-3 text-left shadow-sm transition hover:border-green-300 ${
+                    planFormMode === "edit" && selectedPlanId === plan.id
+                      ? "border-green-500 ring-1 ring-green-200"
+                      : "border-slate-200"
+                  }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-green-700">{plan.code}</p>
-                      <h2 className="mt-1 text-xl font-bold text-slate-950">{plan.name}</h2>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-slate-950">{plan.name}</p>
+                      <p className="truncate text-xs text-slate-500">{plan.code}</p>
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${plan.is_active ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                        plan.is_active ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
                       {plan.is_active ? "active" : "off"}
                     </span>
                   </div>
-                  <p className="mt-3 text-2xl font-bold text-slate-950">
-                    {plan.price_amount} {plan.currency}
-                  </p>
-                  <p className="text-sm text-slate-500">{plan.period_days} дней · features: {plan.features.length}</p>
+                  <div className="mt-2 flex items-center justify-between gap-2 text-xs text-slate-600">
+                    <span>
+                      {plan.price_amount} {plan.currency}
+                    </span>
+                    <span>{plan.period_days} дн.</span>
+                    <span>{plan.features.length} фич</span>
+                  </div>
                 </button>
               ))}
             </div>
 
             <aside className="space-y-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-xl font-bold text-slate-950">{selectedPlan ? "Редактировать тариф" : "Новый тариф"}</h2>
-                <button type="button" onClick={resetPlanForm} className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600">
-                  Новый
+                <h2 className="text-lg font-bold text-slate-950">
+                  {planFormMode === "edit" && selectedPlan
+                    ? `Редактирование тарифа: ${selectedPlan.name}`
+                    : "Создание нового тарифа"}
+                </h2>
+                <button type="button" onClick={resetPlanForm} className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                  + Новый тариф
                 </button>
               </div>
               <div className="grid gap-2">
@@ -501,6 +553,16 @@ export function AdminPage() {
                 <button type="button" disabled={saving || !planForm.code || !planForm.name} onClick={savePlan} className="rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50">
                   Сохранить тариф
                 </button>
+                {planFormMode === "edit" && selectedPlanId ? (
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => setDeleteConfirmPlan(true)}
+                    className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
+                  >
+                    Удалить тариф
+                  </button>
+                ) : null}
               </div>
 
               {selectedPlan ? (
@@ -615,6 +677,28 @@ export function AdminPage() {
           </section>
         ) : null}
       </div>
+
+      <AdminConfirmDialog
+        open={deleteConfirmUser !== null}
+        title="Удаление пользователя"
+        message="Вы уверены, что хотите удалить пользователя?"
+        onConfirm={confirmDeleteUser}
+        onCancel={() => setDeleteConfirmUser(null)}
+        loading={saving}
+      />
+
+      <AdminConfirmDialog
+        open={deleteConfirmPlan}
+        title="Удаление тарифа"
+        message={
+          selectedPlan
+            ? `Удалить тариф «${selectedPlan.name}»? Если есть подписки, тариф будет только деактивирован.`
+            : "Удалить выбранный тариф?"
+        }
+        onConfirm={confirmDeletePlan}
+        onCancel={() => setDeleteConfirmPlan(false)}
+        loading={saving}
+      />
     </AppShell>
   );
 }
@@ -642,12 +726,32 @@ function FeatureValueForm<T extends AdminPlanFeaturePayload | AdminUserOverrideP
     <div className="grid gap-2">
       <select
         value={value.feature_key}
-        onChange={(event) => setValue({ feature_key: event.target.value } as Partial<T>)}
+        onChange={(event) => {
+          const key = event.target.value;
+          const defaults = getDefaultFeaturePayload(key);
+          if ("feature_name" in value) {
+            onChange({
+              ...value,
+              ...defaults,
+              reason: "reason" in value ? value.reason : undefined,
+            } as T);
+          } else {
+            onChange({
+              ...value,
+              feature_key: key,
+              value_type: defaults.value_type,
+              value_bool: defaults.value_bool,
+              value_int: defaults.value_int,
+              value_text: defaults.value_text,
+              reason: "reason" in value ? value.reason : undefined,
+            } as T);
+          }
+        }}
         className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
       >
         {FEATURE_PRESETS.map((key) => (
           <option key={key} value={key}>
-            {key}
+            {featureOptionLabel(key)}
           </option>
         ))}
       </select>
