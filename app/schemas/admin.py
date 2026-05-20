@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class AdminUserListItem(BaseModel):
     id: int
     email: str | None = None
+    provider: str | None = None
     telegram_id: int | None = None
     username: str | None = None
     first_name: str | None = None

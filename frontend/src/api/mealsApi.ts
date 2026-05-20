@@ -9,28 +9,44 @@ if (!API_URL) {
   throw new Error("VITE_API_URL is not defined");
 }
 
-export async function analyzeMealImageBase64(image_base64: string): Promise<Record<string, unknown>> {
-  const { data } = await axios.post<Record<string, unknown>>(`${API_URL}/meals/analyze`, { image_base64 });
+export async function analyzeMealImageBase64(
+  accessToken: string,
+  image_base64: string,
+): Promise<Record<string, unknown>> {
+  const { data } = await authClient.post<Record<string, unknown>>(
+    "/users/me/meals/analyze",
+    { image_base64 },
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
   return data;
 }
 
-export async function analyzeMealText(text: string): Promise<Record<string, unknown>> {
-  const { data } = await axios.post<Record<string, unknown>>(`${API_URL}/meals/analyze-text`, { text });
+export async function analyzeMealText(accessToken: string, text: string): Promise<Record<string, unknown>> {
+  const { data } = await authClient.post<Record<string, unknown>>(
+    "/users/me/meals/analyze-text",
+    { text },
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
   return data;
 }
 
 export async function analyzeMealImageWithText(
+  accessToken: string,
   image_base64: string,
   text: string,
   previous_ingredients?: Record<string, IngredientEntry> | null,
   previous_prediction?: string | null,
 ): Promise<Record<string, unknown>> {
-  const { data } = await axios.post<Record<string, unknown>>(`${API_URL}/meals/analyze-image-text`, {
-    image_base64,
-    text,
-    previous_ingredients,
-    previous_prediction,
-  });
+  const { data } = await authClient.post<Record<string, unknown>>(
+    "/users/me/meals/analyze-image-text",
+    {
+      image_base64,
+      text,
+      previous_ingredients,
+      previous_prediction,
+    },
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
   return data;
 }
 

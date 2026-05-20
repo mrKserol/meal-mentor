@@ -22,6 +22,7 @@ import {
   Wheat,
 } from "lucide-react";
 
+import { authClient } from "../api/authApi";
 import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
 import type { ProfileUpdatePayload, User } from "../types/auth";
@@ -78,7 +79,7 @@ function userToForm(u: User): ProfileFormState {
   };
 }
 
-function buildPayload(form: ProfileFormState): ProfileUpdatePayload {
+function buildPayload(form: ProfileFormState, includeAllergens: boolean): ProfileUpdatePayload {
   const payload: ProfileUpdatePayload = {};
   if (form.sex) payload.sex = form.sex as ProfileUpdatePayload["sex"];
   if (form.birth_date) payload.birth_date = form.birth_date;
@@ -89,21 +90,42 @@ function buildPayload(form: ProfileFormState): ProfileUpdatePayload {
     payload.activity_level = form.activity_level as ProfileUpdatePayload["activity_level"];
   }
   if (form.target_weight_kg) payload.target_weight_kg = Number(form.target_weight_kg);
-  payload.allergens = [...form.allergens];
+  if (includeAllergens) {
+    payload.allergens = [...form.allergens];
+  }
   return payload;
 }
 
 export function ProfileOnboardingPage() {
   const navigate = useNavigate();
-  const { user, updateProfile, validateSession, logout } = useAuth();
+  const { user, updateProfile, validateSession, logout, getAccessToken } = useAuth();
   const [form, setForm] = useState<ProfileFormState>(emptyForm);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [allergensEnabled, setAllergensEnabled] = useState(true);
 
   useEffect(() => {
     void validateSession();
   }, [validateSession]);
+
+  useEffect(() => {
+    const loadEntitlements = async () => {
+      const ok = await validateSession();
+      const token = getAccessToken();
+      if (!ok || !token) return;
+      try {
+        const { data } = await authClient.get<{ features?: Record<string, unknown> }>("/users/me/entitlements", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const flag = data.features?.allergens_enabled;
+        setAllergensEnabled(flag === true || flag === 1);
+      } catch {
+        setAllergensEnabled(false);
+      }
+    };
+    void loadEntitlements();
+  }, [getAccessToken, validateSession]);
 
   useEffect(() => {
     if (!user) return;
@@ -130,7 +152,7 @@ export function ProfileOnboardingPage() {
     setSuccess(null);
     setIsSaving(true);
     try {
-      await updateProfile(buildPayload(form));
+      await updateProfile(buildPayload(form, allergensEnabled));
       setSuccess("Профиль обновлен");
       window.setTimeout(() => setSuccess(null), 5000);
     } catch (err) {
@@ -305,11 +327,14 @@ export function ProfileOnboardingPage() {
                 <div>
                   <h2 className="text-2xl font-semibold text-slate-900">Аллергены</h2>
                   <p className="text-sm text-slate-500">
-                    Выберите продукты, которые вам противопоказаны.
+                    {allergensEnabled
+                      ? "Выберите продукты, которые вам противопоказаны."
+                      : "Учёт аллергенов доступен на расширенных тарифах."}
                   </p>
                 </div>
               </div>
 
+              {allergensEnabled ? (
               <div className="grid min-w-0 grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
                 {ALLERGEN_OPTIONS.map(({ key, label, Icon }) => {
                   const selected = form.allergens.includes(key);
@@ -345,6 +370,11 @@ export function ProfileOnboardingPage() {
                   );
                 })}
               </div>
+              ) : (
+                <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  Обновите тариф, чтобы отмечать аллергены в профиле и получать персональные подсказки с их учётом.
+                </p>
+              )}
             </div>
           </section>
 

@@ -27,7 +27,12 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 def _get_user_or_404(db: Session, user_id: int) -> User:
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (
+        db.query(User)
+        .options(joinedload(User.auth_identities))
+        .filter(User.id == user_id)
+        .first()
+    )
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user
@@ -62,11 +67,22 @@ def _serialize_subscription(sub: Subscription) -> AdminSubscriptionResponse:
     )
 
 
+def _get_user_provider(user: User) -> str:
+    if user.auth_identities:
+        return ", ".join(sorted({identity.provider for identity in user.auth_identities}))
+    if user.telegram_id:
+        return "telegram"
+    if user.email:
+        return "email"
+    return "unknown"
+
+
 def _serialize_user_list_item(db: Session, user: User) -> AdminUserListItem:
     active_sub = get_active_subscription(db, user.id)
     return AdminUserListItem(
         id=user.id,
         email=user.email,
+        provider=_get_user_provider(user),
         telegram_id=user.telegram_id,
         username=user.username,
         first_name=user.first_name,
@@ -99,7 +115,7 @@ def list_users(
     db: Session = Depends(get_db),
 ):
     _ = admin
-    query = db.query(User).order_by(User.created_at.desc())
+    query = db.query(User).options(joinedload(User.auth_identities)).order_by(User.created_at.desc())
     if q:
         like = f"%{q.strip()}%"
         query = query.filter(

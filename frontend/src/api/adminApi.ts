@@ -33,6 +33,7 @@ export interface AdminPlan {
 export interface AdminUser {
   id: number;
   email: string | null;
+  provider: string | null;
   telegram_id: number | null;
   username: string | null;
   first_name: string | null;

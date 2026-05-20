@@ -1,7 +1,9 @@
+import base64
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from pydantic import BaseModel
 from starlette.responses import Response
 from sqlalchemy.orm import Session
 
@@ -30,7 +32,21 @@ from app.schemas.auth import (
 from app.schemas.diary import DiarySnapshotResponse
 from app.services.diary_snapshot import _resolve_tz, build_diary_snapshot, meal_datetime_for_local_date_end
 from app.services.web_meals_day import build_web_meal_day_row
-from app.core.use_cases.meal_analysis import build_meal_item_specs_from_ingredients, resolve_meal_photo_urls_for_save
+from app.core.use_cases.meal_analysis import (
+    analyze_meal_from_image_and_text,
+    analyze_meal_from_image_base64,
+    analyze_meal_from_text,
+    build_meal_item_specs_from_ingredients,
+    resolve_meal_photo_urls_for_save,
+)
+from app.services.usage_limits import (
+    check_label_analysis_limits,
+    check_photo_recognition_limits,
+    check_text_ai_limits,
+    record_label_analysis_usage,
+    record_photo_recognition_usage,
+    record_text_ai_usage,
+)
 from app.core.use_cases.meal_update import update_meal_composition
 from app.services.ingredient_checker import analyze_label_from_image_bytes, format_label_result_for_telegram
 from app.services.nutrition_targets import (
@@ -61,13 +77,94 @@ router = APIRouter(prefix="/users", tags=["users-web"])
 _MAX_LABEL_IMAGE_BYTES = 15 * 1024 * 1024
 
 
+class WebAnalyzeImageBody(BaseModel):
+    image_base64: str
+
+
+class WebAnalyzeTextBody(BaseModel):
+    text: str
+
+
+class WebAnalyzeImageTextBody(BaseModel):
+    image_base64: str
+    text: str
+    previous_ingredients: dict[str, Any] | None = None
+    previous_prediction: str | None = None
+
+
+@router.post("/me/meals/analyze")
+def analyze_my_meal_image(
+    body: WebAnalyzeImageBody,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not body.image_base64:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="image_base64 is required")
+    try:
+        base64.b64decode(body.image_base64)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid base64: {e}") from e
+
+    check_photo_recognition_limits(db, current_user)
+    result = analyze_meal_from_image_base64(body.image_base64)
+    payload = result.to_api_dict()
+    if payload.get("status") == "success":
+        record_photo_recognition_usage(db, current_user)
+    return payload
+
+
+@router.post("/me/meals/analyze-text")
+def analyze_my_meal_text(
+    body: WebAnalyzeTextBody,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not body.text or not body.text.strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="text is required")
+
+    check_text_ai_limits(db, current_user)
+    result = analyze_meal_from_text(body.text.strip())
+    payload = result.to_api_dict()
+    if payload.get("status") == "success":
+        record_text_ai_usage(db, current_user)
+    return payload
+
+
+@router.post("/me/meals/analyze-image-text")
+def analyze_my_meal_image_text(
+    body: WebAnalyzeImageTextBody,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not body.image_base64:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="image_base64 is required")
+    if not body.text or not body.text.strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="text is required")
+    try:
+        base64.b64decode(body.image_base64)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid base64: {e}") from e
+
+    check_photo_recognition_limits(db, current_user)
+    result = analyze_meal_from_image_and_text(
+        body.image_base64,
+        body.text.strip(),
+        previous_ingredients=body.previous_ingredients,
+        previous_prediction=body.previous_prediction,
+    )
+    payload = result.to_api_dict()
+    if payload.get("status") == "success":
+        record_photo_recognition_usage(db, current_user)
+    return payload
+
+
 @router.post("/me/analyze-label", response_model=LabelAnalysisResponse)
 async def analyze_product_label(
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
     file: UploadFile = File(...),
 ):
     """Анализ фото этикетки: тот же пайплайн, что и /check_ingredients в Telegram (promt3.txt + vision)."""
-    _ = current_user
     content_type = (file.content_type or "").lower()
     if not content_type.startswith("image/"):
         raise HTTPException(
@@ -80,7 +177,10 @@ async def analyze_product_label(
     if len(body) > _MAX_LABEL_IMAGE_BYTES:
         raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="Файл слишком большой.")
 
+    check_label_analysis_limits(db, current_user)
     data = analyze_label_from_image_bytes(body)
+    if data.get("status") == "ok":
+        record_label_analysis_usage(db, current_user)
     text = format_label_result_for_telegram(data)
     return LabelAnalysisResponse(text=text)
 
