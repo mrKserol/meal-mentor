@@ -10,6 +10,9 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const telegramClientId = import.meta.env.VITE_TELEGRAM_CLIENT_ID ?? "";
   const telegramRedirectUri = import.meta.env.VITE_TELEGRAM_REDIRECT_URI ?? "";
+  const yandexClientId = import.meta.env.VITE_YANDEX_CLIENT_ID ?? "";
+  const yandexRedirectUri = import.meta.env.VITE_YANDEX_REDIRECT_URI ?? "";
+  const yandexScopes = (import.meta.env.VITE_YANDEX_SCOPES ?? "").trim();
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -53,6 +56,30 @@ export function LoginPage() {
     window.location.assign(url.toString());
   };
 
+  const onYandexOAuth = () => {
+    if (!yandexClientId || !yandexRedirectUri) {
+      setError("Яндекс OAuth не настроен. Проверьте VITE_YANDEX_CLIENT_ID и VITE_YANDEX_REDIRECT_URI.");
+      return;
+    }
+    if (!yandexScopes) {
+      setError("Яндекс OAuth не настроен. Задайте VITE_YANDEX_SCOPES (например: login:info login:email login:avatar login:birthday).");
+      return;
+    }
+    setError(null);
+    const state = crypto.randomUUID();
+    sessionStorage.setItem("yandex_oauth_state", state);
+
+    const params = new URLSearchParams({
+      response_type: "code",
+      client_id: yandexClientId,
+      redirect_uri: yandexRedirectUri,
+      scope: yandexScopes,
+      state,
+    });
+
+    window.location.href = `https://oauth.yandex.ru/authorize?${params.toString()}`;
+  };
+
   return (
     <div className="font-body-md text-on-surface min-h-screen flex items-center justify-center p-margin relative bg-surface">
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden opacity-40">
@@ -84,7 +111,7 @@ export function LoginPage() {
           </div>
           <h1 className="font-h1 text-h1 text-on-surface mb-xs">Вход в Meal Mentor</h1>
           <p className="font-body-md text-on-surface-variant text-center px-lg">
-            Войдите через Telegram — ваш персональный AI-нутрициолог
+            Войдите через Telegram или Яндекс — ваш персональный AI-нутрициолог
           </p>
         </div>
 
@@ -97,6 +124,14 @@ export function LoginPage() {
             className="w-full bg-[#229ED9] hover:opacity-90 text-white py-4 rounded-lg font-h3 text-h3 font-semibold transition shadow-[0_4px_14px_rgba(34,158,217,0.25)]"
           >
             Войти через Telegram
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onYandexOAuth()}
+            className="mt-3 w-full bg-[#FC3F1D] hover:opacity-90 text-white py-4 rounded-lg font-h3 text-h3 font-semibold transition shadow-[0_4px_14px_rgba(252,63,29,0.25)]"
+          >
+            Войти через Яндекс
           </button>
 
           <div className="relative bg-secondary-container/30 p-md rounded-xl border border-secondary-container/50 flex gap-md items-start mt-lg">

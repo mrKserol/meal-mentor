@@ -61,6 +61,34 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    auth_identities = relationship(
+        "UserAuthIdentity",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+
+class UserAuthIdentity(Base):
+    __tablename__ = "user_auth_identities"
+    __table_args__ = (
+        UniqueConstraint("provider", "provider_user_id", name="uq_auth_identity_provider_user"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    provider = Column(String(32), nullable=False, index=True)
+    provider_user_id = Column(String(255), nullable=False)
+
+    email = Column(String(255), nullable=True)
+    username = Column(String(255), nullable=True)
+    display_name = Column(String(255), nullable=True)
+    avatar_url = Column(String(512), nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", back_populates="auth_identities")
 
 
 class NutritionTarget(Base):

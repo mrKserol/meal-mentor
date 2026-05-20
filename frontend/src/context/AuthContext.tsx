@@ -1,8 +1,15 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import axios from "axios";
 
-import { getMe, login, loginWithTelegram, logout, refresh, updateMyProfile } from "../api/authApi";
-import type { AuthResponse, LoginPayload, ProfileUpdatePayload, TelegramCallbackPayload, User } from "../types/auth";
+import { getMe, login, loginWithTelegram, loginWithYandex, logout, refresh, updateMyProfile } from "../api/authApi";
+import type {
+  AuthResponse,
+  LoginPayload,
+  ProfileUpdatePayload,
+  TelegramCallbackPayload,
+  User,
+  YandexCallbackPayload,
+} from "../types/auth";
 
 const ACCESS_TOKEN_KEY = "meal_mentor_access_token";
 const REFRESH_TOKEN_KEY = "meal_mentor_refresh_token";
@@ -13,6 +20,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (payload: LoginPayload) => Promise<void>;
   loginWithTelegram: (payload: TelegramCallbackPayload) => Promise<{ isNewUser: boolean; profileCompleted: boolean }>;
+  loginWithYandex: (payload: YandexCallbackPayload) => Promise<{ isNewUser: boolean; profileCompleted: boolean }>;
   updateProfile: (payload: ProfileUpdatePayload) => Promise<User>;
   logout: () => Promise<void>;
   validateSession: () => Promise<boolean>;
@@ -117,6 +125,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const yandexLoginHandler = useCallback(async (payload: YandexCallbackPayload) => {
+    const tokens = await loginWithYandex(payload);
+    saveTokens(tokens);
+    const raw = tokens.user ?? (await getMe(tokens.access_token));
+    const me: User = { ...raw, allergens: raw.allergens ?? [] };
+    setUser(me);
+    return {
+      isNewUser: Boolean(tokens.is_new_user),
+      profileCompleted: Boolean(tokens.profile_completed ?? me.profile_completed),
+    };
+  }, []);
+
   const updateProfileHandler = useCallback(
     async (payload: ProfileUpdatePayload) => {
       const sessionOk = await validateSession();
@@ -153,6 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       login: loginHandler,
       loginWithTelegram: telegramLoginHandler,
+      loginWithYandex: yandexLoginHandler,
       updateProfile: updateProfileHandler,
       logout: logoutHandler,
       validateSession,
@@ -164,6 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loginHandler,
       logoutHandler,
       telegramLoginHandler,
+      yandexLoginHandler,
       updateProfileHandler,
       user,
       validateSession,

@@ -98,6 +98,11 @@ TELEGRAM_CLIENT_ID = os.getenv("TELEGRAM_CLIENT_ID")
 TELEGRAM_CLIENT_SECRET = os.getenv("TELEGRAM_CLIENT_SECRET")
 TELEGRAM_REDIRECT_URI = os.getenv("TELEGRAM_REDIRECT_URI")
 
+# Yandex OAuth
+YANDEX_CLIENT_ID = os.getenv("YANDEX_CLIENT_ID")
+YANDEX_CLIENT_SECRET = os.getenv("YANDEX_CLIENT_SECRET")
+YANDEX_REDIRECT_URI = os.getenv("YANDEX_REDIRECT_URI")
+
 # Subscriptions: if true, POST /subscriptions/order activates plan without Robokassa (demo only)
 SUBSCRIPTION_DEMO_AUTO = os.getenv("SUBSCRIPTION_DEMO_AUTO", "0").lower() in ("1", "true", "yes")
 

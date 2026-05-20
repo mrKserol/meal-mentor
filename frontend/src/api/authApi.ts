@@ -8,6 +8,7 @@ import type {
   RegisterPayload,
   TelegramCallbackPayload,
   User,
+  YandexCallbackPayload,
 } from "../types/auth";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -37,6 +38,11 @@ export const login = async (payload: LoginPayload): Promise<AuthResponse> => {
 
 export const loginWithTelegram = async (payload: TelegramCallbackPayload): Promise<AuthResponse> => {
   const response = await authClient.post<AuthResponse>("/auth/telegram/callback", payload);
+  return response.data;
+};
+
+export const loginWithYandex = async (payload: YandexCallbackPayload): Promise<AuthResponse> => {
+  const response = await authClient.post<AuthResponse>("/auth/yandex/callback", payload);
   return response.data;
 };
 

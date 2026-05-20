@@ -5,6 +5,7 @@ from app.auth.service import (
     login_user,
     login_with_telegram,
     login_with_telegram_oauth,
+    login_with_yandex_oauth,
     logout_user,
     refresh_tokens,
     register_user,
@@ -19,6 +20,8 @@ from app.schemas.auth import (
     AuthTelegramCallbackRequest,
     AuthTelegramRequest,
     AuthTokenPair,
+    AuthYandexCallbackRequest,
+    OAuthAuthResponse,
     TelegramAuthResponse,
 )
 from app.services.nutrition_targets import create_or_update_active_nutrition_target
@@ -79,6 +82,20 @@ def telegram_login(payload: AuthTelegramRequest, db: Session = Depends(get_db)):
 @router.post("/telegram/callback", response_model=TelegramAuthResponse)
 def telegram_callback(payload: AuthTelegramCallbackRequest, db: Session = Depends(get_db)):
     user, tokens, is_new_user, profile_completed = login_with_telegram_oauth(db, payload)
+    return {
+        "access_token": tokens.access_token,
+        "refresh_token": tokens.refresh_token,
+        "token_type": tokens.token_type,
+        "access_token_expires_in": tokens.access_token_expires_in,
+        "user": serialize_user_me(db, user),
+        "is_new_user": is_new_user,
+        "profile_completed": profile_completed,
+    }
+
+
+@router.post("/yandex/callback", response_model=OAuthAuthResponse)
+def yandex_callback(payload: AuthYandexCallbackRequest, db: Session = Depends(get_db)):
+    user, tokens, is_new_user, profile_completed = login_with_yandex_oauth(db, payload)
     return {
         "access_token": tokens.access_token,
         "refresh_token": tokens.refresh_token,

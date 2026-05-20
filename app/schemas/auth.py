@@ -58,6 +58,13 @@ class AuthTelegramCallbackRequest(BaseModel):
     timezone: str | None = None
 
 
+class AuthYandexCallbackRequest(BaseModel):
+    code: str
+    state: str
+    redirect_uri: str
+    timezone: str | None = None
+
+
 class NutritionTargetResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -139,10 +146,14 @@ class WeightMeasurementsResponse(BaseModel):
     items: list[WeightMeasurementPoint]
 
 
-class TelegramAuthResponse(AuthTokenPair):
+class OAuthAuthResponse(AuthTokenPair):
     user: UserMeResponse
     is_new_user: bool
     profile_completed: bool
+
+
+class TelegramAuthResponse(OAuthAuthResponse):
+    pass
 
 
 class LabelAnalysisResponse(BaseModel):
