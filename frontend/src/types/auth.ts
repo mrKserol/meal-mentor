@@ -48,6 +48,13 @@ export interface TelegramCallbackPayload {
   timezone: string;
 }
 
+export interface YandexCallbackPayload {
+  code: string;
+  state: string;
+  redirect_uri: string;
+  timezone?: string;
+}
+
 export interface AuthResponse {
   access_token: string;
   refresh_token: string;

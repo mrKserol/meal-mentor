@@ -17,10 +17,23 @@ from app.auth.security import (
 )
 from app.auth.telegram import verify_telegram_login
 from app.auth.profile import is_profile_completed
-from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES, ADMIN_BOOTSTRAP_EMAILS
-from app.db.models import RefreshToken, User
-from app.schemas.auth import AuthTelegramCallbackRequest, AuthTelegramRequest, AuthTokenPair
-from app.core.config import TELEGRAM_CLIENT_ID, TELEGRAM_CLIENT_SECRET, TELEGRAM_REDIRECT_URI
+from app.core.config import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    ADMIN_BOOTSTRAP_EMAILS,
+    TELEGRAM_CLIENT_ID,
+    TELEGRAM_CLIENT_SECRET,
+    TELEGRAM_REDIRECT_URI,
+    YANDEX_CLIENT_ID,
+    YANDEX_CLIENT_SECRET,
+    YANDEX_REDIRECT_URI,
+)
+from app.db.models import RefreshToken, User, UserAuthIdentity
+from app.schemas.auth import (
+    AuthTelegramCallbackRequest,
+    AuthTelegramRequest,
+    AuthTokenPair,
+    AuthYandexCallbackRequest,
+)
 
 logger = logging.getLogger(__name__)
 TELEGRAM_OIDC_ISSUER = "https://oauth.telegram.org"
@@ -110,6 +123,67 @@ def _decode_and_validate_telegram_id_token(id_token: str) -> dict:
     return claims
 
 
+def get_user_by_identity(
+    db: Session,
+    *,
+    provider: str,
+    provider_user_id: str,
+) -> User | None:
+    identity = (
+        db.query(UserAuthIdentity)
+        .filter(
+            UserAuthIdentity.provider == provider,
+            UserAuthIdentity.provider_user_id == str(provider_user_id),
+        )
+        .first()
+    )
+    return identity.user if identity else None
+
+
+def attach_identity_to_user(
+    db: Session,
+    *,
+    user: User,
+    provider: str,
+    provider_user_id: str,
+    email: str | None = None,
+    username: str | None = None,
+    display_name: str | None = None,
+    avatar_url: str | None = None,
+) -> UserAuthIdentity:
+    existing = (
+        db.query(UserAuthIdentity)
+        .filter(
+            UserAuthIdentity.provider == provider,
+            UserAuthIdentity.provider_user_id == str(provider_user_id),
+        )
+        .first()
+    )
+    if existing:
+        if existing.user_id != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This external account is already linked to another user",
+            )
+        return existing
+
+    identity = UserAuthIdentity(
+        user_id=user.id,
+        provider=provider,
+        provider_user_id=str(provider_user_id),
+        email=email,
+        username=username,
+        display_name=display_name,
+        avatar_url=avatar_url,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+    )
+    db.add(identity)
+    db.commit()
+    db.refresh(identity)
+    return identity
+
+
 def get_or_create_telegram_user(
     db: Session,
     *,
@@ -118,9 +192,26 @@ def get_or_create_telegram_user(
     first_name: str | None,
     timezone: str | None = None,
 ) -> tuple[User, bool]:
-    user = db.query(User).filter(User.telegram_id == telegram_id).first()
-    logger.info("existing user found: %s", bool(user))
+    provider_user_id = str(telegram_id)
+
+    user = get_user_by_identity(
+        db,
+        provider="telegram",
+        provider_user_id=provider_user_id,
+    )
     if user:
+        return user, False
+
+    user = db.query(User).filter(User.telegram_id == telegram_id).first()
+    if user:
+        attach_identity_to_user(
+            db,
+            user=user,
+            provider="telegram",
+            provider_user_id=provider_user_id,
+            username=username,
+            display_name=first_name,
+        )
         return user, False
 
     logger.info("creating new web telegram user")
@@ -139,7 +230,16 @@ def get_or_create_telegram_user(
     db.commit()
     db.refresh(user)
     logger.info("new user created id: %s", user.id)
-    logger.info("commit success")
+
+    attach_identity_to_user(
+        db,
+        user=user,
+        provider="telegram",
+        provider_user_id=provider_user_id,
+        username=username,
+        display_name=first_name,
+    )
+
     return user, True
 
 
@@ -276,6 +376,164 @@ def login_with_telegram_oauth(
 
     profile_completed = is_profile_completed(user)
     logger.info("profile_completed value: %s", profile_completed)
+    return user, _issue_token_pair(db, user), is_new_user, profile_completed
+
+
+def login_with_yandex_oauth(
+    db: Session,
+    payload: AuthYandexCallbackRequest,
+) -> tuple[User, AuthTokenPair, bool, bool]:
+    logger.info("yandex callback started")
+
+    if not YANDEX_CLIENT_ID or not YANDEX_CLIENT_SECRET or not YANDEX_REDIRECT_URI:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Yandex OAuth is not configured",
+        )
+
+    token_response = requests.post(
+        "https://oauth.yandex.ru/token",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        data={
+            "grant_type": "authorization_code",
+            "code": payload.code,
+            "client_id": YANDEX_CLIENT_ID,
+            "client_secret": YANDEX_CLIENT_SECRET,
+            "redirect_uri": payload.redirect_uri,
+        },
+        timeout=15,
+    )
+
+    if token_response.status_code >= 400:
+        logger.warning("Yandex token exchange failed: %s", token_response.text[:500])
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Yandex code exchange failed",
+        )
+
+    token_data = token_response.json()
+    access_token = token_data.get("access_token")
+
+    if not isinstance(access_token, str) or not access_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Yandex access_token missing in token response",
+        )
+
+    userinfo_response = requests.get(
+        "https://login.yandex.ru/info",
+        headers={"Authorization": f"OAuth {access_token}"},
+        params={"format": "json"},
+        timeout=15,
+    )
+
+    if userinfo_response.status_code >= 400:
+        logger.warning("Yandex userinfo failed: %s", userinfo_response.text[:500])
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Yandex userinfo request failed",
+        )
+
+    profile = userinfo_response.json()
+    if not isinstance(profile, dict):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Yandex userinfo response invalid",
+        )
+
+    def _as_str(v: object) -> str | None:
+        return v.strip() if isinstance(v, str) and v.strip() else None
+
+    yandex_id = profile.get("id")
+    if yandex_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Yandex user id not found",
+        )
+
+    provider_user_id = str(yandex_id)
+    email = _as_str(profile.get("default_email"))
+    username = _as_str(profile.get("login"))
+    first_name = _as_str(profile.get("first_name"))
+    display_name = (
+        _as_str(profile.get("display_name"))
+        or _as_str(profile.get("real_name"))
+        or first_name
+        or username
+    )
+
+    avatar_url = None
+    avatar_id = profile.get("default_avatar_id")
+    if isinstance(avatar_id, str) and avatar_id:
+        avatar_url = f"https://avatars.yandex.net/get-yapic/{avatar_id}/islands-200"
+
+    user = get_user_by_identity(
+        db,
+        provider="yandex",
+        provider_user_id=provider_user_id,
+    )
+
+    is_new_user = False
+
+    if not user and email:
+        user = db.query(User).filter(User.email == email).first()
+
+    if user:
+        attach_identity_to_user(
+            db,
+            user=user,
+            provider="yandex",
+            provider_user_id=provider_user_id,
+            email=email,
+            username=username,
+            display_name=display_name,
+            avatar_url=avatar_url,
+        )
+
+        changed = False
+        if email and not user.email:
+            user.email = email
+            changed = True
+        if first_name and not user.first_name:
+            user.first_name = first_name
+            changed = True
+        if payload.timezone and not user.timezone:
+            user.timezone = payload.timezone
+            changed = True
+        if changed:
+            user.updated_at = datetime.utcnow()
+            db.commit()
+            db.refresh(user)
+    else:
+        user = User(
+            email=email,
+            username=username,
+            first_name=first_name or display_name,
+            timezone=payload.timezone or "UTC",
+            subscription_status="Free",
+            hashed_password=None,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        attach_identity_to_user(
+            db,
+            user=user,
+            provider="yandex",
+            provider_user_id=provider_user_id,
+            email=email,
+            username=username,
+            display_name=display_name,
+            avatar_url=avatar_url,
+        )
+        is_new_user = True
+
+    user = apply_admin_bootstrap(db, user)
+    profile_completed = is_profile_completed(user)
+
     return user, _issue_token_pair(db, user), is_new_user, profile_completed
 
 
