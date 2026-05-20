@@ -70,6 +70,7 @@ def increment_usage(
     period_type: str,
     amount: int = 1,
     timezone: str | None = None,
+    commit: bool = True,
 ) -> None:
     period_start = get_period_start(_user_now(timezone), period_type, timezone)
     row = (
@@ -98,7 +99,55 @@ def increment_usage(
                 updated_at=now,
             )
         )
-    db.commit()
+    if commit:
+        db.commit()
+
+
+def increment_many_usage(
+    db: Session,
+    user_id: int,
+    increments: list[tuple[str, str]],
+    timezone: str | None = None,
+    amount: int = 1,
+) -> None:
+    """
+    Атомарно увеличивает несколько usage-счётчиков пользователя.
+
+    increments: список пар (feature_key, period_type), например:
+    [
+        ("daily_photo_recognition_limit", "daily"),
+        ("monthly_photo_recognition_limit", "monthly"),
+        ("daily_ai_requests_limit", "daily"),
+    ]
+
+    Все изменения коммитятся одним db.commit(). При ошибке — rollback.
+
+    Будущий ИИ-чат должен использовать эту же функцию, например:
+    increment_many_usage(
+        db=db,
+        user_id=user.id,
+        increments=[
+            ("daily_ai_chat_messages_limit", "daily"),
+            ("daily_ai_requests_limit", "daily"),
+        ],
+        timezone=user.timezone,
+    )
+    """
+    try:
+        for feature_key, period_type in increments:
+            increment_usage(
+                db=db,
+                user_id=user_id,
+                feature_key=feature_key,
+                period_type=period_type,
+                amount=amount,
+                timezone=timezone,
+                commit=False,
+            )
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
 
 
 def _limit_exceeded_message(limit_feature_key: str) -> str:
@@ -199,10 +248,16 @@ def check_photo_recognition_limits(db: Session, user: User) -> None:
 
 
 def record_photo_recognition_usage(db: Session, user: User) -> None:
-    tz = user.timezone
-    increment_usage(db, user.id, "daily_photo_recognition_limit", "daily", timezone=tz)
-    increment_usage(db, user.id, "monthly_photo_recognition_limit", "monthly", timezone=tz)
-    increment_usage(db, user.id, "daily_ai_requests_limit", "daily", timezone=tz)
+    increment_many_usage(
+        db=db,
+        user_id=user.id,
+        increments=[
+            ("daily_photo_recognition_limit", "daily"),
+            ("monthly_photo_recognition_limit", "monthly"),
+            ("daily_ai_requests_limit", "daily"),
+        ],
+        timezone=user.timezone,
+    )
 
 
 def check_label_analysis_limits(db: Session, user: User) -> None:
@@ -218,8 +273,15 @@ def check_label_analysis_limits(db: Session, user: User) -> None:
 
 
 def record_label_analysis_usage(db: Session, user: User) -> None:
-    increment_usage(db, user.id, "monthly_label_analysis_limit", "monthly", timezone=user.timezone)
-    increment_usage(db, user.id, "daily_ai_requests_limit", "daily", timezone=user.timezone)
+    increment_many_usage(
+        db=db,
+        user_id=user.id,
+        increments=[
+            ("monthly_label_analysis_limit", "monthly"),
+            ("daily_ai_requests_limit", "daily"),
+        ],
+        timezone=user.timezone,
+    )
 
 
 def check_text_ai_limits(db: Session, user: User) -> None:
@@ -228,4 +290,11 @@ def check_text_ai_limits(db: Session, user: User) -> None:
 
 
 def record_text_ai_usage(db: Session, user: User) -> None:
-    increment_usage(db, user.id, "daily_ai_requests_limit", "daily", timezone=user.timezone)
+    increment_many_usage(
+        db=db,
+        user_id=user.id,
+        increments=[
+            ("daily_ai_requests_limit", "daily"),
+        ],
+        timezone=user.timezone,
+    )
