@@ -30,7 +30,7 @@ A nutrition tracking service: **web app**, **Telegram bot**, and **REST API** on
 
 - **Sign-in:** email/password, **Telegram OAuth**, **Yandex OAuth** (profile: email, name, sex and birth date when OAuth scopes allow).
 - **Dashboard:** greeting and today’s diary card vs daily macro targets from the DB.
-- **Diary:** week/month stats, meal history, weight, daily targets; add meals for past dates (not today).
+- **Diary:** week/month stats, meal history, weight, daily targets; add meals for any selected day (past, today, or tomorrow).
 - **Profile:** sex, age, height, weight, goal, activity, allergens (if enabled by plan), Mifflin–St Jeor macro targets.
 - **Add meal:** photo / file / text → AI analysis → confirm composition and weights → save; edit title and ingredients with macro recalc without another AI call.
 - **Label analysis:** upload a product label photo (separate prompt).

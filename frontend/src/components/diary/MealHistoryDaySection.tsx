@@ -531,9 +531,6 @@ export function MealHistoryDaySection({
 
   const todayYmd = useMemo(() => formatLocalYmd(new Date()), []);
   const tomorrowYmd = useMemo(() => addDaysYmd(todayYmd, 1), [todayYmd]);
-  const isToday = day === todayYmd;
-  const isTomorrow = day === tomorrowYmd;
-  const canAddForSelectedDay = isToday || isTomorrow;
   const dateLabel = useMemo(() => ymdToRuLong(day), [day]);
   const dayGoals = useMemo(() => buildDayGoals(dayNutritionTarget, items), [dayNutritionTarget, items]);
 
@@ -600,15 +597,8 @@ export function MealHistoryDaySection({
               <button
                 type="button"
                 onClick={() => onAddMealForDay(day)}
-                disabled={!canAddForSelectedDay}
-                title={
-                  canAddForSelectedDay
-                    ? isTomorrow
-                      ? "Добавить приём на завтра (23:59)"
-                      : "Добавить приём на сегодня"
-                    : "Добавление доступно только для сегодня и завтра"
-                }
-                className="mt-3 w-full rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:bg-slate-300 sm:w-auto sm:min-w-[10rem]"
+                title="Добавить приём за выбранный день"
+                className="mt-3 w-full rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 sm:w-auto sm:min-w-[10rem]"
               >
                 Добавить
               </button>

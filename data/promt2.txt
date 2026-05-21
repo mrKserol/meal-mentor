@@ -20,6 +20,7 @@ grilled
 roasted
 dry
 canned
+smoked
 unknown
 
 Rules:
@@ -86,6 +87,13 @@ STATE RULES:
   fresh → "raw"
   if described as part of cooked dish → "boiled", "fried", or "baked"
 * Canned food → "canned"
+* Smoked fish (копчёная/копченая рыба) → "smoked" when clearly smoked; if species is unclear use "smoked fish" with state "smoked" or "unknown"
+* For fish, be specific when possible:
+  smoked mackerel, smoked herring, smoked salmon, smoked trout, whitefish, sardines, canned tuna.
+  If fish is visibly smoked but species is unclear, use:
+  "smoked fish": {"grams": ..., "state": "smoked"}
+  or state "unknown" if preparation is uncertain.
+  Do NOT use "fish oil" unless the text clearly describes fish oil as a supplement or ingredient.
 * Do NOT assume "dry" unless explicitly stated or clearly implied
 * If the dish is described in Russian without specifying preparation (e.g., "гречка", "рис", "макароны"), assume it is cooked unless stated otherwise.
 * If the description does not contain any food, return an empty JSON object {}

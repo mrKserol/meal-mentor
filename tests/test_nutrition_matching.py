@@ -504,6 +504,57 @@ def test_beef_patty_not_fat(nutrition_svc: NutritionService) -> None:
     assert cb <= 5.0, f"beef patty 150g carbs {cb}"
 
 
+def test_smoked_fish_not_fish_oil(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"smoked fish": {"grams": 100, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    for bad in (
+        "oil",
+        "fish oil",
+        "cod liver oil",
+        "sauce",
+        "soup",
+        "spread",
+        "babyfood",
+        "roe",
+    ):
+        assert bad not in m, f"smoked fish matched bad row: {m!r}"
+    cal = int(data.get("calories") or 0)
+    p = float(data.get("proteins") or 0)
+    f = float(data.get("fats") or 0)
+    cb = float(data.get("carbohydrates") or 0)
+    assert 100 <= cal <= 350, f"smoked fish 100g calories {cal}"
+    assert p >= 10.0, f"smoked fish 100g proteins {p}"
+    assert f <= 30.0, f"smoked fish 100g fats {f}"
+    assert cb <= 2.0, f"smoked fish 100g carbs {cb}"
+
+
+def test_smoked_fish_meal_regression(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    ingredients = {
+        "smoked fish": {"grams": 100, "state": "unknown"},
+        "potato": {"grams": 50, "state": "boiled"},
+        "sauerkraut": {"grams": 40, "state": "canned"},
+    }
+    rows = nutrition_svc.search(ingredients, include_candidates=True)
+    flat = flatten_search_results(rows)
+    full = nutrition_svc.aggregate_nutrition_full(ingredients)
+    assert full is not None
+    cal = int(full.get("calories") or 0)
+    p = float(full.get("proteins") or 0)
+    f = float(full.get("fats") or 0)
+    assert 180 <= cal <= 430, f"meal calories {cal}"
+    assert p >= 12.0, f"meal proteins {p}"
+    assert f <= 30.0, f"meal fats {f}"
+    sf = str(flat.get("smoked fish", {}).get("match") or "").lower()
+    for bad in ("oil", "fish oil", "cod liver oil", "fat only"):
+        assert bad not in sf, f"smoked fish match {sf!r}"
+
+
 def test_millet_porridge_plain_weight_not_dry(nutrition_svc: NutritionService) -> None:
     if not nutrition_svc.aliases.is_loaded:
         pytest.skip("food_aliases.json not loaded")

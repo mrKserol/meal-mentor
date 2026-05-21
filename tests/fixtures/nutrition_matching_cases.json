@@ -544,5 +544,29 @@
         "beef patty": ["beef", "ground", "patty"]
       }
     }
+  },
+  {
+    "name": "smoked fish potato sauerkraut",
+    "description": "Smoked fish should not match fish oil / fat-only rows",
+    "ingredients": {
+      "smoked fish": {"grams": 100, "state": "unknown"},
+      "potato": {"grams": 50, "state": "boiled"},
+      "sauerkraut": {"grams": 40, "state": "canned"}
+    },
+    "expected": {
+      "calories_min": 180,
+      "calories_max": 430,
+      "protein_min": 12,
+      "fat_min": 3,
+      "fat_max": 30,
+      "carbohydrates_min": 8,
+      "carbohydrates_max": 25,
+      "forbidden_match_contains": {
+        "smoked fish": ["oil", "fish oil", "cod liver oil", "sauce", "soup", "spread", "babyfood", "roe"]
+      },
+      "required_contains_any": {
+        "smoked fish": ["fish", "mackerel", "herring", "salmon", "whitefish", "trout", "sablefish", "cisco", "haddock", "kippered"]
+      }
+    }
   }
 ]
