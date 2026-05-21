@@ -71,7 +71,7 @@ export function AppSideNav({ activeItem, onLogout, onNewMeal, onCompositionClick
           className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 font-bold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.98]"
         >
           <Plus className="h-5 w-5 shrink-0" aria-hidden />
-          Добавить прием пищи
+          Сканер
         </button>
         <button
           type="button"
