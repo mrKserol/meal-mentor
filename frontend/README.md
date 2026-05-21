@@ -1,28 +1,49 @@
-# Meal Mentor — фронтенд
+# Meal Mentor — frontend
 
-SPA на **React + Vite + TypeScript + Tailwind**: дашборд, дневник питания, онбординг профиля, вход (email/пароль, Telegram), **PWA** (манифест и `sw.js` в `public/`).
+SPA on **React + Vite + TypeScript + Tailwind**: dashboard, nutrition diary, profile onboarding, sign-in (email/password, **Telegram**, **Yandex**), **PWA** (`manifest`, `sw.js` in `public/`).
 
-Полное описание продукта, API и запуска бэкенда — в [корневом README](../README.md).
+| Docs | |
+|------|--|
+| Русский | [docs/README.ru.md](../docs/README.ru.md) |
+| English | [docs/README.en.md](../docs/README.en.md) |
+| Root | [README.md](../README.md) |
 
-## Окружение
+## Environment
 
-Создайте `.env` из `.env.example`:
+Copy `.env` from `.env.example`:
 
 ```bash
 VITE_API_URL=http://127.0.0.1:8000
+# OAuth (optional for local login buttons)
+VITE_TELEGRAM_CLIENT_ID=
+VITE_TELEGRAM_REDIRECT_URI=http://localhost:5173/auth/telegram/callback
+VITE_YANDEX_CLIENT_ID=
+VITE_YANDEX_REDIRECT_URI=http://localhost:5173/auth/yandex/callback
+VITE_YANDEX_SCOPES=login:info login:email login:avatar login:birthday
 ```
 
-Для продакшена укажите URL развёрнутого FastAPI (например Railway).
+For production, set `VITE_API_URL` to your deployed FastAPI URL and matching OAuth redirect URIs.
 
-## Скрипты
+## Scripts
 
-| Команда | Назначение |
-|---------|------------|
-| `npm run dev` | Локальная разработка (Vite) |
-| `npm run build` | Сборка (`tsc` + Vite) |
-| `npm run preview` | Просмотр production-сборки |
-| `npm run start` | Статическая отдача `dist` (например на Railway) |
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Local development (Vite, default http://localhost:5173) |
+| `npm run build` | Production build (`tsc` + Vite → `dist/`) |
+| `npm run preview` | Preview production build |
+| `npm run start` | Serve `dist` statically (e.g. Railway) |
 
-## Важно для контрибьюторов
+## Routes (high level)
 
-- Общие хелперы анализа приёма пищи лежат в **`src/utils/mealFlow.ts`**. Каталог с именем `lib/` в путях фронта **не используется**: в корневом `.gitignore` есть правило `lib/` (для Python), из‑за него файлы в `frontend/src/lib/` не попадали бы в git.
+- `/login`, `/register` — auth
+- `/auth/telegram/callback`, `/auth/yandex/callback` — OAuth
+- `/dashboard`, `/diary`, `/onboarding/profile` — main app
+- `/admin` — admin panel (`role=admin`)
+
+Web meal AI calls use JWT endpoints under `/users/me/meals/*` (plan limits apply). See full API tables in the docs above.
+
+## Contributors
+
+- Shared meal-flow helpers: **`src/utils/mealFlow.ts`**
+- Do **not** add a `frontend/src/lib/` tree: root `.gitignore` ignores `lib/` (Python), so those files would not be committed.
+- Admin feature presets: **`src/admin/featurePresets.ts`**
