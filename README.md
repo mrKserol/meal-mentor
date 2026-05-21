@@ -1,179 +1,80 @@
 # Meal Mentor
 
-Сервис учёта питания: **веб-приложение** (дашборд, дневник, профиль), **Telegram-бот** и опционально **Streamlit** для демо. Бэкенд на **FastAPI** хранит приёмы пищи и профиль в БД, считает **КБЖУ** по CSV и при необходимости вызывает **OpenAI** для распознавания фото и текста.
+**Meal Mentor** — сервис учёта питания: веб-приложение (дашборд, дневник, профиль), Telegram-бот и API на **FastAPI**. Расчёт **КБЖУ** по локальной базе продуктов (`nutrition.csv`), распознавание блюд по фото и тексту через **OpenAI**, тарифы и лимиты использования AI-функций.
 
-## Как устроен продукт сейчас
+| Документация | |
+|--------------|--|
+| **Русский** | [docs/README.ru.md](docs/README.ru.md) |
+| **English** | [docs/README.en.md](docs/README.en.md) |
+| Архитектура слоёв | [docs/architecture.md](docs/architecture.md) |
+| Фронтенд (кратко) | [frontend/README.md](frontend/README.md) |
 
-### Веб-интерфейс (`frontend/`)
+---
 
-После входа (email/пароль или Telegram OAuth) пользователь попадает в оболочку **AppShell**: боковое меню, верхняя шапка, плавающая кнопка «+» на мобильных, модалки **«Добавить приём пищи»** и анализа этикетки.
+## Быстрый старт
 
-| Раздел | Назначение |
-|--------|------------|
-| **Главная (дашборд)** | Приветствие, карточка **«Дневник питания»**: съедено **за сегодня** по данным из БД (`GET /users/me/diary` → `today`) против **дневных целей** из активной цели КБЖУ (`nutrition_target`). После сохранения приёма из модалки дашборд обновляется. |
-| **Дневник** | **Обзор питания** — кнопка открывает ту же модалку добавления приёма. **Статистика**: переключатель **Неделя** / **Месяц** (данные из одного запроса снимка дневника). Столбцы — калории по дням; средние ккал и БЖУ считаются как сумма за период, делённая на число **дней с ненулевыми калориями** (не на 7 и не на число дней месяца «вслепую»). **История** — последние 3 приёма. **Текущий вес** — из профиля; дельта за неделю — по взвешиваниям за календарную неделю. **Дневные цели** — факт за сегодня vs цели из БД. |
-| **Профиль** (`/onboarding/profile`) | Редактирование профиля, аллергенов, расчёт **дневной цели КБЖУ** (калории, белки, жиры, углеводы; без отображения BMR/TDEE в карточке). |
-
-**Шапка:** по клику на аватар — меню **«Мой профиль»** и **«Выйти»**.
-
-**Добавить приём пищи (модалка):** фото с камеры / загрузка файла / текст → публичные эндпоинты `POST /meals/analyze` или `POST /meals/analyze-text` → при подтверждении сохранение в дневник пользователя с JWT: `POST /users/me/meals/save` (ингредиенты + `source_type`).
-
-**PWA и иконки:** `public/manifest.webmanifest`, иконки в `public/icons/`, favicon в `index.html` — можно установить приложение на домашний экран; тема в манифесте согласована с зелёной палитрой UI.
-
-### Telegram-бот
-
-Фото → анализ → подтверждение → сохранение через сценарии, завязанные на `telegram_id`. Текст при низкой уверенности — как раньше. Сводки отчётов — через существующие отчётные эндпоинты.
-
-### Ядро и данные
-
-- Расчёт и хранение **целей КБЖУ** (в т.ч. Миффлин–Сан Жеор): `app/services/nutrition_targets.py`, активная цель привязана к пользователю.
-- Снимок дневника для веба: `app/services/diary_snapshot.py` — неделя (пн–вс в TZ профиля), **месяц** (все дни текущего месяца), сегодняшние суммы, последние приёмы, вес.
-- Анализ блюда без привязки к Telegram: `app/core/use_cases/meal_analysis.py`.
-
-Подробнее об архитектуре слоёв: [docs/architecture.md](docs/architecture.md).
-
-## Структура репозитория
-
-```
-meal-mentor/
-├── frontend/                 # React + Vite + TypeScript + Tailwind (основной UI)
-│   ├── public/               # PWA manifest, sw.js, иконки, favicon
-│   └── src/
-│       ├── pages/            # Dashboard, Diary, Profile onboarding, Login…
-│       ├── components/layout/# AppShell, AppTopBar, навигация, AddMealModal
-│       ├── api/              # authApi, diaryApi, mealsApi
-│       └── utils/mealFlow.ts # парсинг ответа анализа (не в каталоге lib/ — см. .gitignore)
-├── app/
-│   ├── core/                 # use cases (анализ приёма и т.д.)
-│   ├── infrastructure/       # OpenAI, nutrition CSV
-│   ├── interfaces/         # FastAPI (api/), Telegram, заготовки
-│   ├── routers/            # auth.py, users.py (веб JWT: /users/me/…)
-│   ├── services/           # diary_snapshot, nutrition_targets, отчёты…
-│   ├── db/                 # модели, репозиторий, сессия
-│   └── main.py
-├── docs/
-├── alembic/
-├── data/                     # nutrition.csv, промпты
-├── service.py                # uvicorn: service:app
-├── ui.py                     # Streamlit (демо)
-├── requirements.txt
-└── README.md
-```
-
-## Переменные окружения (бэкенд)
-
-| Переменная | Назначение |
-|------------|------------|
-| `OPENAI_API_KEY` | OpenAI (vision / текст) для анализа еды и этикеток |
-| `PROMPT_PATH`, `PROMPT2_PATH` | Промпты для фото и текста (по умолчанию `./data/promt.txt`, `promt2.txt`) |
-| `LOW_CONFIDENCE_THRESHOLD` | Порог уверенности 0–1; ниже — запрос текстового описания (по умолчанию `0.5`) |
-| `NUTRITION_CSV_PATH` | CSV нутриентов на 100 г (по умолчанию `./data/nutrition.csv`) |
-| `NUTRITION_DEBUG_MATCHING` | При `1` / `true` — подробные INFO-логи матчинга по каждому ингредиенту (кандидаты, scores, выбранная строка) |
-| `NUTRITION_ENABLE_SEMANTIC` | Семантический поиск (часто тяжёлый на Railway); по умолчанию выкл. |
-| `TELEGRAM_BOT_TOKEN`, `BASE_URL` | Для Telegram-бота |
-| `DATABASE_URL` | БД (по умолчанию SQLite `sqlite:///./meal_mentor.db`) |
-| `JWT_SECRET_KEY`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`, `REFRESH_TOKEN_EXPIRE_DAYS` | JWT для веба |
-
-Фронтенд: **`VITE_API_URL`** — базовый URL API (см. `frontend/.env.example`).
-
-## Запуск
-
-### Бэкенд
+**Backend**
 
 ```bash
 pip install -r requirements.txt
+cp .env.example .env   # OPENAI_API_KEY, JWT_SECRET_KEY, DATABASE_URL, …
+alembic upgrade head
 uvicorn service:app --reload
 ```
 
-### Фронтенд
+**Frontend**
 
 ```bash
 cd frontend
-cp .env.example .env   # задать VITE_API_URL
+cp .env.example .env   # VITE_API_URL, OAuth (Telegram / Yandex)
 npm install
-npm run dev            # разработка
-npm run build          # прод-сборка
+npm run dev
 ```
 
-### Прочее
-
-- **Telegram-бот:** `python -m app.bot.telegram_bot` (бэкенд должен быть доступен по `BASE_URL`).
-- **Streamlit:** `streamlit run ui.py` — демо к `POST /generate_response`.
-- **Make:** при наличии цели в Makefile — `make run_app` и т.п.
-
-## Схема БД (кратко)
-
-`users` (профиль, вес, цель, активность, TZ), `meals` + `meal_items` + `meal_item_nutrition`, `nutrition_targets`, `daily_summary`, `recommendations_log`, `user_measurements`, `allergens` и др. Состав и БЖУ по строкам приёма — в нормализованных таблицах, не в одном JSON «логе».
-
-## Миграции (Alembic)
+**Telegram-бот** (отдельный процесс, нужен `BASE_URL` на API):
 
 ```bash
+python -m app.bot.telegram_bot
+```
+
+---
+
+## Quick start
+
+**Backend**
+
+```bash
+pip install -r requirements.txt
+cp .env.example .env
 alembic upgrade head
+uvicorn service:app --reload
 ```
 
-Ревизия `001_normalize` и последующие — см. историю в `alembic/`. На пустой БД часто достаточно `init_db()` при старте приложения.
-
-## Тесты nutrition matching
-
-В проекте есть **регрессионные и smoke-тесты** для подбора строк из `data/nutrition.csv` (через `NutritionService`, алиасы `data/food_aliases.json`, RapidFuzz, state-reranking и category-aware matching layer). Они **не ходят в сеть**, не вызывают OpenAI, Telegram и API — только локальный CSV и JSON.
-
-Зачем: ловить типичные ошибки матчинга, когда готовая еда попадает на сухой/сырой/порошковый или нерелевантный продукт (и наоборот), из-за чего **КБЖУ уезжают** (например, варёная гречка → сухая, `milk tea` → сухая смесь, варёное яйцо → почти нулевые калории, финики → «сырой» низкокалорийный ряд, `beef rice beans salad` → mismatch между plain beef и beef dish row).
-
-Матчинг теперь учитывает:
-- aliases;
-- ingredient state;
-- ingredient category;
-- forbidden terms / category penalties;
-- regression fixtures.
-
-Фикстуры с «золотыми» сценариями (набор ингредиентов + ожидаемые диапазоны калорий и ограничения на выбранную строку `match`):
-
-- `tests/fixtures/nutrition_matching_cases.json`
-
-Запуск всех тестов matching:
+**Frontend**
 
 ```bash
-pytest tests/test_nutrition_matching.py
+cd frontend
+cp .env.example .env
+npm install
+npm run dev
 ```
 
-Подробные **INFO**-логи по каждому ингредиенту (топ кандидатов, `final`/`text`/`state_adj`, причины, выбранная строка): переменная **`NUTRITION_DEBUG_MATCHING`** — см. таблицу выше и `nutrition_debug_matching()` в `app/core/config.py`.
+**Telegram bot**
 
-Когда добавлять новые кейсы: после исправления бага в matching или алиасах добавьте объект в массив в `nutrition_matching_cases.json` (валидный JSON, без комментариев): `name`, `description`, `ingredients`, `expected` с полями вроде `calories_min` / `calories_max`, `protein_min` (минимум суммарного белка по блюду), `min_aggregate_proteins` (то же назначение, альтернативное имя), `aggregate_macros` (диапазоны суммарных `proteins` / `fats` / `carbohydrates`: массив `[min, max]` на ключ), `required_matches`, `allowed_matches`, `required_contains_any`, `forbidden_match_contains`, `expected_states`. Логику матчинга в тестах не дублируйте — только ожидания на результат.
+```bash
+python -m app.bot.telegram_bot
+```
 
-Примечание по generic ingredients: формулировки вроде `"cooked grains"`, `"mixed vegetables"`, `"meat"`, `"fish"` опасны для CSV matching и часто дают нерелевантную строку. Если generic ингредиент сломал match:
-1. усилите промпты, чтобы LLM возвращал конкретный ингредиент;
-2. добавьте alias/fallback только если действительно нужно;
-3. закрепите регрессию fixture-кейсом;
-4. прогоните `pytest tests/test_nutrition_matching.py`.
-Пример: раньше `"cooked grains"` мог матчиться в высокобелковую/высокожировую строку; теперь это покрыто fixture и безопасно сводится к cooked oats/oat groats.
+---
 
-Новые реальные ошибки matching нужно превращать в fixture case. Это дешевле и надёжнее, чем потом ловить регрессию вручную.
+## Стек
 
-## API: веб-пользователь (Bearer)
+| Слой | Технологии |
+|------|------------|
+| API | FastAPI, SQLAlchemy, Alembic, JWT |
+| AI | OpenAI (vision + text) |
+| Nutrition | `data/nutrition.csv`, aliases, fuzzy / optional semantic match |
+| Web UI | React, Vite, TypeScript, Tailwind, PWA |
+| Bot | Python, long polling → HTTP API |
 
-Префикс веб-роутера пользователя: **`/users`** (теги в OpenAPI: users-web).
-
-| Метод | Путь | Описание |
-|-------|------|----------|
-| `GET` | `/users/me` | Профиль, в т.ч. активная `nutrition_target` |
-| `PATCH` | `/users/me/profile` | Обновление профиля; пересчёт целей КБЖУ при полных данных |
-| `GET` | `/users/me/nutrition-target` | Активная дневная цель КБЖУ |
-| `GET` | `/users/me/diary` | Снимок дневника: `week`, `month`, `today`, `recent_meals`, `weight` |
-| `POST` | `/users/me/meals/save` | Сохранить приём в дневник (ингредиенты после анализа) |
-| `POST` | `/users/me/analyze-label` | Анализ фото этикетки (multipart) |
-
-Аутентификация: **`/auth/register`**, **`/auth/login`**, **`/auth/refresh`**, **`/auth/logout`**, OAuth Telegram — **`/auth/telegram/callback`** и др. (см. `app/routers/auth.py`).
-
-## API: анализ без записи (как у бота и модалки)
-
-| Метод | Путь | Описание |
-|-------|------|----------|
-| `POST` | `/meals/analyze` | `{ "image_base64" }` — состав и БЖУ |
-| `POST` | `/meals/analyze-text` | `{ "text" }` — разбор описания |
-| `POST` | `/meals/save` | Сохранение по **telegram_id** (бот) |
-| `POST` | `/generate_response` | Legacy для Streamlit: `{ "image_base64" }` |
-
-## Документация
-
-- [docs/architecture.md](docs/architecture.md) — слои и потоки.
-- [frontend/README.md](frontend/README.md) — кратко про фронт и `VITE_API_URL`.
+Полное описание возможностей, API, env, админки, OAuth, лимитов и тестов — в [docs/README.ru.md](docs/README.ru.md) и [docs/README.en.md](docs/README.en.md).

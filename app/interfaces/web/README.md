@@ -1,5 +1,11 @@
-# Web interface layer
+# Web interface
 
-The Streamlit demo lives at the **repository root** as `ui.py` (not inside this package). It is a separate UI client that talks to the FastAPI backend over HTTP (`POST /generate_response`, etc.).
+The production web UI is the **React SPA** in [`frontend/`](../../../frontend/).
 
-Future dedicated web frontend (React/Vue) would also sit under `app/interfaces/web/` or a sibling frontend repo, calling the same API.
+Documentation: [docs/README.ru.md](../../../docs/README.ru.md) · [docs/README.en.md](../../../docs/README.en.md)
+
+Run locally:
+
+```bash
+cd frontend && npm install && npm run dev
+```

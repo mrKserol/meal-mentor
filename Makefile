@@ -1,15 +1,14 @@
-STREAMLIT_APP = ui.py
 FASTAPI_APP = service
 
-.PHONY: frontend backend bot run_app
-
-frontend:
-	streamlit run $(STREAMLIT_APP)
+.PHONY: backend bot frontend-dev run-api
 
 backend:
-	uvicorn $(FASTAPI_APP):app --reload &
+	uvicorn $(FASTAPI_APP):app --reload
 
 bot:
 	python -m app.bot.telegram_bot
 
-run_app: backend frontend
+frontend-dev:
+	cd frontend && npm run dev
+
+run-api: backend
