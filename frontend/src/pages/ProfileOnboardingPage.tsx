@@ -441,7 +441,7 @@ export function ProfileOnboardingPage() {
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 py-3 font-semibold text-white shadow-sm transition hover:bg-green-700 disabled:opacity-60"
             >
               <Save className="h-5 w-5 shrink-0" aria-hidden />
-              {isSaving ? "Сохраняем..." : "Сохранить изменения профиля"}
+              {isSaving ? "Сохраняем..." : "Сохранить"}
             </button>
           </aside>
         </div>
