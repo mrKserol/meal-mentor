@@ -484,6 +484,8 @@ interface MealHistoryDaySectionProps {
   nutritionTarget: NutritionTarget | null;
   onMealsChanged?: () => void;
   onAddMealForDay?: (dateYmd: string) => void;
+  /** Увеличивается после сохранения приёма из модалки — перезагрузка списка за выбранный день. */
+  refreshToken?: number;
 }
 
 export function MealHistoryDaySection({
@@ -491,6 +493,7 @@ export function MealHistoryDaySection({
   nutritionTarget,
   onMealsChanged,
   onAddMealForDay,
+  refreshToken = 0,
 }: MealHistoryDaySectionProps) {
   const [day, setDay] = useState(() => formatLocalYmd(new Date()));
   const [items, setItems] = useState<WebMealDayRow[]>([]);
@@ -522,14 +525,21 @@ export function MealHistoryDaySection({
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (refreshToken > 0) void load();
+  }, [refreshToken, load]);
+
   const todayYmd = useMemo(() => formatLocalYmd(new Date()), []);
+  const tomorrowYmd = useMemo(() => addDaysYmd(todayYmd, 1), [todayYmd]);
   const isToday = day === todayYmd;
+  const isTomorrow = day === tomorrowYmd;
+  const canAddForSelectedDay = isToday || isTomorrow;
   const dateLabel = useMemo(() => ymdToRuLong(day), [day]);
   const dayGoals = useMemo(() => buildDayGoals(dayNutritionTarget, items), [dayNutritionTarget, items]);
 
   useEffect(() => {
-    if (day > todayYmd) setDay(todayYmd);
-  }, [day, todayYmd]);
+    if (day > tomorrowYmd) setDay(tomorrowYmd);
+  }, [day, tomorrowYmd]);
 
   const handleDelete = async (id: number) => {
     if (deletingId != null) return;
@@ -563,18 +573,23 @@ export function MealHistoryDaySection({
               <input
                 type="date"
                 value={day}
-                max={todayYmd}
+                max={tomorrowYmd}
                 onChange={(e) => {
                   const v = e.target.value;
                   if (!v) return;
-                  setDay(v > todayYmd ? todayYmd : v);
+                  setDay(v > tomorrowYmd ? tomorrowYmd : v);
                 }}
                 className="min-w-0 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-800"
               />
               <button
                 type="button"
-                onClick={() => setDay((d) => (addDaysYmd(d, 1) > todayYmd ? d : addDaysYmd(d, 1)))}
-                disabled={isToday}
+                onClick={() =>
+                  setDay((d) => {
+                    const next = addDaysYmd(d, 1);
+                    return next > tomorrowYmd ? d : next;
+                  })
+                }
+                disabled={day >= tomorrowYmd}
                 className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Следующий день"
               >
@@ -585,11 +600,13 @@ export function MealHistoryDaySection({
               <button
                 type="button"
                 onClick={() => onAddMealForDay(day)}
-                disabled={isToday}
+                disabled={!canAddForSelectedDay}
                 title={
-                  isToday
-                    ? "Для сегодняшнего дня используйте кнопку «+» в меню"
-                    : "Добавить приём за выбранный день (23:59)"
+                  canAddForSelectedDay
+                    ? isTomorrow
+                      ? "Добавить приём на завтра (23:59)"
+                      : "Добавить приём на сегодня"
+                    : "Добавление доступно только для сегодня и завтра"
                 }
                 className="mt-3 w-full rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:bg-slate-300 sm:w-auto sm:min-w-[10rem]"
               >
