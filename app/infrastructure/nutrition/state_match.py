@@ -589,6 +589,113 @@ def _generic_grain_candidate_adjustment(
     return max(score, -420.0), reasons
 
 
+def _fish_candidate_adjustment(
+    n: str,
+    query_lower: str,
+    requested_state: str,
+    *,
+    candidate_calories_per100: float = 0.0,
+    candidate_protein_per100: float = 0.0,
+    candidate_fat_per100: float = 0.0,
+    smoked_fish_q: bool = False,
+) -> tuple[float, list[str]]:
+    """Prefer edible fish rows; penalize fish oil, roe, sauces, and fat-only profiles."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    rs = (requested_state or "unknown").strip().lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    query_has_oil = any(x in query_lower for x in ("fish oil", "oil", "жир", "масло"))
+    fish_species = (
+        "salmon",
+        "mackerel",
+        "herring",
+        "trout",
+        "whitefish",
+        "cod",
+        "sardine",
+        "haddock",
+        "sablefish",
+        "cisco",
+        "losos",
+        "лосос",
+        "сельд",
+        "скумбр",
+        "форел",
+    )
+
+    if "fish" in nl:
+        add(70, "fish_word")
+    for sp in fish_species:
+        if sp in nl and sp in query_lower:
+            add(50, f"fish_species_{sp.replace(' ', '_')}")
+            break
+    if any(x in nl for x in ("smoked", "kippered", "lox")) and any(
+        x in query_lower for x in ("smoked", "kippered", "копчен", "копчё", "lox")
+    ):
+        add(45, "fish_smoked_word")
+    if rs in ("cooked", "unknown", "smoked") and any(
+        x in nl for x in ("cooked", "smoked", "baked", "grilled", "dry heat", "kippered", "lox")
+    ):
+        add(30, "fish_prepared_state")
+    if smoked_fish_q and not any(sp in query_lower for sp in fish_species):
+        if any(x in nl for x in ("mackerel", "herring", "whitefish", "sablefish", "cisco", "haddock")):
+            add(20, "fish_smoked_fatty_default")
+
+    for bad, tag in (
+        ("fish oil", "fish_oil"),
+        ("cod liver oil", "cod_liver_oil"),
+        ("oil,", "fish_oil_comma"),
+    ):
+        if bad in nl and not query_has_oil:
+            add(-200, tag)
+    if "oil" in nl and "fish" in nl and not query_has_oil:
+        add(-200, "fish_oil_generic")
+    if re.search(r"\bfat\b", nl) and "fat only" not in query_lower and not query_has_oil:
+        add(-180, "fish_fat_keyword")
+    if "roe" in nl and "roe" not in query_lower and "икра" not in query_lower:
+        add(-150, "fish_roe")
+    for bad in ("sauce", "soup", "spread", "babyfood", "stew"):
+        if bad in nl and bad not in query_lower:
+            add(-120, f"fish_bad_{bad}")
+    if "salad" in nl and "salad" not in query_lower and "салат" not in query_lower:
+        add(-100, "fish_salad")
+    if "dried" in nl and "dried" not in query_lower and "сушен" not in query_lower:
+        add(-100, "fish_dried")
+    if re.search(r"\braw\b", nl) and smoked_fish_q:
+        add(-100, "fish_raw_vs_smoked")
+
+    if not query_has_oil:
+        if candidate_fat_per100 >= 80 and candidate_protein_per100 <= 5:
+            add(-250, "fish_oil_macro_profile")
+        if candidate_calories_per100 >= 700:
+            add(-250, "fish_too_high_calories")
+        if candidate_protein_per100 == 0 and candidate_fat_per100 > 50:
+            add(-250, "fish_fat_only_macro")
+
+    if smoked_fish_q:
+        if "smoked" in nl or "kippered" in nl or "lox" in nl:
+            add(80, "smoked_fish_smoked_row")
+        if "fish" in nl:
+            add(40, "smoked_fish_fish_row")
+        for sp in ("mackerel", "herring", "whitefish", "salmon", "trout", "sablefish", "cisco", "haddock"):
+            if sp in nl:
+                add(30, f"smoked_fish_{sp}")
+                break
+        if "canned" in nl and "canned" not in query_lower and "консерв" not in query_lower:
+            add(-150, "smoked_fish_canned")
+        for bad in ("soup", "sauce", "spread", "babyfood"):
+            if bad in nl and bad not in query_lower:
+                add(-120, f"smoked_fish_bad_{bad}")
+
+    return max(score, -520.0), reasons
+
+
 def _beef_candidate_adjustment(
     n: str,
     query_lower: str,
@@ -931,6 +1038,9 @@ def state_score(
     query: str,
     ingredient_input: str = "",
     candidate_carbs_per100: float = 0.0,
+    candidate_calories_per100: float = 0.0,
+    candidate_protein_per100: float = 0.0,
+    candidate_fat_per100: float = 0.0,
     categories: tuple[str, ...] = (),
     is_grain_like: bool,
     is_legume_like: bool = False,
@@ -942,6 +1052,8 @@ def state_score(
     generic_grain_query: bool = False,
     beef_q: bool = False,
     beef_patty_q: bool = False,
+    fish_like_q: bool = False,
+    smoked_fish_q: bool = False,
     porridge_like_grain_q: bool = False,
     tea_drink_q: bool = False,
     cottage_cheese_q: bool = False,
@@ -1112,6 +1224,17 @@ def state_score(
                 score -= 30
                 add(-30, "raw/dry")
 
+        elif rs == "smoked":
+            if "smoked" in n or "kippered" in n or "lox" in n:
+                score += 40
+                add(40, "smoked_row")
+            elif "dry heat" in n or "cooked" in n:
+                score += 20
+                add(20, "smoked_cooked_fallback")
+            if has_raw and "smoked" not in n:
+                score -= 35
+                add(-35, "smoked_vs_raw")
+
     if is_beverage_like_query(ing) and not query_implies_beverage_powder_or_dry_mix(ing):
         bb, br = _beverage_candidate_adjustment(n)
         score += bb
@@ -1155,6 +1278,19 @@ def state_score(
         bp, bpr = _beef_patty_candidate_adjustment(n, query_lower)
         score += bp
         reasons.extend(bpr)
+
+    if fish_like_q:
+        ff, ffr = _fish_candidate_adjustment(
+            n,
+            query_lower,
+            rs,
+            candidate_calories_per100=candidate_calories_per100,
+            candidate_protein_per100=candidate_protein_per100,
+            candidate_fat_per100=candidate_fat_per100,
+            smoked_fish_q=smoked_fish_q,
+        )
+        score += ff
+        reasons.extend(ffr)
 
     if porridge_like_grain_q:
         pg, pgr = _porridge_like_grain_adjustment(n, query_lower, rs)

@@ -7758,6 +7758,106 @@
       "canonical": "Dates, medjool",
       "default_state": "dry",
       "category": "fruit"
+    },
+    "smoked fish": {
+      "canonical": "Fish, smoked, sablefish",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "smoked fishes": {
+      "canonical": "Fish, smoked, sablefish",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "копченая рыба": {
+      "canonical": "Fish, smoked, sablefish",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "копчёная рыба": {
+      "canonical": "Fish, smoked, sablefish",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "копченый рыб": {
+      "canonical": "Fish, smoked, sablefish",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "копчёный рыб": {
+      "canonical": "Fish, smoked, sablefish",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "рыба копченая": {
+      "canonical": "Fish, smoked, sablefish",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "рыба копчёная": {
+      "canonical": "Fish, smoked, sablefish",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "smoked mackerel": {
+      "canonical": "Fish, smoked, cisco",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "копченая скумбрия": {
+      "canonical": "Fish, smoked, cisco",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "копчёная скумбрия": {
+      "canonical": "Fish, smoked, cisco",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "smoked herring": {
+      "canonical": "Fish, kippered, Atlantic, herring",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "копченая сельдь": {
+      "canonical": "Fish, kippered, Atlantic, herring",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "копчёная сельдь": {
+      "canonical": "Fish, kippered, Atlantic, herring",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "smoked salmon": {
+      "canonical": "Fish, smoked, chinook, salmon",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "копченый лосось": {
+      "canonical": "Fish, smoked, chinook, salmon",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "копчёный лосось": {
+      "canonical": "Fish, smoked, chinook, salmon",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "smoked trout": {
+      "canonical": "Fish, smoked, mixed species, whitefish",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "копченая форель": {
+      "canonical": "Fish, smoked, mixed species, whitefish",
+      "default_state": "smoked",
+      "category": "fish"
+    },
+    "копчёная форель": {
+      "canonical": "Fish, smoked, mixed species, whitefish",
+      "default_state": "smoked",
+      "category": "fish"
     }
   }
 }

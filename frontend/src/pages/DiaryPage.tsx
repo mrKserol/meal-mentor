@@ -270,6 +270,7 @@ export function DiaryPage() {
   const [newWeightNotes, setNewWeightNotes] = useState("");
   const [weightSaving, setWeightSaving] = useState(false);
   const [weightSaveError, setWeightSaveError] = useState<string | null>(null);
+  const [mealHistoryRefresh, setMealHistoryRefresh] = useState(0);
 
   const loadDiary = useCallback(async () => {
     setDiaryPhase("loading");
@@ -304,6 +305,11 @@ export function DiaryPage() {
       setDiaryPhase("error");
     }
   }, [getAccessToken, navigate, validateSession]);
+
+  const handleMealSaved = useCallback(() => {
+    void loadDiary();
+    setMealHistoryRefresh((n) => n + 1);
+  }, [loadDiary]);
 
   const loadWeightMeasurements = useCallback(async () => {
     setWeightPhase("loading");
@@ -434,7 +440,7 @@ export function DiaryPage() {
 
   if (diaryPhase === "error" && diaryError) {
     return (
-      <AppShell activeNav="diary" avatarFallback={avatarFallback} onLogout={handleLogout} onMealSaved={loadDiary}>
+      <AppShell activeNav="diary" avatarFallback={avatarFallback} onLogout={handleLogout} onMealSaved={handleMealSaved}>
         <div className="mx-auto flex max-w-lg flex-col items-center gap-4 p-8 text-center">
           <p className="text-lg font-semibold text-slate-900">Не удалось загрузить данные</p>
           <p className="text-slate-600">{diaryError}</p>
@@ -455,7 +461,7 @@ export function DiaryPage() {
       activeNav="diary"
       avatarFallback={avatarFallback}
       onLogout={handleLogout}
-      onMealSaved={() => void loadDiary()}
+      onMealSaved={handleMealSaved}
     >
       {({ openAddMealForDate }) => (
         <div className="mx-auto w-full max-w-full overflow-x-hidden p-4 pb-8 lg:max-w-7xl lg:p-8">
@@ -597,7 +603,8 @@ export function DiaryPage() {
             <MealHistoryDaySection
               accessToken={webDiaryToken}
               nutritionTarget={nutritionTarget}
-              onMealsChanged={() => void loadDiary()}
+              refreshToken={mealHistoryRefresh}
+              onMealsChanged={handleMealSaved}
               onAddMealForDay={openAddMealForDate}
             />
           ) : null}

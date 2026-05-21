@@ -27,6 +27,7 @@ ALLOWED_STATES = frozenset(
         "roasted",
         "dry",
         "canned",
+        "smoked",
         "unknown",
     }
 )
@@ -312,6 +313,63 @@ def is_seed_kernel_query(ni: NormalizedIngredient) -> bool:
     if "тыквенные" in blob:
         return True
     return False
+
+
+def is_fish_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """Plain fish queries (not tuna-in-oil, not shrimp/prawn)."""
+    if is_tuna_like_ingredient(ni):
+        return False
+    if is_seafood_like_ingredient(ni):
+        return False
+    if NutritionCategory.FISH.value in ni.categories:
+        return True
+    if ni.alias_category == "fish":
+        return True
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    if "fish oil" in blob or "рыбий жир" in blob or "рыбьего жира" in blob:
+        return False
+    fish_words = (
+        "fish",
+        "рыба",
+        "рыб",
+        "salmon",
+        "herring",
+        "mackerel",
+        "trout",
+        "cod",
+        "whitefish",
+        "sardine",
+        "haddock",
+        "sablefish",
+        "cisco",
+        "kippered",
+        "losos",
+        "лосос",
+        "сельд",
+        "скумбр",
+        "форел",
+        "треск",
+        "судак",
+    )
+    return any(w in blob for w in fish_words)
+
+
+def is_smoked_fish_like_ingredient(ni: NormalizedIngredient) -> bool:
+    if not is_fish_like_ingredient(ni):
+        return False
+    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    smoked = (
+        "smoked",
+        "kippered",
+        "lox",
+        "копчен",
+        "копчё",
+        "копченая",
+        "копчёная",
+        "копченый",
+        "копчёный",
+    )
+    return any(s in blob for s in smoked)
 
 
 def is_tuna_like_ingredient(ni: NormalizedIngredient) -> bool:

@@ -39,6 +39,7 @@ grilled
 roasted
 dry
 canned
+smoked
 unknown
 
 Rules:
@@ -86,6 +87,12 @@ Rules:
   if cut is unclear, use "chicken meat with skin" instead of generic "chicken".
 * If the chicken piece contains visible bone, estimate only edible meat grams.
   Do not include bone weight in grams.
+* For fish, be specific when possible:
+  smoked mackerel, smoked herring, smoked salmon, smoked trout, whitefish, sardines, canned tuna.
+  If fish is visibly smoked but species is unclear, use:
+  "smoked fish": {"grams": ..., "state": "smoked"}
+  or state "unknown" if preparation is uncertain.
+  Do NOT use "fish oil" unless the image/text clearly shows fish oil as a supplement or ingredient.
 
 STATE RULES:
 
@@ -104,6 +111,7 @@ STATE RULES:
   fresh → "raw"
   visibly cooked → "boiled", "fried", or "baked"
 * Canned food → "canned"
+* Smoked fish (копчёная/копченая рыба) → "smoked" when clearly smoked; if species is unclear use "smoked fish" with state "smoked" or "unknown"
 * Do NOT mark plate food as "dry" unless it is clearly dry (e.g., uncooked pasta)
 * If the dish is described in Russian without specifying preparation (e.g., "гречка", "рис", "макароны"), assume it is cooked unless stated otherwise.
 * If the image contains no food, return an empty JSON object {}

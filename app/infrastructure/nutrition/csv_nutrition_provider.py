@@ -17,6 +17,8 @@ from app.infrastructure.nutrition.ingredient_input import (
     is_beer_like_ingredient,
     is_beef_like_ingredient,
     is_beef_patty_like_ingredient,
+    is_fish_like_ingredient,
+    is_smoked_fish_like_ingredient,
     is_porridge_like_grain,
     is_generic_grain_query,
     NormalizedIngredient,
@@ -337,6 +339,8 @@ class NutritionService:
         generic_grain_q = is_generic_grain_query(ni)
         beef_q = is_beef_like_ingredient(ni)
         beef_patty_q = is_beef_patty_like_ingredient(ni)
+        fish_q = is_fish_like_ingredient(ni)
+        smoked_fish_q = is_smoked_fish_like_ingredient(ni)
         porridge_grain_q = is_porridge_like_grain(ni)
         tea_drink = is_tea_drink_query(ni)
         cottage = is_cottage_cheese_like(ni)
@@ -352,6 +356,9 @@ class NutritionService:
                 query=ni.canonical_query,
                 ingredient_input=ni.input_name,
                 candidate_carbs_per100=float(row.get("carbohydrates") or 0),
+                candidate_calories_per100=float(row.get("calories") or 0),
+                candidate_protein_per100=float(row.get("proteins") or 0),
+                candidate_fat_per100=float(row.get("fats") or 0),
                 categories=ni.categories,
                 is_grain_like=grain,
                 is_legume_like=legume,
@@ -363,6 +370,8 @@ class NutritionService:
                 generic_grain_query=generic_grain_q,
                 beef_q=beef_q,
                 beef_patty_q=beef_patty_q,
+                fish_like_q=fish_q,
+                smoked_fish_q=smoked_fish_q,
                 porridge_like_grain_q=porridge_grain_q,
                 tea_drink_q=tea_drink,
                 cottage_cheese_q=cottage,

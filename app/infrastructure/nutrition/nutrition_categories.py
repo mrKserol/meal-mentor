@@ -127,6 +127,23 @@ def detect_ingredient_categories(
             )
     if "tuna" in blob or "тунец" in blob:
         mark(NutritionCategory.TUNA, NutritionCategory.SEAFOOD, NutritionCategory.FISH, reason="tuna_like")
+    if any(
+        x in blob
+        for x in (
+            "smoked fish",
+            "kippered",
+            "копченая рыба",
+            "копчёная рыба",
+            "копченый рыб",
+            "копчёный рыб",
+            "рыба копченая",
+            "рыба копчёная",
+        )
+    ) or (
+        ("smoked" in blob or "копчен" in blob or "копчё" in blob)
+        and ("fish" in blob or "рыба" in blob or "рыб" in blob)
+    ):
+        mark(NutritionCategory.FISH, reason="smoked_fish_like")
     if re.search(r"\b(shrimp|shrimps|prawn|prawns)\b", blob) or "кревет" in blob:
         mark(NutritionCategory.SHRIMP, NutritionCategory.SEAFOOD, reason="shrimp_like")
     if "banana" in blob or "банан" in blob:
