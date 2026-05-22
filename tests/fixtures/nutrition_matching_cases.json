@@ -568,5 +568,87 @@
         "smoked fish": ["fish", "mackerel", "herring", "salmon", "whitefish", "trout", "sablefish", "cisco", "haddock", "kippered"]
       }
     }
+  },
+  {
+    "name": "borscht with bread",
+    "description": "Borscht should match cooked soup, not dry mix/fat/sauce",
+    "ingredients": {
+      "borscht": {"grams": 300, "state": "cooked"},
+      "bread": {"grams": 50, "state": "unknown"}
+    },
+    "expected": {
+      "calories_min": 220,
+      "calories_max": 500,
+      "protein_min": 6,
+      "protein_max": 25,
+      "fat_min": 1,
+      "fat_max": 20,
+      "carbohydrates_min": 30,
+      "carbohydrates_max": 75,
+      "required_contains_any": {
+        "borscht": ["soup", "borscht", "borsch", "beet", "vegetable"]
+      },
+      "forbidden_match_contains": {
+        "borscht": [
+          "dry mix",
+          "dehydrated",
+          "powder",
+          "sauce",
+          "gravy",
+          "oil",
+          "fat",
+          "shortening",
+          "babyfood"
+        ]
+      }
+    }
+  },
+  {
+    "name": "generic soup with bread",
+    "ingredients": {
+      "soup": {"grams": 300, "state": "cooked"},
+      "bread": {"grams": 50, "state": "unknown"}
+    },
+    "expected": {
+      "calories_min": 180,
+      "calories_max": 450,
+      "fat_max": 20,
+      "carbohydrates_min": 25,
+      "forbidden_match_contains": {
+        "soup": ["dry mix", "dehydrated", "powder", "sauce", "gravy", "oil", "fat", "shortening"]
+      }
+    }
+  },
+  {
+    "name": "lentil soup",
+    "ingredients": {
+      "lentil soup": {"grams": 300, "state": "cooked"}
+    },
+    "expected": {
+      "calories_min": 120,
+      "calories_max": 400,
+      "protein_min": 6,
+      "fat_max": 18,
+      "forbidden_match_contains": {
+        "lentil soup": ["dry mix", "dehydrated", "powder", "sauce", "gravy", "oil", "fat"]
+      }
+    }
+  },
+  {
+    "name": "tomato soup",
+    "ingredients": {
+      "tomato soup": {"grams": 300, "state": "cooked"}
+    },
+    "expected": {
+      "calories_min": 60,
+      "calories_max": 300,
+      "fat_max": 15,
+      "required_contains_any": {
+        "tomato soup": ["soup", "tomato"]
+      },
+      "forbidden_match_contains": {
+        "tomato soup": ["dry mix", "powder", "gravy", "oil", "fat"]
+      }
+    }
   }
 ]

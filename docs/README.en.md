@@ -358,6 +358,8 @@ pytest tests/test_feature_access.py
 
 **Nutrition matching:** fixtures in `tests/fixtures/nutrition_matching_cases.json`. Add cases when fixing matcher bugs. Verbose logs: `NUTRITION_DEBUG_MATCHING=1`.
 
+**Category-aware matching (soups):** `soup` / `prepared_soup` categories block incorrect matches to dry mix, condensed, powder, sauce, gravy, oil, fat, shortening, and dehydrated rows. Covered cases include borscht with bread, generic soup with bread, lentil soup, tomato soup, and aliases for cabbage soup / kharcho / rassolnik / solyanka. For common named soups, add an alias and fixture first instead of relying on fuzzy search alone.
+
 **Usage limits:** atomic multi-counter increment per AI request.
 
 ---

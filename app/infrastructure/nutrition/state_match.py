@@ -696,6 +696,173 @@ def _fish_candidate_adjustment(
     return max(score, -520.0), reasons
 
 
+def _soup_candidate_adjustment(
+    candidate_name: str,
+    query_lower: str,
+    requested_state: str,
+    candidate_calories_per100: float = 0.0,
+    candidate_protein_per100: float = 0.0,
+    candidate_fat_per100: float = 0.0,
+    candidate_carbs_per100: float = 0.0,
+) -> tuple[float, list[str]]:
+    """Prefer prepared/ready-to-serve soup rows; penalize dry mix, fat, sauce, gravy."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = candidate_name.lower()
+    ql = query_lower.lower()
+    rs = (requested_state or "unknown").lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if "soup" in nl:
+        add(90, "soup_word")
+    if "ready-to-serve" in nl or "ready to serve" in nl:
+        add(50, "soup_ready_to_serve")
+    if "prepared" in nl:
+        add(45, "soup_prepared")
+    if "cooked" in nl:
+        add(40, "soup_cooked")
+    if "with water" in nl:
+        add(35, "soup_with_water")
+    if "prepared with water" in nl:
+        add(35, "soup_prepared_with_water")
+    if "vegetable" in nl:
+        add(30, "soup_vegetable")
+    if "broth" in nl and "broth" in ql:
+        add(25, "soup_broth")
+    for token in ("cabbage", "tomato", "bean", "lentil", "chicken", "beef"):
+        if token in nl and token in ql:
+            add(20, f"soup_query_{token}")
+
+    if rs in ("cooked", "boiled", "unknown"):
+        if any(x in nl for x in ("prepared with equal volume water", "prepared with water", "ready-to-serve", "ready to serve")):
+            add(25, "soup_state_prepared")
+
+    for bad, pen in (
+        ("dry mix", 220),
+        ("dehydrated", 220),
+        ("powder", 200),
+    ):
+        if bad in nl:
+            add(-pen, f"soup_bad_{bad.replace(' ', '_')}")
+    if "condensed" in nl and "prepared" not in nl:
+        add(-180, "soup_condensed_unprepared")
+    for bad, pen in (
+        ("sauce", 180),
+        ("gravy", 180),
+        ("oil", 180),
+        ("shortening", 180),
+    ):
+        if bad in nl and bad not in ql:
+            add(-pen, f"soup_bad_{bad}")
+    if re.search(r"\bfat\b", nl) and "fat" not in ql and "жир" not in ql:
+        add(-180, "soup_bad_fat")
+    if "cream" in nl and not any(x in ql for x in ("cream", "сливки", "сметана")):
+        add(-140, "soup_cream_unrequested")
+    if "babyfood" in nl and "baby" not in ql:
+        add(-130, "soup_babyfood")
+    if "stew" in nl and "stew" not in ql and "рагу" not in ql:
+        add(-120, "soup_stew")
+    if "canned" in nl and "canned" not in ql and "консерв" not in ql:
+        add(-100, "soup_canned_unrequested")
+    if "mix" in nl and not any(x in nl for x in ("ready-to-serve", "ready to serve", "prepared")):
+        add(-100, "soup_mix")
+
+    query_has_cream = any(x in ql for x in ("cream", "сливки", "сметана", "oil", "масло"))
+    if not query_has_cream:
+        if candidate_calories_per100 > 220:
+            add(-180, "soup_high_calories")
+        if candidate_fat_per100 > 15:
+            add(-180, "soup_high_fat")
+        if candidate_calories_per100 > 400:
+            add(-350, "soup_impossible_calories")
+        if candidate_fat_per100 > 30:
+            add(-350, "soup_impossible_fat")
+        if candidate_fat_per100 > 50:
+            add(-500, "soup_fat_only_profile")
+
+    _ = candidate_protein_per100, candidate_carbs_per100
+    return max(score, -900.0), reasons
+
+
+def _borscht_candidate_adjustment(
+    candidate_name: str,
+    query_lower: str,
+    candidate_calories_per100: float = 0.0,
+    candidate_fat_per100: float = 0.0,
+) -> tuple[float, list[str]]:
+    """Borscht-like queries: beet/vegetable soup rows, not beef fat or dry mix."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = candidate_name.lower()
+    ql = query_lower.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if "borscht" in nl:
+        add(120, "borscht_word")
+    if "borsch" in nl:
+        add(110, "borsch_word")
+    if "beet" in nl:
+        add(80, "borscht_beet")
+    if "soup" in nl:
+        add(60, "borscht_soup")
+    if "cabbage" in nl:
+        add(35, "borscht_cabbage")
+    if "vegetable" in nl:
+        add(30, "borscht_vegetable")
+    if "beef" in nl and any(x in ql for x in ("meat", "beef", "мясом", "говядина", "говяж")):
+        add(20, "borscht_beef_in_query")
+
+    for bad, pen in (
+        ("dry mix", 250),
+        ("dehydrated", 250),
+        ("powder", 250),
+    ):
+        if bad in nl:
+            add(-pen, f"borscht_bad_{bad.replace(' ', '_')}")
+    for bad, pen in (
+        ("sauce", 220),
+        ("gravy", 220),
+        ("oil", 220),
+        ("shortening", 220),
+    ):
+        if bad in nl and bad not in ql:
+            add(-pen, f"borscht_bad_{bad}")
+    if re.search(r"\bfat\b", nl) and "fat" not in ql:
+        add(-220, "borscht_bad_fat")
+    if "condensed" in nl and "prepared" not in nl:
+        add(-180, "borscht_condensed_unprepared")
+    if "cream" in nl and not any(x in ql for x in ("sour cream", "cream", "сметана", "сливки")):
+        add(-140, "borscht_cream_unrequested")
+    if "stew" in nl and "stew" not in ql and "рагу" not in ql:
+        add(-120, "borscht_stew")
+    if "babyfood" in nl:
+        add(-120, "borscht_babyfood")
+    if "meat only" in nl and "meat" not in ql:
+        add(-120, "borscht_meat_only")
+    for bad in ("sausage", "beef fat", "pork fat", "tallow", "lard", "separable fat"):
+        if bad in nl:
+            add(-120, f"borscht_bad_{bad.replace(' ', '_')}")
+
+    if candidate_calories_per100 > 180:
+        add(-220, "borscht_high_calories")
+    if candidate_fat_per100 > 12:
+        add(-220, "borscht_high_fat")
+    if candidate_calories_per100 > 300:
+        add(-400, "borscht_impossible_calories")
+    if candidate_fat_per100 > 25:
+        add(-400, "borscht_impossible_fat")
+
+    return max(score, -950.0), reasons
+
+
 def _beef_candidate_adjustment(
     n: str,
     query_lower: str,
@@ -926,6 +1093,33 @@ def _category_common_adjustment(
         blob = f"{ql} {il}"
         return any(w in blob for w in words)
 
+    # Soup / prepared dishes
+    if "soup" in cats or "prepared_soup" in cats or "prepared_dish" in cats:
+        if "soup" in nl:
+            add(40, "cat_soup_word")
+        if any(x in nl for x in ("ready-to-serve", "ready to serve", "prepared with water", "prepared with equal volume water")):
+            add(35, "cat_soup_prepared")
+        if rs in ("cooked", "boiled", "unknown") and any(
+            x in nl for x in ("prepared", "cooked", "with water", "ready-to-serve", "ready to serve")
+        ):
+            add(25, "cat_soup_state_aligned")
+        for bad, pen in (
+            ("dry mix", 120),
+            ("dehydrated", 120),
+            ("powder", 110),
+            ("sauce", 100),
+            ("gravy", 100),
+            ("shortening", 100),
+        ):
+            if bad in nl and not q_has(bad):
+                add(-pen, f"cat_soup_bad_{bad.replace(' ', '_')}")
+        if "condensed" in nl and "prepared" not in nl and not q_has("condensed"):
+            add(-90, "cat_soup_condensed")
+        if re.search(r"\bfat\b", nl) and not q_has("fat", "oil", "масло", "жир"):
+            add(-100, "cat_soup_fat")
+        if "oil" in nl and not q_has("oil", "масло"):
+            add(-100, "cat_soup_oil")
+
     # Meat / beef
     if "meat" in cats or "beef" in cats:
         if "meat only" in nl:
@@ -1052,6 +1246,8 @@ def state_score(
     generic_grain_query: bool = False,
     beef_q: bool = False,
     beef_patty_q: bool = False,
+    soup_like_q: bool = False,
+    borscht_like_q: bool = False,
     fish_like_q: bool = False,
     smoked_fish_q: bool = False,
     porridge_like_grain_q: bool = False,
@@ -1269,6 +1465,28 @@ def state_score(
         gg, ggr = _generic_grain_candidate_adjustment(n, query_lower, rs)
         score += gg
         reasons.extend(ggr)
+
+    if soup_like_q:
+        sp, spr = _soup_candidate_adjustment(
+            n,
+            query_lower,
+            rs,
+            candidate_calories_per100=candidate_calories_per100,
+            candidate_protein_per100=candidate_protein_per100,
+            candidate_fat_per100=candidate_fat_per100,
+            candidate_carbs_per100=candidate_carbs_per100,
+        )
+        score += sp
+        reasons.extend(spr)
+    if borscht_like_q:
+        bo, bor = _borscht_candidate_adjustment(
+            n,
+            query_lower,
+            candidate_calories_per100=candidate_calories_per100,
+            candidate_fat_per100=candidate_fat_per100,
+        )
+        score += bo
+        reasons.extend(bor)
 
     if beef_q:
         bf, bfr = _beef_candidate_adjustment(n, query_lower, candidate_carbs_per100)

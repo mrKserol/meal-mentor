@@ -487,10 +487,88 @@ def is_generic_grain_query(ni: NormalizedIngredient) -> bool:
     return any(g in blob for g in generic)
 
 
+def _ingredient_blob(ni: NormalizedIngredient) -> str:
+    return f"{ni.input_name} {ni.canonical_query}".lower()
+
+
+def is_soup_like_ingredient(ni: NormalizedIngredient) -> bool:
+    if NutritionCategory.SOUP.value in ni.categories:
+        return True
+    if NutritionCategory.PREPARED_SOUP.value in ni.categories:
+        return True
+    blob = _ingredient_blob(ni)
+    terms = (
+        "soup",
+        "borscht",
+        "borsch",
+        "борщ",
+        "суп",
+        "щи",
+        "харчо",
+        "kharcho",
+        "рассольник",
+        "rassolnik",
+        "солянка",
+        "solyanka",
+        "похлебка",
+        "похлёбка",
+        "broth",
+        "бульон",
+        "chowder",
+        "beet soup",
+        "beetroot soup",
+        "cabbage soup",
+        "tomato soup",
+        "lentil soup",
+        "bean soup",
+        "chicken soup",
+        "vegetable soup",
+        "чечевичный суп",
+        "фасолевый суп",
+        "томатный суп",
+        "овощной суп",
+        "куриный суп",
+        "грибной суп",
+        "капустный суп",
+    )
+    return any(t in blob for t in terms)
+
+
+def is_borscht_like_ingredient(ni: NormalizedIngredient) -> bool:
+    blob = _ingredient_blob(ni)
+    return any(
+        t in blob
+        for t in (
+            "borscht",
+            "borsch",
+            "борщ",
+            "beet soup",
+            "beetroot soup",
+            "красный борщ",
+            "украинский борщ",
+        )
+    )
+
+
+def is_lentil_soup_like_ingredient(ni: NormalizedIngredient) -> bool:
+    blob = _ingredient_blob(ni)
+    return any(t in blob for t in ("lentil soup", "чечевичный суп", "суп чечевичный"))
+
+
+def is_bean_soup_like_ingredient(ni: NormalizedIngredient) -> bool:
+    blob = _ingredient_blob(ni)
+    return any(t in blob for t in ("bean soup", "фасолевый суп", "суп фасолевый"))
+
+
 def is_beef_like_ingredient(ni: NormalizedIngredient) -> bool:
+    if is_soup_like_ingredient(ni) and not any(
+        t in _ingredient_blob(ni)
+        for t in ("beef soup", "говяжий суп", "beef barley", "kharcho", "харчо")
+    ):
+        return False
     if NutritionCategory.BEEF.value in ni.categories:
         return True
-    blob = f"{ni.input_name} {ni.canonical_query}".lower()
+    blob = _ingredient_blob(ni)
     return "beef" in blob or "говядин" in blob
 
 

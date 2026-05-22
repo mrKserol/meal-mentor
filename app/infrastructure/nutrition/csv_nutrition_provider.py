@@ -17,6 +17,8 @@ from app.infrastructure.nutrition.ingredient_input import (
     is_beer_like_ingredient,
     is_beef_like_ingredient,
     is_beef_patty_like_ingredient,
+    is_borscht_like_ingredient,
+    is_soup_like_ingredient,
     is_fish_like_ingredient,
     is_smoked_fish_like_ingredient,
     is_porridge_like_grain,
@@ -339,6 +341,8 @@ class NutritionService:
         generic_grain_q = is_generic_grain_query(ni)
         beef_q = is_beef_like_ingredient(ni)
         beef_patty_q = is_beef_patty_like_ingredient(ni)
+        soup_q = is_soup_like_ingredient(ni)
+        borscht_q = is_borscht_like_ingredient(ni)
         fish_q = is_fish_like_ingredient(ni)
         smoked_fish_q = is_smoked_fish_like_ingredient(ni)
         porridge_grain_q = is_porridge_like_grain(ni)
@@ -370,6 +374,8 @@ class NutritionService:
                 generic_grain_query=generic_grain_q,
                 beef_q=beef_q,
                 beef_patty_q=beef_patty_q,
+                soup_like_q=soup_q,
+                borscht_like_q=borscht_q,
                 fish_like_q=fish_q,
                 smoked_fish_q=smoked_fish_q,
                 porridge_like_grain_q=porridge_grain_q,

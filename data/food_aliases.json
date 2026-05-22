@@ -7858,6 +7858,176 @@
       "canonical": "Fish, smoked, mixed species, whitefish",
       "default_state": "smoked",
       "category": "fish"
+    },
+    "soup": {
+      "canonical": "Soup, ready-to-serve, canned, chunky vegetable",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "суп": {
+      "canonical": "Soup, ready-to-serve, canned, chunky vegetable",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "домашний суп": {
+      "canonical": "Soup, ready-to-serve, canned, chunky vegetable",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "borscht": {
+      "canonical": "Soup, prepared with equal volume water, canned, vegetarian vegetable",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "borsch": {
+      "canonical": "Soup, prepared with equal volume water, canned, vegetarian vegetable",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "борщ": {
+      "canonical": "Soup, prepared with equal volume water, canned, vegetarian vegetable",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "борщ домашний": {
+      "canonical": "Soup, prepared with equal volume water, canned, vegetarian vegetable",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "красный борщ": {
+      "canonical": "Soup, prepared with equal volume water, canned, vegetarian vegetable",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "украинский борщ": {
+      "canonical": "Soup, prepared with equal volume water, canned, vegetarian vegetable",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "beet soup": {
+      "canonical": "Soup, prepared with equal volume water, canned, vegetarian vegetable",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "beetroot soup": {
+      "canonical": "Soup, prepared with equal volume water, canned, vegetarian vegetable",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "cabbage soup": {
+      "canonical": "Soup, prepared with equal volume water, canned, minestrone",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "щи": {
+      "canonical": "Soup, prepared with equal volume water, canned, minestrone",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "щи из капусты": {
+      "canonical": "Soup, prepared with equal volume water, canned, minestrone",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "капустный суп": {
+      "canonical": "Soup, prepared with equal volume water, canned, minestrone",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "kharcho": {
+      "canonical": "Soup, ready to serve, beef barley",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "харчо": {
+      "canonical": "Soup, ready to serve, beef barley",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "суп харчо": {
+      "canonical": "Soup, ready to serve, beef barley",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "rassolnik": {
+      "canonical": "Soup, ready to serve, beef barley",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "рассольник": {
+      "canonical": "Soup, ready to serve, beef barley",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "solyanka": {
+      "canonical": "Soup, ready-to-serve, canned, beef and vegetables",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "солянка": {
+      "canonical": "Soup, ready-to-serve, canned, beef and vegetables",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "lentil soup": {
+      "canonical": "Soup, ready-to-serve, canned, lentil with ham",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "чечевичный суп": {
+      "canonical": "Soup, ready-to-serve, canned, lentil with ham",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "суп чечевичный": {
+      "canonical": "Soup, ready-to-serve, canned, lentil with ham",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "bean soup": {
+      "canonical": "Soup, prepared with equal volume water, canned, black bean",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "фасолевый суп": {
+      "canonical": "Soup, prepared with equal volume water, canned, black bean",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "суп фасолевый": {
+      "canonical": "Soup, prepared with equal volume water, canned, black bean",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "tomato soup": {
+      "canonical": "Soup, commercial, prepared with equal volume water, canned, tomato",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "томатный суп": {
+      "canonical": "Soup, commercial, prepared with equal volume water, canned, tomato",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "суп томатный": {
+      "canonical": "Soup, commercial, prepared with equal volume water, canned, tomato",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "chicken soup": {
+      "canonical": "Soup, prepared with equal volume water, canned, chicken noodle",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "куриный суп": {
+      "canonical": "Soup, prepared with equal volume water, canned, chicken noodle",
+      "default_state": "cooked",
+      "category": "soup"
+    },
+    "суп с курицей": {
+      "canonical": "Soup, prepared with equal volume water, canned, chicken noodle",
+      "default_state": "cooked",
+      "category": "soup"
     }
   }
 }

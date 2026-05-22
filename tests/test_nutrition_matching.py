@@ -522,6 +522,83 @@ def test_beef_patty_not_fat(nutrition_svc: NutritionService) -> None:
     assert cb <= 5.0, f"beef patty 150g carbs {cb}"
 
 
+def test_borscht_not_fat_or_dry_mix(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"borscht": {"grams": 300, "state": "cooked"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert any(x in m for x in ("soup", "borscht", "borsch", "beet", "vegetable"))
+    for bad in (
+        "dry mix",
+        "dehydrated",
+        "powder",
+        "sauce",
+        "gravy",
+        "oil",
+        "fat",
+        "shortening",
+        "babyfood",
+    ):
+        assert bad not in m, f"borscht matched bad row: {m!r}"
+    cal = int(data.get("calories") or 0)
+    f = float(data.get("fats") or 0)
+    assert 80 <= cal <= 350, f"borscht 300g calories {cal}"
+    assert f <= 18.0, f"borscht 300g fats {f}"
+
+
+def test_borscht_with_bread_regression(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    ingredients = {
+        "borscht": {"grams": 300, "state": "cooked"},
+        "bread": {"grams": 50, "state": "unknown"},
+    }
+    full = nutrition_svc.aggregate_nutrition_full(ingredients)
+    assert full is not None
+    cal = int(round(float(full.get("calories", 0) or 0)))
+    p = float(full.get("proteins", 0) or 0)
+    f = float(full.get("fats", 0) or 0)
+    cb = float(full.get("carbohydrates", 0) or 0)
+    assert 220 <= cal <= 500, f"borscht+bread calories {cal}"
+    assert f <= 20.0, f"borscht+bread fats {f}"
+    assert 30.0 <= cb <= 75.0, f"borscht+bread carbs {cb}"
+    rows = nutrition_svc.search(ingredients)
+    m = (list(rows[0].values())[0].get("match") or "").lower()
+    for bad in ("dry mix", "dehydrated", "powder", "sauce", "gravy", "oil", "fat", "shortening"):
+        assert bad not in m, f"borscht matched bad row: {m!r}"
+    assert p >= 6.0, f"borscht+bread proteins {p}"
+
+
+def test_generic_soup_not_dry_mix(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"soup": {"grams": 300, "state": "cooked"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    for bad in ("dry mix", "dehydrated", "powder", "oil", "fat", "gravy", "shortening"):
+        assert bad not in m, f"soup matched bad row: {m!r}"
+    cal = int(data.get("calories") or 0)
+    assert 60 <= cal <= 450, f"soup 300g calories {cal}"
+
+
+def test_lentil_soup_not_dry_mix(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"lentil soup": {"grams": 300, "state": "cooked"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    for bad in ("dry mix", "dehydrated", "powder", "oil", "fat", "gravy"):
+        assert bad not in m, f"lentil soup matched bad row: {m!r}"
+    cal = int(data.get("calories") or 0)
+    p = float(data.get("proteins") or 0)
+    assert 60 <= cal <= 400, f"lentil soup 300g calories {cal}"
+    assert p >= 5.0, f"lentil soup 300g proteins {p}"
+
+
 def test_smoked_fish_not_fish_oil(nutrition_svc: NutritionService) -> None:
     if not nutrition_svc.aliases.is_loaded:
         pytest.skip("food_aliases.json not loaded")
