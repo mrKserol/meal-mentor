@@ -10,10 +10,16 @@ from typing import Any
 import zoneinfo
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.config import BASE_URL
 from app.db.models import Meal, MealItem, User
+from app.services.additive_totals import sum_additive_intakes_for_range
 from app.db.nutrition_columns import MEAL_ITEM_NUTRITION_KEYS
 from app.services.meal_serialization import meal_composition_line
+from app.services.user_timezone import (
+    absolute_public_url,
+    meal_datetime_for_local_date_end,
+    resolve_tz,
+    utc_naive_to_local,
+)
 from app.db.repository import list_user_measurements
 from app.schemas.diary import (
     DiaryPeriodBlock,
@@ -76,31 +82,17 @@ def _warn_suspicious_nutrient_mapping(avg_values: dict[str, float], *, avg_fat_g
 
 
 def _resolve_tz(user: User) -> zoneinfo.ZoneInfo:
-    raw = (user.timezone or "").strip() or "UTC"
-    try:
-        return zoneinfo.ZoneInfo(raw)
-    except Exception:
-        return zoneinfo.ZoneInfo("UTC")
+    return resolve_tz(user)
+
+
+def _utc_naive_to_local(dt: datetime, tz: zoneinfo.ZoneInfo) -> datetime:
+    return utc_naive_to_local(dt, tz)
 
 
 def _as_utc_naive(dt: datetime) -> datetime:
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc).astimezone(timezone.utc).replace(tzinfo=None)
     return dt.astimezone(timezone.utc).replace(tzinfo=None)
-
-
-def _utc_naive_to_local(dt: datetime, tz: zoneinfo.ZoneInfo) -> datetime:
-    utc = dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt.astimezone(timezone.utc)
-    return utc.astimezone(tz)
-
-
-def meal_datetime_for_local_date_end(user: User, d: date) -> datetime:
-    """End of calendar day `d` in user timezone (23:59:59), as UTC-naive for DB."""
-    from datetime import time
-
-    tz = _resolve_tz(user)
-    local_end = datetime.combine(d, time(23, 59, 59), tzinfo=tz)
-    return local_end.astimezone(timezone.utc).replace(tzinfo=None)
 
 
 def _rolling_7_days_utc_naive(user: User) -> tuple[datetime, datetime, date, date, zoneinfo.ZoneInfo]:
@@ -175,15 +167,7 @@ def _sum_meal_nutrition(meal: Meal) -> dict[str, int | float]:
 
 
 def _absolute_public_url(web_path: str | None) -> str | None:
-    if not web_path:
-        return None
-    p = web_path.strip()
-    if p.startswith("http://") or p.startswith("https://"):
-        return p
-    base = BASE_URL.rstrip("/")
-    if not p.startswith("/"):
-        p = "/" + p
-    return f"{base}{p}"
+    return absolute_public_url(web_path)
 
 
 def _meal_naive_dt(meal: Meal) -> datetime:
@@ -353,6 +337,14 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         tf += nut["fat_g"]
         tcb += nut["carbs_g"]
         tfib += float(nut["fiber_g"])
+
+    additive_today = sum_additive_intakes_for_range(db, user.id, t_start, t_end)
+    tc += int(round(additive_today.get("calories", 0) or 0))
+    tp += int(round(additive_today.get("protein_g", 0) or 0))
+    tf += int(round(additive_today.get("fat_g", 0) or 0))
+    tcb += int(round(additive_today.get("carbs_g", 0) or 0))
+    tfib += float(additive_today.get("fiber_g", 0) or 0)
+
     today = DiaryTodayTotals(calories=tc, protein_g=tp, fat_g=tf, carbs_g=tcb, fiber_g=round(tfib, 2))
 
     meals_today_desc = sorted(meals_today, key=lambda m: m.meal_datetime, reverse=True)

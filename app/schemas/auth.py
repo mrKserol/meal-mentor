@@ -3,6 +3,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.schemas.additives import DayNutritionTotals
+
 
 class AuthRegisterRequest(BaseModel):
     telegram_username: str | None = None
@@ -260,6 +262,7 @@ class WebMealDayRow(BaseModel):
 class WebMealsDayResponse(BaseModel):
     date: date
     items: list[WebMealDayRow]
+    additive_totals: DayNutritionTotals | None = None
 
 
 class ProfilePatchRequest(BaseModel):

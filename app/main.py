@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from app.infrastructure.storage.additive_photo_storage import get_upload_root as get_additive_upload_root
 from app.infrastructure.storage.meal_photo_storage import get_upload_root
 from app.db.session import init_db
 from app.interfaces.api.routes_users import router as users_router
@@ -14,6 +15,7 @@ from app.interfaces.api.routes_subscriptions import router as subscriptions_rout
 from app.routers.auth import router as auth_router
 from app.routers.admin import router as admin_router
 from app.routers.curator import router as curator_router
+from app.routers.user_additives import router as user_additives_router
 from app.routers.users import router as users_web_router
 from app.core.use_cases.meal_analysis import analyze_meal_from_image_base64
 
@@ -35,6 +37,7 @@ app.include_router(nutrition_router)
 app.include_router(subscriptions_router)
 app.include_router(auth_router)
 app.include_router(users_web_router)
+app.include_router(user_additives_router)
 app.include_router(admin_router)
 app.include_router(curator_router)
 
@@ -45,6 +48,14 @@ app.mount(
     "/media/meal_photos",
     StaticFiles(directory=str(_meal_photo_root)),
     name="meal_photos_media",
+)
+
+_additive_photo_root = get_additive_upload_root()
+_additive_photo_root.mkdir(parents=True, exist_ok=True)
+app.mount(
+    "/media/additives",
+    StaticFiles(directory=str(_additive_photo_root)),
+    name="additives_media",
 )
 
 

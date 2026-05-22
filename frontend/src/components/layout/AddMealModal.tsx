@@ -1,7 +1,10 @@
 import axios from "axios";
 import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Camera, FileUp, Loader2, PenLine, X } from "lucide-react";
+import { Camera, Droplets, FileUp, Loader2, PenLine, Pill, X } from "lucide-react";
+
+import { recordWaterIntake } from "../../api/additivesApi";
+import { TakeAdditiveModal } from "../additives/TakeAdditiveModal";
 
 import {
   analyzeMealImageBase64,
@@ -69,6 +72,8 @@ function formatMealLocalDateHint(ymd: string): string {
 export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddMealModalProps) {
   const { validateSession, getAccessToken } = useAuth();
   const [ui, setUi] = useState<UiState>({ kind: "menu" });
+  const [takeAdditiveOpen, setTakeAdditiveOpen] = useState(false);
+  const [waterSaving, setWaterSaving] = useState(false);
   const [textDraft, setTextDraft] = useState("");
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -88,7 +93,11 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
   }, []);
 
   useEffect(() => {
-    if (open) reset();
+    if (open) {
+      reset();
+      setTakeAdditiveOpen(false);
+      setWaterSaving(false);
+    }
   }, [open, reset]);
 
   useEffect(() => {
@@ -262,7 +271,10 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
 
   if (!open) return null;
 
+  const token = getAccessToken();
+
   return (
+    <>
     <div
       className="fixed inset-0 z-[100] flex items-end justify-center bg-black/45 p-4 sm:items-center"
       role="presentation"
@@ -331,6 +343,46 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
               >
                 <PenLine className="h-5 w-5 shrink-0" aria-hidden />
                 Написать текстом
+              </button>
+              <button
+                type="button"
+                onClick={() => setTakeAdditiveOpen(true)}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+              >
+                <Pill className="h-5 w-5 shrink-0" aria-hidden />
+                Принять добавку
+              </button>
+              <button
+                type="button"
+                disabled={waterSaving}
+                onClick={() => void (async () => {
+                  const sessionOk = await validateSession();
+                  const token = getAccessToken();
+                  if (!sessionOk || !token) {
+                    setUi({ kind: "error", message: "Сессия истекла. Войдите снова." });
+                    return;
+                  }
+                  setWaterSaving(true);
+                  try {
+                    await recordWaterIntake(token, {
+                      amount_ml: 100,
+                      intake_local_date: mealLocalDate ?? undefined,
+                    });
+                    onMealSaved?.();
+                    onClose();
+                  } catch (err) {
+                    setUi({
+                      kind: "error",
+                      message: err instanceof Error ? err.message : "Не удалось записать воду.",
+                    });
+                  } finally {
+                    setWaterSaving(false);
+                  }
+                })()}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-900 transition hover:bg-sky-100 disabled:opacity-50"
+              >
+                <Droplets className="h-5 w-5 shrink-0" aria-hidden />
+                {waterSaving ? "Сохранение…" : "Выпить воды"}
               </button>
               <input
                 ref={cameraRef}
@@ -492,5 +544,19 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
         </div>
       </div>
     </div>
+
+    {token ? (
+      <TakeAdditiveModal
+        open={takeAdditiveOpen}
+        accessToken={token}
+        dateYmd={mealLocalDate ?? null}
+        onClose={() => setTakeAdditiveOpen(false)}
+        onSaved={() => {
+          onMealSaved?.();
+          onClose();
+        }}
+      />
+    ) : null}
+    </>
   );
 }

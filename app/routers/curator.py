@@ -20,6 +20,8 @@ from app.schemas.curator import CuratorUserListItem, CuratorUserProfileResponse
 from app.schemas.diary import DiarySnapshotResponse
 from app.services.diary_snapshot import _resolve_tz, build_diary_snapshot
 from app.services.nutrition_targets import get_active_nutrition_target, get_nutrition_target_for_range
+from app.schemas.additives import DayNutritionTotals
+from app.services.additive_totals import day_additive_totals_response, sum_additive_intakes_for_local_date
 from app.services.web_meals_day import build_web_meal_day_row
 
 router = APIRouter(prefix="/curator", tags=["curator"])
@@ -140,7 +142,9 @@ def get_curator_user_meals_for_day(
     tz = _resolve_tz(target)
     meals = list_meals_for_user_local_date(db, target.id, date_q, tz)
     rows = [build_web_meal_day_row(m, target) for m in meals]
-    return WebMealsDayResponse(date=date_q, items=rows)
+    additive_raw = sum_additive_intakes_for_local_date(db, target, date_q)
+    additive_totals = DayNutritionTotals(**day_additive_totals_response(additive_raw))
+    return WebMealsDayResponse(date=date_q, items=rows, additive_totals=additive_totals)
 
 
 @router.get("/users/{user_id}/measurements", response_model=WeightMeasurementsResponse)
