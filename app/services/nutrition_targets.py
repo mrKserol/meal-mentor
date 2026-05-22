@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.profile import is_profile_completed
 from app.db.models import NutritionTarget, User
+from app.services.user_goal import sync_user_goal
 
 
 def calculate_age(birth_date: date) -> int:
@@ -172,6 +173,8 @@ def create_or_update_active_nutrition_target(
     *,
     force_new: bool = False,
 ) -> NutritionTarget | None:
+    sync_user_goal(user)
+
     if not is_profile_completed(user):
         return None
 

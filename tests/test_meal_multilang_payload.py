@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from app.core.use_cases.meal_analysis import _build_meal_items, _meal_result_from_vision_dict
+from app.core.use_cases.meal_analysis import (
+    _build_meal_items,
+    _meal_result_from_vision_dict,
+    enrich_meal_display_fields,
+)
 from app.infrastructure.ai.openai_food_client import _normalize_model_json
 
 
@@ -57,6 +61,27 @@ def test_build_meal_items_legacy_numeric() -> None:
     assert len(items) == 1
     assert items[0]["item_name"] == "rice"
     assert items[0].get("name_translated") is None
+
+
+def test_enrich_meal_display_fields_legacy_text_shape() -> None:
+    result = enrich_meal_display_fields(
+        _meal_result_from_vision_dict(
+            {
+                "status": "success",
+                "ingredients": {
+                    "buckwheat": {"grams": 180, "state": "cooked"},
+                    "chicken breast": {"grams": 120, "state": "fried"},
+                },
+                "confidence": 0.76,
+                "prediction": "Гречка с курицей",
+                "prediction_translated": None,
+                "prediction_language": None,
+            }
+        ),
+        user_language="ru",
+    )
+    assert result.prediction_translated == "Гречка с курицей"
+    assert result.ingredients["buckwheat"]["name_translated"] == "гречка"
 
 
 def test_build_meal_items_with_name_translated() -> None:

@@ -16,6 +16,9 @@ from app.db.models import (
     UserMeasurement,
 )
 from app.db.nutrition_columns import MEAL_ITEM_NUTRITION_KEYS
+from app.services.user_goal import sync_user_goal
+
+
 def get_or_create_user(
     db: Session,
     telegram_id: int,
@@ -44,13 +47,16 @@ def get_or_create_user(
             ("height_cm", height_cm),
             ("weight_kg", weight_kg),
             ("target_weight_kg", target_weight_kg),
-            ("goal", goal),
             ("activity_level", activity_level),
             ("timezone", timezone),
         ):
             if value is not None and getattr(user, field) != value:
                 setattr(user, field, value)
                 changed = True
+        old_goal = user.goal
+        sync_user_goal(user)
+        if user.goal != old_goal:
+            changed = True
         if changed:
             user.updated_at = datetime.utcnow()
             db.commit()
@@ -65,11 +71,13 @@ def get_or_create_user(
         height_cm=height_cm,
         weight_kg=weight_kg,
         target_weight_kg=target_weight_kg,
-        goal=goal,
+        goal=None,
         activity_level=activity_level,
         timezone=timezone,
     )
     db.add(user)
+    db.flush()
+    sync_user_goal(user)
     db.commit()
     db.refresh(user)
     return user

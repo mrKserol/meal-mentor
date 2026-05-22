@@ -202,6 +202,67 @@ def build_meal_item_specs_from_ingredients(ingredients: dict[str, Any]) -> list[
     return _build_meal_items(ingredients, _get_nutrition())
 
 
+def _has_cyrillic(text: str) -> bool:
+    return any("\u0400" <= ch <= "\u04FF" for ch in text)
+
+
+def enrich_meal_display_fields(
+    result: MealAnalysisResult,
+    *,
+    user_language: str | None = "ru",
+) -> MealAnalysisResult:
+    """Fill prediction_translated / name_translated for legacy or partial text-model JSON."""
+    if result.status != "success":
+        return result
+
+    lang = (user_language or "ru").strip().lower() or "ru"
+    prediction = result.prediction
+    prediction_translated = result.prediction_translated
+    prediction_language = (result.prediction_language or lang).strip().lower()
+
+    if prediction and not prediction_translated and _has_cyrillic(prediction):
+        prediction_translated = prediction
+
+    nutrition_svc = _get_nutrition()
+    aliases = nutrition_svc.aliases if nutrition_svc.is_available else None
+
+    enriched: dict[str, Any] = {}
+    for key, val in (result.ingredients or {}).items():
+        if not isinstance(key, str) or not key.strip():
+            continue
+        if isinstance(val, dict):
+            entry = dict(val)
+        else:
+            try:
+                entry = {"grams": float(val), "state": "unknown"}
+            except (TypeError, ValueError):
+                continue
+
+        if not entry.get("name_translated"):
+            if _has_cyrillic(key):
+                entry["name_translated"] = key.strip()
+                entry.setdefault("name_language", lang)
+            elif lang == "ru" and aliases is not None and aliases.is_loaded:
+                ru = aliases.russian_display_for(key)
+                if ru:
+                    entry["name_translated"] = ru
+                    entry.setdefault("name_language", lang)
+
+        enriched[key.strip()] = entry
+
+    return MealAnalysisResult(
+        status=result.status,
+        ingredients=enriched,
+        confidence=result.confidence,
+        nutrition=result.nutrition,
+        nutrition_full=result.nutrition_full,
+        prediction=prediction,
+        prediction_translated=prediction_translated,
+        prediction_language=prediction_language,
+        error=result.error,
+    )
+
+
 def _meal_result_from_vision_dict(out: dict[str, Any]) -> MealAnalysisResult:
     if out.get("status") != "success":
         return MealAnalysisResult(
@@ -249,11 +310,12 @@ def analyze_meal_from_image_base64(image_base64: str) -> MealAnalysisResult:
     return _meal_result_from_vision_dict(raw)
 
 
-def analyze_meal_from_text(user_text: str) -> MealAnalysisResult:
+def analyze_meal_from_text(user_text: str, *, user_language: str | None = "ru") -> MealAnalysisResult:
     """Same pipeline as photo, text-only model call."""
     vision = _get_vision()
     raw = vision.analyze_text(user_text)
-    return _meal_result_from_vision_dict(raw)
+    result = _meal_result_from_vision_dict(raw)
+    return enrich_meal_display_fields(result, user_language=user_language)
 
 
 def analyze_meal_from_image_and_text(

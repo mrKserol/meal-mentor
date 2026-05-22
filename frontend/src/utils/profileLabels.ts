@@ -4,6 +4,23 @@ const GOALS: Record<string, string> = {
   gain_weight: "Набор массы",
 };
 
+export type UserGoal = "lose_weight" | "maintain_weight" | "gain_weight";
+
+/** Same rules as backend `derive_goal_from_weights`. */
+export function deriveGoalFromWeights(
+  weightKg?: number | null,
+  targetWeightKg?: number | null,
+): UserGoal | null {
+  if (weightKg == null || targetWeightKg == null || Number.isNaN(Number(weightKg)) || Number.isNaN(Number(targetWeightKg))) {
+    return null;
+  }
+  const current = Number(weightKg);
+  const target = Number(targetWeightKg);
+  if (current > target) return "lose_weight";
+  if (current < target) return "gain_weight";
+  return "maintain_weight";
+}
+
 /** PAL / TDEE multiplier → short label */
 const ACTIVITY_NEW: Record<string, string> = {
   "1.2": "Сидячий образ жизни",

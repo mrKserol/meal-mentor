@@ -26,6 +26,8 @@ class FoodAliasIndex:
     def __init__(self, path: str | None):
         self._path = path
         self._by_norm: dict[str, AliasEntry] = {}
+        self._ru_name_by_canonical: dict[str, str] = {}
+        self._ru_name_rank_by_canonical: dict[str, tuple[int, int]] = {}
         if path:
             self._load(path)
 
@@ -72,6 +74,13 @@ class FoodAliasIndex:
                 language=lang_s,
                 display=display_map,
             )
+            if _has_cyrillic(key):
+                canon_s = canon.strip()
+                rank = _ru_alias_rank(key)
+                prev_rank = self._ru_name_rank_by_canonical.get(canon_s)
+                if prev_rank is None or rank > prev_rank:
+                    self._ru_name_by_canonical[canon_s] = key.strip()
+                    self._ru_name_rank_by_canonical[canon_s] = rank
         logger.info("Loaded %s food alias entries from %s", len(self._by_norm), path)
 
     def lookup(self, name: str) -> AliasEntry | None:
@@ -79,9 +88,32 @@ class FoodAliasIndex:
             return None
         return self._by_norm.get(_norm_key(name))
 
+    def russian_display_for(self, english_key: str) -> str | None:
+        """Best-effort Russian UI label for an English ingredient key."""
+        entry = self.lookup(english_key)
+        if entry is None:
+            return None
+        if entry.display:
+            ru = entry.display.get("ru")
+            if isinstance(ru, str) and ru.strip():
+                return ru.strip()
+        return self._ru_name_by_canonical.get(entry.canonical)
+
     @property
     def is_loaded(self) -> bool:
         return bool(self._by_norm)
+
+
+def _has_cyrillic(text: str) -> bool:
+    return any("\u0400" <= ch <= "\u04FF" for ch in text)
+
+
+def _ru_alias_rank(key: str) -> tuple[int, int]:
+    """Prefer one-word Russian aliases with a typical short label length (~6 chars)."""
+    k = key.strip()
+    single_word = 1 if " " not in k else 0
+    sweet_spot = -abs(len(k) - 6)
+    return (single_word, sweet_spot)
 
 
 def _norm_key(s: str) -> str:
