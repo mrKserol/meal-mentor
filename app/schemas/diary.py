@@ -20,6 +20,7 @@ class DiaryRecentMeal(BaseModel):
     water_g: float = 0.0
     recorded_at: datetime
     prediction: str | None = None
+    prediction_translated: str | None = None
     user_text: str | None = None
     composition: str = ""
     meal_photo_large: str | None = None

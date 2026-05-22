@@ -15,6 +15,7 @@ export interface DiaryRecentMeal {
   water_g?: number;
   recorded_at: string;
   prediction?: string | null;
+  prediction_translated?: string | null;
   user_text?: string | null;
   composition?: string;
   meal_photo_large?: string | null;
