@@ -17,6 +17,23 @@ export interface CuratorUserListItem {
   created_at: string | null;
 }
 
+export interface CuratorUserProfile {
+  id: number;
+  first_name: string | null;
+  birth_date: string | null;
+  height_cm: number | null;
+  weight_kg: number | null;
+  target_weight_kg: number | null;
+  activity_level: string | null;
+}
+
+export async function getCuratorUserProfile(token: string, userId: number): Promise<CuratorUserProfile> {
+  const { data } = await authClient.get<CuratorUserProfile>(`/curator/users/${userId}/profile`, {
+    headers: authHeaders(token),
+  });
+  return data;
+}
+
 export async function getCuratorUsers(token: string): Promise<CuratorUserListItem[]> {
   const { data } = await authClient.get<CuratorUserListItem[]>("/curator/users", {
     headers: authHeaders(token),

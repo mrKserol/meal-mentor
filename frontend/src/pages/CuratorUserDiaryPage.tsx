@@ -7,8 +7,11 @@ import {
   getCuratorUserDiary,
   getCuratorUserMealsForDay,
   getCuratorUserNutritionTarget,
+  getCuratorUserProfile,
   getCuratorUserWeightMeasurements,
+  type CuratorUserProfile,
 } from "../api/curatorApi";
+import { CuratorUserProfileSummary } from "../components/curator/CuratorUserProfileSummary";
 import { DiaryStatsCard } from "../components/diary/DiaryStatsCard";
 import { MealHistoryDaySection } from "../components/diary/MealHistoryDaySection";
 import { WeightHistoryCard } from "../components/diary/WeightHistoryCard";
@@ -23,6 +26,7 @@ export function CuratorUserDiaryPage() {
   const navigate = useNavigate();
   const { user, validateSession, logout, getAccessToken } = useAuth();
 
+  const [profile, setProfile] = useState<CuratorUserProfile | null>(null);
   const [snapshot, setSnapshot] = useState<DiarySnapshot | null>(null);
   const [nutritionTarget, setNutritionTarget] = useState<NutritionTarget | null>(null);
   const [diaryPhase, setDiaryPhase] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -47,12 +51,14 @@ export function CuratorUserDiaryPage() {
         navigate("/login", { replace: true });
         return;
       }
-      const [snap, ntEnv] = await Promise.all([
+      const [snap, ntEnv, prof] = await Promise.all([
         getCuratorUserDiary(token, selectedUserId),
         getCuratorUserNutritionTarget(token, selectedUserId),
+        getCuratorUserProfile(token, selectedUserId),
       ]);
       setSnapshot(snap);
       setNutritionTarget(ntEnv.nutrition_target);
+      setProfile(prof);
       setDiaryPhase("ready");
     } catch (e) {
       if (axios.isAxiosError(e) && e.response?.status === 403) {
@@ -105,6 +111,10 @@ export function CuratorUserDiaryPage() {
     user?.first_name?.trim()?.[0] ?? user?.username?.trim()?.[0] ?? user?.email?.trim()?.[0] ?? "U";
   const token = getAccessToken() ?? "";
   const weightKg = snapshot?.weight.weight_kg ?? null;
+  const profileForHeader =
+    profile != null
+      ? { ...profile, weight_kg: weightKg ?? profile.weight_kg }
+      : null;
 
   if (!user) {
     return (
@@ -134,11 +144,15 @@ export function CuratorUserDiaryPage() {
   return (
     <AppShell activeNav="home" avatarFallback={avatarFallback} onLogout={handleLogout} showMobileFab={false}>
       <div className="mx-auto w-full max-w-full overflow-x-hidden p-4 pb-8 lg:max-w-7xl lg:p-8">
-        <div className="mb-4 flex justify-end">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <CuratorUserProfileSummary
+            profile={profileForHeader}
+            loading={diaryPhase === "loading" && !profileForHeader}
+          />
           <button
             type="button"
             onClick={() => navigate("/curator")}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex shrink-0 items-center gap-2 self-end rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:self-start"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden />
             Назад

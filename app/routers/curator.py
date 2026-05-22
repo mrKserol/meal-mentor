@@ -16,7 +16,7 @@ from app.schemas.auth import (
     WeightMeasurementsResponse,
     WebMealsDayResponse,
 )
-from app.schemas.curator import CuratorUserListItem
+from app.schemas.curator import CuratorUserListItem, CuratorUserProfileResponse
 from app.schemas.diary import DiarySnapshotResponse
 from app.services.diary_snapshot import _resolve_tz, build_diary_snapshot
 from app.services.nutrition_targets import get_active_nutrition_target, get_nutrition_target_for_range
@@ -99,6 +99,24 @@ def list_curator_users(
         )
         for u in rows
     ]
+
+
+@router.get("/users/{user_id}/profile", response_model=CuratorUserProfileResponse)
+def get_curator_user_profile(
+    user_id: int,
+    curator: User = Depends(require_curator_or_admin),
+    db: Session = Depends(get_db),
+):
+    target = _ensure_curator_can_access_user(db, curator, user_id)
+    return CuratorUserProfileResponse(
+        id=target.id,
+        first_name=target.first_name,
+        birth_date=target.birth_date,
+        height_cm=target.height_cm,
+        weight_kg=target.weight_kg,
+        target_weight_kg=target.target_weight_kg,
+        activity_level=target.activity_level,
+    )
 
 
 @router.get("/users/{user_id}/diary", response_model=DiarySnapshotResponse)

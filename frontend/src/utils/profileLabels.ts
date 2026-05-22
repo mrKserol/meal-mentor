@@ -23,6 +23,32 @@ const ACTIVITY_LEGACY: Record<string, string> = {
   high: "Высокая активность",
 };
 
+/** Full years from ISO birth date (YYYY-MM-DD). */
+export function ageYearsFromBirthDate(birthDate?: string | null): number | null {
+  if (!birthDate) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthDate.trim());
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) return null;
+  const today = new Date();
+  let years = today.getFullYear() - y;
+  const monthDay = (today.getMonth() + 1) * 100 + today.getDate();
+  const birthMonthDay = mo * 100 + d;
+  if (monthDay < birthMonthDay) years -= 1;
+  return years >= 0 ? years : null;
+}
+
+export function formatWeightKgRu(value?: number | null): string {
+  if (value == null || Number.isNaN(Number(value))) {
+    return "—";
+  }
+  const n = Number(value);
+  const text = Number.isInteger(n) ? String(n) : n.toFixed(1).replace(".", ",");
+  return `${text} кг`;
+}
+
 export function getGoalLabel(goal?: string | null): string {
   if (goal == null || goal === "") {
     return "Не указано";
