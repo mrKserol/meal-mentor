@@ -73,7 +73,7 @@ python -m app.bot.telegram_bot
 |------|------------|
 | API | FastAPI, SQLAlchemy, Alembic, JWT |
 | AI | OpenAI (vision + text) |
-| Nutrition | `data/nutrition.csv`, aliases, fuzzy / optional semantic match |
+| Nutrition | `data/nutrition.csv`, aliases, fuzzy / optional semantic match; soup category scoring (see docs) |
 | Web UI | React, Vite, TypeScript, Tailwind, PWA |
 | Bot | Python, long polling → HTTP API |
 

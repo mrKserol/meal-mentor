@@ -59,6 +59,31 @@ export async function recalculateMealNutrition(
   return data;
 }
 
+export type FoodNameResolveResult = {
+  status: string;
+  input_name: string;
+  canonical_name: string | null;
+  display_name: string | null;
+  language: string | null;
+  default_state: string | null;
+  category: string | null;
+  source: string | null;
+  confidence: number | null;
+  error?: string;
+};
+
+export async function resolveIngredientName(
+  accessToken: string,
+  payload: { name: string; grams?: number; state?: string | null },
+): Promise<FoodNameResolveResult> {
+  const { data } = await authClient.post<FoodNameResolveResult>(
+    "/users/me/ingredients/resolve",
+    payload,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  return data;
+}
+
 export async function saveMyMealToDiary(
   accessToken: string,
   payload: {
@@ -66,6 +91,8 @@ export async function saveMyMealToDiary(
     source_type: string;
     telegram_file_id?: string | null;
     prediction?: string | null;
+    prediction_translated?: string | null;
+    prediction_language?: string | null;
     user_text?: string | null;
     image_base64?: string | null;
     meal_local_date?: string | null;

@@ -13,7 +13,12 @@ from app.auth.user_me_payload import serialize_user_me
 from app.db.models import Allergen, User
 from app.db.repository import create_meal, delete_meal_for_user, list_meals_for_user_local_date, list_user_measurements
 from app.db.session import get_db
+from app.core.config import FOOD_ALIASES_PATH
+from app.infrastructure.nutrition.food_aliases import FoodAliasIndex
+from app.infrastructure.nutrition.food_name_resolver import FoodNameResolver
 from app.schemas.auth import (
+    FoodNameResolveRequest,
+    FoodNameResolveResponse,
     LabelAnalysisResponse,
     MyNutritionTargetResponse,
     NutritionTargetResponse,
@@ -56,6 +61,8 @@ from app.services.nutrition_targets import (
 )
 from app.services.entitlements import build_user_entitlements
 from app.services.weight_measurements import record_weight_measurement
+
+ALLOWED_LANGUAGE_CODES = frozenset({"ru", "en", "es", "de", "fr"})
 
 ALLOWED_ALLERGEN_KEYS = frozenset(
     {
@@ -110,6 +117,7 @@ def analyze_my_meal_image(
     payload = result.to_api_dict()
     if payload.get("status") == "success":
         record_photo_recognition_usage(db, current_user)
+        payload.setdefault("prediction_language", current_user.language or "ru")
     return payload
 
 
@@ -127,6 +135,7 @@ def analyze_my_meal_text(
     payload = result.to_api_dict()
     if payload.get("status") == "success":
         record_text_ai_usage(db, current_user)
+        payload.setdefault("prediction_language", current_user.language or "ru")
     return payload
 
 
@@ -155,7 +164,49 @@ def analyze_my_meal_image_text(
     payload = result.to_api_dict()
     if payload.get("status") == "success":
         record_photo_recognition_usage(db, current_user)
+        payload.setdefault("prediction_language", current_user.language or "ru")
     return payload
+
+
+@router.post("/me/ingredients/resolve", response_model=FoodNameResolveResponse)
+def resolve_my_ingredient_name(
+    body: FoodNameResolveRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Resolve a user-typed ingredient name to canonical name for nutrition lookup."""
+    name = (body.name or "").strip()
+    if not name:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="name is required")
+
+    user_lang = current_user.language or "ru"
+    aliases = FoodAliasIndex(FOOD_ALIASES_PATH)
+    resolver = FoodNameResolver(aliases)
+    resolved = resolver.resolve(name, language=user_lang)
+
+    if resolved is not None:
+        display = resolved.display_name or name
+        return FoodNameResolveResponse(
+            status="success",
+            input_name=name,
+            canonical_name=resolved.canonical_name,
+            display_name=display,
+            language=user_lang,
+            default_state=resolved.default_state,
+            category=resolved.category,
+            source=resolved.source,
+            confidence=resolved.confidence,
+        )
+
+    return FoodNameResolveResponse(
+        status="success",
+        input_name=name,
+        canonical_name=name,
+        display_name=name,
+        language=user_lang,
+        default_state=body.state,
+        source="input",
+        confidence=0.0,
+    )
 
 
 @router.post("/me/analyze-label", response_model=LabelAnalysisResponse)
@@ -206,12 +257,15 @@ def save_my_meal(
     if body.meal_local_date is not None:
         meal_dt = meal_datetime_for_local_date_end(current_user, body.meal_local_date)
 
+    pred_lang = body.prediction_language or current_user.language or "ru"
     create_meal(
         db,
         current_user.id,
         source_type=body.source_type or "photo",
         telegram_file_id=body.telegram_file_id,
         prediction=body.prediction,
+        prediction_translated=body.prediction_translated,
+        prediction_language=pred_lang,
         user_text=body.user_text,
         meal_photo_large=lg,
         meal_photo_thumb=th,
@@ -258,12 +312,15 @@ def patch_my_meal(
     db: Session = Depends(get_db),
 ):
     """Обновить состав и название существующего приёма."""
+    pred_lang = body.prediction_language or current_user.language or "ru"
     out = update_meal_composition(
         db,
         current_user.id,
         meal_id,
         body.ingredients or {},
         prediction=body.prediction,
+        prediction_translated=body.prediction_translated,
+        prediction_language=pred_lang,
     )
     if out.get("status") != "ok":
         raise HTTPException(
@@ -399,6 +456,17 @@ def patch_my_profile(
     for field in ("sex", "birth_date", "height_cm", "weight_kg", "goal", "activity_level", "target_weight_kg"):
         if field in data:
             setattr(current_user, field, data[field])
+
+    if "language" in data:
+        lang = data["language"]
+        if lang is not None:
+            lang_norm = str(lang).strip().lower()
+            if lang_norm not in ALLOWED_LANGUAGE_CODES:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Unknown language: {lang}",
+                )
+            current_user.language = lang_norm
 
     if "allergens" in data:
         incoming_allergens = data["allergens"] or []

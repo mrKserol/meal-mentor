@@ -39,6 +39,8 @@ class User(Base):
     goal = Column(String(100), nullable=True)
     activity_level = Column(String(50), nullable=True)
     timezone = Column(String(64), nullable=True)
+    # ISO 639-1 codes: ru, en, es, de, fr
+    language = Column(String(16), nullable=False, default="ru")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -203,7 +205,11 @@ class Meal(Base):
     meal_datetime = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     notes = Column(Text, nullable=True)
+    # item_name / prediction: base/canonical names for nutrition.csv lookup.
+    # prediction_translated / MealItem.name_translated: presentation-only; never use for nutrition.
     prediction = Column(Text, nullable=True)
+    prediction_translated = Column(Text, nullable=True)
+    prediction_language = Column(String(16), nullable=True)
     user_text = Column(Text, nullable=True)
     meal_photo_large = Column(String(512), nullable=True)
     meal_photo_thumb = Column(String(512), nullable=True)
@@ -222,6 +228,8 @@ class MealItem(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     meal_id = Column(ForeignKey("meals.id"), nullable=False, index=True)
     item_name = Column(String(255), nullable=False)
+    name_translated = Column(String(255), nullable=True)
+    name_language = Column(String(16), nullable=True)
     ingredient_state = Column(String(32), nullable=True)
     estimated_weight_g = Column(Integer, nullable=True)
     quantity = Column(Integer, nullable=True)

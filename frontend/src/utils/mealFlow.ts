@@ -8,8 +8,17 @@ export type MealNutrition = {
   carbohydrates: number;
 };
 
-/** Legacy: number; structured: { grams, state? } */
-export type IngredientEntry = number | string | { grams: number; state?: string };
+/** Legacy: number; structured: { grams, state?, display fields } */
+export type IngredientEntry =
+  | number
+  | string
+  | {
+      grams: number;
+      state?: string;
+      name_translated?: string;
+      name_language?: string;
+      display_name?: string;
+    };
 
 export type MealAnalyzePayload = {
   status: string;
@@ -17,8 +26,33 @@ export type MealAnalyzePayload = {
   confidence: number | null;
   nutrition: MealNutrition | null;
   prediction: string | null;
+  prediction_translated: string | null;
+  prediction_language: string | null;
   error?: string;
 };
+
+export function ingredientDisplayName(name: string, entry: IngredientEntry): string {
+  if (entry != null && typeof entry === "object" && !Array.isArray(entry)) {
+    const e = entry as { name_translated?: unknown; display_name?: unknown };
+    if (typeof e.name_translated === "string" && e.name_translated.trim()) {
+      return e.name_translated.trim();
+    }
+    if (typeof e.display_name === "string" && e.display_name.trim()) {
+      return e.display_name.trim();
+    }
+  }
+  return name;
+}
+
+export function mealDisplayPrediction(state: {
+  prediction?: string | null;
+  prediction_translated?: string | null;
+}): string {
+  const tr = state.prediction_translated?.trim();
+  if (tr) return tr;
+  const base = state.prediction?.trim();
+  return base || "";
+}
 
 export function setIngredientGrams(
   ingredients: Record<string, IngredientEntry>,
@@ -70,6 +104,16 @@ export function parseAnalyzeResponse(raw: Record<string, unknown>): MealAnalyzeP
   const predRaw = raw.prediction;
   const prediction =
     typeof predRaw === "string" && predRaw.trim() ? predRaw.trim() : null;
+  const predictionTranslatedRaw = raw.prediction_translated;
+  const prediction_translated =
+    typeof predictionTranslatedRaw === "string" && predictionTranslatedRaw.trim()
+      ? predictionTranslatedRaw.trim()
+      : null;
+  const predictionLanguageRaw = raw.prediction_language;
+  const prediction_language =
+    typeof predictionLanguageRaw === "string" && predictionLanguageRaw.trim()
+      ? predictionLanguageRaw.trim().toLowerCase()
+      : null;
   const nut = raw.nutrition;
   let nutrition: MealNutrition | null = null;
   if (nut && typeof nut === "object" && !Array.isArray(nut)) {
@@ -87,6 +131,8 @@ export function parseAnalyzeResponse(raw: Record<string, unknown>): MealAnalyzeP
     confidence,
     nutrition,
     prediction,
+    prediction_translated,
+    prediction_language,
     error: typeof raw.error === "string" ? raw.error : undefined,
   };
 }
@@ -94,9 +140,14 @@ export function parseAnalyzeResponse(raw: Record<string, unknown>): MealAnalyzeP
 export function formatRecognitionQuestion(
   ingredients: Record<string, IngredientEntry>,
   prediction?: string | null,
+  predictionTranslated?: string | null,
 ): string {
   const lines: string[] = [];
-  const p = typeof prediction === "string" && prediction.trim() ? prediction.trim() : "";
+  const p =
+    (typeof predictionTranslated === "string" && predictionTranslated.trim()
+      ? predictionTranslated.trim()
+      : "") ||
+    (typeof prediction === "string" && prediction.trim() ? prediction.trim() : "");
 
   if (p) {
     lines.push(`Похоже, что это: ${p}`);
@@ -126,7 +177,7 @@ export function formatMealAnalyzedDetail(
   const keys = Object.keys(ingredients);
   if (keys.length) {
     for (const name of keys) {
-      lines.push(`• ${name}: ${ingredientGramsLabel(ingredients[name])} г`);
+      lines.push(`• ${ingredientDisplayName(name, ingredients[name])}: ${ingredientGramsLabel(ingredients[name])} г`);
     }
   } else {
     lines.push("—");
@@ -147,6 +198,8 @@ export type MealCompositionState = {
   ingredients: Record<string, IngredientEntry>;
   nutrition: MealNutrition | null;
   prediction: string | null;
+  prediction_translated?: string | null;
+  prediction_language?: string | null;
   image_base64?: string | null;
   image_url?: string | null;
 };
@@ -154,8 +207,14 @@ export type MealCompositionState = {
 export function webMealRowToComposition(meal: {
   id: number;
   prediction: string | null;
+  prediction_translated?: string | null;
+  prediction_language?: string | null;
+  display_prediction?: string | null;
   items: Array<{
     item_name: string | null;
+    name_translated?: string | null;
+    name_language?: string | null;
+    display_name?: string | null;
     estimated_weight_g: number | null;
     ingredient_state?: string | null;
   }>;
@@ -170,7 +229,13 @@ export function webMealRowToComposition(meal: {
   for (const it of meal.items) {
     const name = (it.item_name || "").trim();
     if (name) {
-      ingredients[name] = ingredientEntryFromRow(it.estimated_weight_g ?? 0, it.ingredient_state);
+      ingredients[name] = {
+        grams: it.estimated_weight_g ?? 0,
+        state: it.ingredient_state || undefined,
+        name_translated: it.name_translated || undefined,
+        name_language: it.name_language || undefined,
+        display_name: it.display_name || undefined,
+      };
     }
   }
   return {
@@ -182,6 +247,8 @@ export function webMealRowToComposition(meal: {
       carbohydrates: meal.carbs_g ?? 0,
     },
     prediction: meal.prediction,
+    prediction_translated: meal.prediction_translated ?? meal.display_prediction ?? null,
+    prediction_language: meal.prediction_language ?? null,
     image_url: meal.meal_photo_large_url || meal.meal_photo_thumb_url || null,
   };
 }

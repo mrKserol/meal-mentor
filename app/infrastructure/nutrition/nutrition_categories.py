@@ -37,6 +37,9 @@ class NutritionCategory(str, Enum):
     ALCOHOLIC_BEVERAGE = "alcoholic_beverage"
     BEER = "beer"
     SWEET = "sweet"
+    SOUP = "soup"
+    PREPARED_SOUP = "prepared_soup"
+    PREPARED_DISH = "prepared_dish"
     UNKNOWN = "unknown"
 
 
@@ -154,6 +157,86 @@ def detect_ingredient_categories(
         mark(NutritionCategory.TEA, NutritionCategory.BEVERAGE, reason="tea_like")
     if "coffee" in blob or "кофе" in blob:
         mark(NutritionCategory.COFFEE, NutritionCategory.BEVERAGE, reason="coffee_like")
+
+    _SOUP_TERMS_EN = (
+        "soup",
+        "borscht",
+        "borsch",
+        "beet soup",
+        "beetroot soup",
+        "cabbage soup",
+        "tomato soup",
+        "lentil soup",
+        "bean soup",
+        "chicken soup",
+        "beef soup",
+        "vegetable soup",
+        "broth",
+        "chowder",
+        "kharcho",
+        "rassolnik",
+        "solyanka",
+    )
+    _SOUP_TERMS_RU = (
+        "суп",
+        "борщ",
+        "щи",
+        "харчо",
+        "рассольник",
+        "солянка",
+        "похлебка",
+        "похлёбка",
+        "бульон",
+        "чечевичный суп",
+        "фасолевый суп",
+        "томатный суп",
+        "овощной суп",
+        "куриный суп",
+        "грибной суп",
+        "капустный суп",
+    )
+    if ac == "soup" or ac == "prepared_soup" or ac == "prepared_dish":
+        mark(
+            NutritionCategory.SOUP,
+            NutritionCategory.PREPARED_SOUP,
+            NutritionCategory.PREPARED_DISH,
+            reason="alias_soup",
+        )
+    elif any(t in blob for t in _SOUP_TERMS_EN + _SOUP_TERMS_RU):
+        mark(
+            NutritionCategory.SOUP,
+            NutritionCategory.PREPARED_SOUP,
+            NutritionCategory.PREPARED_DISH,
+            reason="soup_like",
+        )
+        if any(t in blob for t in ("lentil soup", "чечевичный суп", "суп чечевичный")):
+            cats.add(NutritionCategory.LEGUME)
+        if any(t in blob for t in ("bean soup", "фасолевый суп", "суп фасолевый")):
+            cats.add(NutritionCategory.LEGUME)
+        if any(
+            t in blob
+            for t in ("chicken soup", "куриный суп", "суп с курицей", "chicken broth")
+        ):
+            cats.add(NutritionCategory.POULTRY)
+            cats.add(NutritionCategory.MEAT)
+        if any(t in blob for t in ("beef soup", "kharcho", "харчо", "beef barley")):
+            cats.add(NutritionCategory.BEEF)
+            cats.add(NutritionCategory.MEAT)
+        if any(
+            t in blob
+            for t in (
+                "tomato soup",
+                "томатный суп",
+                "суп томатный",
+                "vegetable soup",
+                "овощной суп",
+                "cabbage soup",
+                "щи",
+                "капустный суп",
+            )
+        ):
+            cats.add(NutritionCategory.VEGETABLE)
+
     if (
         "beef patty" in blob
         or "hamburger patty" in blob
@@ -236,6 +319,17 @@ def detect_ingredient_categories(
         "nuts": (NutritionCategory.NUT,),
         "alcoholic_beverage": (NutritionCategory.ALCOHOLIC_BEVERAGE, NutritionCategory.BEVERAGE),
         "sweet": (NutritionCategory.SWEET,),
+        "soup": (
+            NutritionCategory.SOUP,
+            NutritionCategory.PREPARED_SOUP,
+            NutritionCategory.PREPARED_DISH,
+        ),
+        "prepared_soup": (
+            NutritionCategory.SOUP,
+            NutritionCategory.PREPARED_SOUP,
+            NutritionCategory.PREPARED_DISH,
+        ),
+        "prepared_dish": (NutritionCategory.PREPARED_DISH,),
     }
     if ac in alias_map:
         vals = alias_map[ac]
@@ -273,6 +367,8 @@ def detect_ingredient_categories(
     if primary == NutritionCategory.UNKNOWN:
         # Prefer a sensible generic primary if only generic categories were found.
         for candidate in (
+            NutritionCategory.SOUP,
+            NutritionCategory.PREPARED_SOUP,
             NutritionCategory.GRAIN,
             NutritionCategory.LEGUME,
             NutritionCategory.VEGETABLE,

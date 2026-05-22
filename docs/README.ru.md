@@ -360,6 +360,8 @@ pytest tests/test_feature_access.py
 
 **Nutrition matching:** фикстуры в `tests/fixtures/nutrition_matching_cases.json`. При багах матчинга добавляйте кейсы и гоняйте регрессию. Подробные логи: `NUTRITION_DEBUG_MATCHING=1`.
 
+**Category-aware matching (супы):** добавлены категории `soup` / `prepared_soup`. Они защищают распространённые супы от матчинга на dry mix, condensed, powder, sauce, gravy, oil, fat, shortening и dehydrated rows. Примеры: borscht with bread, generic soup with bread, lentil soup, tomato soup, щи / kharcho / rassolnik / solyanka (aliases). Если пользователь называет распространённое блюдо-суп, сначала добавляйте alias + fixture, а не полагайтесь только на fuzzy search.
+
 **Usage limits:** атомарный инкремент нескольких счётчиков за один AI-запрос.
 
 ---

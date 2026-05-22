@@ -43,6 +43,8 @@ export function EditMealModal({ open, meal, accessToken, onClose, onSaved }: Edi
       await updateMyMeal(accessToken, meal.id, {
         ingredients: mealData.ingredients,
         prediction: mealData.prediction,
+        prediction_translated: mealData.prediction_translated ?? null,
+        prediction_language: mealData.prediction_language ?? null,
       });
       onSaved?.();
       onClose();
@@ -89,6 +91,7 @@ export function EditMealModal({ open, meal, accessToken, onClose, onSaved }: Edi
           <MealCompositionForm
             mealData={mealData}
             onMealDataChange={setMealData}
+            accessToken={accessToken}
             savePrompt="Сохранить изменения в приеме пищи?"
             primaryLabel={saving ? "Сохраняю…" : "Да, сохранить"}
             secondaryLabel="Отмена"

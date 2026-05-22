@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CircleMinus, Minus, Plus } from "lucide-react";
 
-import { recalculateMealNutrition } from "../../api/mealsApi";
+import { recalculateMealNutrition, resolveIngredientName } from "../../api/mealsApi";
 import {
+  ingredientDisplayName,
   ingredientGramsLabel,
+  mealDisplayPrediction,
   parseAnalyzeResponse,
   setIngredientGrams,
   type IngredientEntry,
@@ -36,6 +38,8 @@ type MealCompositionFormProps = {
   onPrimary: () => void;
   onSecondary: () => void;
   primaryDisabled?: boolean;
+  accessToken?: string;
+  userLanguage?: string;
 };
 
 export function MealCompositionForm({
@@ -47,6 +51,8 @@ export function MealCompositionForm({
   onPrimary,
   onSecondary,
   primaryDisabled,
+  accessToken,
+  userLanguage = "ru",
 }: MealCompositionFormProps) {
   const [showAddIngredient, setShowAddIngredient] = useState(false);
   const [newIngredientText, setNewIngredientText] = useState("");
@@ -118,9 +124,42 @@ export function MealCompositionForm({
       return;
     }
 
+    let canonicalName = parsed.name;
+    let entry: IngredientEntry = parsed.grams;
+    let resolveWarning: string | null = null;
+
+    if (accessToken) {
+      try {
+        const resolved = await resolveIngredientName(accessToken, {
+          name: parsed.name,
+          grams: parsed.grams,
+        });
+        if (resolved.canonical_name) {
+          canonicalName = resolved.canonical_name;
+        }
+        const display = resolved.display_name || parsed.name;
+        const state =
+          resolved.default_state && resolved.default_state !== "unknown"
+            ? resolved.default_state
+            : "unknown";
+        entry = {
+          grams: parsed.grams,
+          state,
+          name_translated: display,
+          name_language: resolved.language || userLanguage,
+        };
+        if (resolved.source === "input" && (resolved.confidence ?? 0) === 0) {
+          resolveWarning =
+            "Не удалось сопоставить ингредиент со словарём. Добавлено как есть, нутриенты могут не рассчитаться.";
+        }
+      } catch {
+        entry = parsed.grams;
+      }
+    }
+
     const nextIngredients = {
       ...mealData.ingredients,
-      [parsed.name]: parsed.grams,
+      [canonicalName]: entry,
     };
 
     const ok = await recalcNutritionForIngredients(nextIngredients, {
@@ -128,6 +167,9 @@ export function MealCompositionForm({
     });
     if (!ok) return;
 
+    if (resolveWarning) {
+      setAddIngredientError(resolveWarning);
+    }
     closeAddIngredientPanel(true);
   };
 
@@ -136,8 +178,13 @@ export function MealCompositionForm({
       <MealPhotoPreview imageBase64={mealData.image_base64} imageUrl={mealData.image_url} />
 
       <EditableMealTitle
-        value={mealData.prediction ?? ""}
-        onChange={(prediction) => onMealDataChange({ ...mealData, prediction: prediction || null })}
+        value={mealDisplayPrediction(mealData)}
+        onChange={(title) =>
+          onMealDataChange({
+            ...mealData,
+            prediction_translated: title || null,
+          })
+        }
       />
 
       <p className="text-sm font-semibold text-slate-900">Состав и вес (г):</p>
@@ -148,7 +195,9 @@ export function MealCompositionForm({
             key={name}
             className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
           >
-            <span className="min-w-0 flex-1 truncate text-sm text-slate-800">{name}</span>
+            <span className="min-w-0 flex-1 truncate text-sm text-slate-800">
+              {ingredientDisplayName(name, entry)}
+            </span>
             <input
               type="number"
               min={0}
@@ -178,7 +227,7 @@ export function MealCompositionForm({
                 void recalcNutritionForIngredients(nextIngredients);
               }}
               className="rounded-lg p-2 text-red-600 transition hover:bg-red-50"
-              aria-label={`Удалить ${name}`}
+              aria-label={`Удалить ${ingredientDisplayName(name, entry)}`}
             >
               <CircleMinus className="h-5 w-5" aria-hidden />
             </button>
@@ -204,7 +253,7 @@ export function MealCompositionForm({
                 setNewIngredientText(e.target.value);
                 if (addIngredientError) setAddIngredientError(null);
               }}
-              placeholder="Например: potato"
+              placeholder="Например: картофель 150"
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 sm:text-sm"
             />
             {addIngredientError ? <p className="text-sm text-red-600">{addIngredientError}</p> : null}

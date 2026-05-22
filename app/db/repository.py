@@ -85,6 +85,8 @@ def create_meal(
     telegram_file_id: Optional[str] = None,
     notes: Optional[str] = None,
     prediction: Optional[str] = None,
+    prediction_translated: Optional[str] = None,
+    prediction_language: Optional[str] = None,
     user_text: Optional[str] = None,
     meal_photo_large: Optional[str] = None,
     meal_photo_thumb: Optional[str] = None,
@@ -103,6 +105,8 @@ def create_meal(
         meal_datetime=meal_datetime or datetime.utcnow(),
         notes=notes,
         prediction=prediction,
+        prediction_translated=prediction_translated,
+        prediction_language=prediction_language,
         user_text=user_text,
         meal_photo_large=meal_photo_large,
         meal_photo_thumb=meal_photo_thumb,
@@ -117,6 +121,8 @@ def create_meal(
         item = MealItem(
             meal_id=meal.id,
             item_name=name,
+            name_translated=spec.get("name_translated"),
+            name_language=spec.get("name_language"),
             ingredient_state=spec.get("ingredient_state"),
             estimated_weight_g=spec.get("estimated_weight_g"),
             quantity=spec.get("quantity"),
@@ -237,6 +243,8 @@ def replace_meal_items_for_user(
     items: list[dict[str, Any]],
     *,
     prediction: str | None = None,
+    prediction_translated: str | None = None,
+    prediction_language: str | None = None,
 ) -> bool:
     """Replace all line items on a meal and optionally update prediction."""
     meal = (
@@ -259,6 +267,8 @@ def replace_meal_items_for_user(
         row = MealItem(
             meal_id=meal.id,
             item_name=name,
+            name_translated=spec.get("name_translated"),
+            name_language=spec.get("name_language"),
             ingredient_state=spec.get("ingredient_state"),
             estimated_weight_g=spec.get("estimated_weight_g"),
             quantity=spec.get("quantity"),
@@ -274,6 +284,10 @@ def replace_meal_items_for_user(
 
     if prediction is not None:
         meal.prediction = prediction
+    if prediction_translated is not None:
+        meal.prediction_translated = prediction_translated
+    if prediction_language is not None:
+        meal.prediction_language = prediction_language
 
     db.commit()
     return True
@@ -296,6 +310,8 @@ def append_meal_item_rows(
         row = MealItem(
             meal_id=meal.id,
             item_name=name,
+            name_translated=spec.get("name_translated"),
+            name_language=spec.get("name_language"),
             ingredient_state=spec.get("ingredient_state"),
             estimated_weight_g=spec.get("estimated_weight_g"),
             quantity=spec.get("quantity"),

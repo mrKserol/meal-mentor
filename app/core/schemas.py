@@ -32,6 +32,8 @@ class MealAnalysisResult(BaseModel):
     nutrition: MacroTotals | None = None
     nutrition_full: dict[str, float] | None = None
     prediction: str | None = None
+    prediction_translated: str | None = None
+    prediction_language: str | None = None
     error: str = ""
 
     def to_api_dict(self) -> dict[str, Any]:
@@ -45,6 +47,10 @@ class MealAnalysisResult(BaseModel):
         }
         if self.prediction is not None:
             out["prediction"] = self.prediction
+        if self.prediction_translated is not None:
+            out["prediction_translated"] = self.prediction_translated
+        if self.prediction_language is not None:
+            out["prediction_language"] = self.prediction_language
         if self.nutrition is not None:
             out["nutrition"] = self.nutrition.model_dump()
         if self.nutrition_full is not None:
@@ -62,6 +68,8 @@ class MealLogRequest(BaseModel):
     source_type: str = "photo"
     telegram_file_id: str | None = None
     prediction: str | None = None
+    prediction_translated: str | None = None
+    prediction_language: str | None = None
     user_text: str | None = None
     image_base64: str | None = None
     meal_photo_large: str | None = None

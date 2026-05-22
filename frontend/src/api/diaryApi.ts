@@ -36,6 +36,8 @@ export async function updateMyMeal(
   payload: {
     ingredients: Record<string, IngredientEntry>;
     prediction?: string | null;
+    prediction_translated?: string | null;
+    prediction_language?: string | null;
   },
 ): Promise<void> {
   await authClient.patch(
@@ -43,6 +45,8 @@ export async function updateMyMeal(
     {
       ingredients: payload.ingredients,
       prediction: payload.prediction,
+      prediction_translated: payload.prediction_translated,
+      prediction_language: payload.prediction_language,
     },
     { headers: { Authorization: `Bearer ${accessToken}` } },
   );

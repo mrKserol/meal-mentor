@@ -29,10 +29,14 @@ def build_web_meal_day_row(meal: Meal, user: User) -> WebMealDayRow:
             sugar_g += int(n.sugar_g or 0)
             sodium_mg += int(n.sodium_mg or 0)
             saturated_fat_g += float(n.saturated_fat_g or 0)
+        display_name = it.name_translated or it.item_name
         lines.append(
             WebMealDayItemLine(
                 id=it.id,
                 item_name=it.item_name,
+                name_translated=it.name_translated,
+                name_language=it.name_language,
+                display_name=display_name,
                 ingredient_state=it.ingredient_state,
                 estimated_weight_g=it.estimated_weight_g,
                 calories=n.calories if n else None,
@@ -42,9 +46,13 @@ def build_web_meal_day_row(meal: Meal, user: User) -> WebMealDayRow:
                 fiber_g=float(n.fiber_g) if n and n.fiber_g is not None else None,
             )
         )
+    display_prediction = meal.prediction_translated or meal.prediction
     return WebMealDayRow(
         id=meal.id,
         prediction=meal.prediction,
+        prediction_translated=meal.prediction_translated,
+        prediction_language=meal.prediction_language,
+        display_prediction=display_prediction,
         user_text=meal.user_text,
         time_local=local.strftime("%H:%M"),
         meal_type=meal.meal_type,

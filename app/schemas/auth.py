@@ -100,6 +100,7 @@ class UserMeResponse(BaseModel):
     activity_level: str | None
     target_weight_kg: float | None
     timezone: str | None
+    language: str
     telegram_id: int | None
     role: str
     status: str
@@ -169,6 +170,8 @@ class WebMealSaveRequest(BaseModel):
     source_type: str = "photo"
     telegram_file_id: str | None = None
     prediction: str | None = None
+    prediction_translated: str | None = None
+    prediction_language: str | None = None
     user_text: str | None = None
     image_base64: str | None = None
     meal_photo_large: str | None = None
@@ -185,6 +188,27 @@ class WebMealUpdateRequest(BaseModel):
 
     ingredients: dict[str, Any]
     prediction: str | None = None
+    prediction_translated: str | None = None
+    prediction_language: str | None = None
+
+
+class FoodNameResolveRequest(BaseModel):
+    name: str
+    grams: int | None = None
+    state: str | None = None
+
+
+class FoodNameResolveResponse(BaseModel):
+    status: str
+    input_name: str
+    canonical_name: str | None = None
+    display_name: str | None = None
+    language: str | None = None
+    default_state: str | None = None
+    category: str | None = None
+    source: str | None = None
+    confidence: float | None = None
+    error: str = ""
 
 
 class WebMealUpdateResponse(BaseModel):
@@ -194,6 +218,9 @@ class WebMealUpdateResponse(BaseModel):
 class WebMealDayItemLine(BaseModel):
     id: int
     item_name: str | None = None
+    name_translated: str | None = None
+    name_language: str | None = None
+    display_name: str | None = None
     ingredient_state: str | None = None
     estimated_weight_g: int | None = None
     calories: int | None = None
@@ -206,6 +233,9 @@ class WebMealDayItemLine(BaseModel):
 class WebMealDayRow(BaseModel):
     id: int
     prediction: str | None = None
+    prediction_translated: str | None = None
+    prediction_language: str | None = None
+    display_prediction: str | None = None
     user_text: str | None = None
     time_local: str
     meal_type: str | None = None
@@ -243,3 +273,4 @@ class ProfilePatchRequest(BaseModel):
     activity_level: str | None = None
     target_weight_kg: float | None = None
     allergens: list[str] | None = None
+    language: str | None = None

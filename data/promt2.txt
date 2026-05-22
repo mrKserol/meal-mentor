@@ -88,6 +88,15 @@ STATE RULES:
   if described as part of cooked dish → "boiled", "fried", or "baked"
 * Canned food → "canned"
 * Smoked fish (копчёная/копченая рыба) → "smoked" when clearly smoked; if species is unclear use "smoked fish" with state "smoked" or "unknown"
+* For common soups, use specific soup names:
+  borscht, cabbage soup, vegetable soup, lentil soup, bean soup, chicken soup, tomato soup, kharcho, rassolnik, solyanka.
+  For Russian/Ukrainian "борщ", use:
+  "borscht": {"grams": ..., "state": "cooked"}
+  Do not classify soups as dry soup mix, sauce, gravy, oil, or fat.
+  Do not add sour cream unless it is visible or explicitly mentioned.
+  If bread is present, keep bread as a separate ingredient.
+  If the exact soup type is unclear, use:
+  "soup": {"grams": ..., "state": "cooked"}
 * For fish, be specific when possible:
   smoked mackerel, smoked herring, smoked salmon, smoked trout, whitefish, sardines, canned tuna.
   If fish is visibly smoked but species is unclear, use:

@@ -6,7 +6,7 @@ The user will provide an image of food.
 Your task:
 
 * Identify the food or dish visible in the image
-* Write a short human-readable food prediction in Russian
+* Write a short English base dish name in "prediction" and a short natural dish name in the user's language in "prediction_translated" (default user language: Russian, code "ru")
 * Identify all food ingredients visible in the image
 * Estimate the weight of each ingredient in grams
 * Determine the state of each ingredient
@@ -44,10 +44,12 @@ unknown
 
 Rules:
 
-* The "prediction" field must be written in Russian
-* The "prediction" field should describe the recognized dish or food as a short phrase
-* The "prediction" field should sound natural for a Russian-speaking user
-* Use simple, standard ingredient names in English for "ingredients" (e.g., "chicken breast", "rice", "milk")
+* The "prediction" field must be a short English base dish name suitable for nutrition database lookup
+* The "prediction_translated" field must be a short natural dish name in the user's language (default: Russian)
+* Set "prediction_language" to the user's language code (default: "ru")
+* Ingredient object keys must always be simple standard English base names (e.g., "chicken breast", "rice", "milk")
+* Each ingredient object may include "name_translated" in the user's language and "name_language" (e.g. "ru")
+* Never use translated ingredient names as JSON keys. Translations go only into "name_translated"
 * If multiple ingredients are mixed in one dish, try to separate them logically
 * If the exact weight is unknown, make a reasonable estimate
 * Ignore non-food objects (plates, utensils, packaging, etc.)
@@ -87,6 +89,15 @@ Rules:
   if cut is unclear, use "chicken meat with skin" instead of generic "chicken".
 * If the chicken piece contains visible bone, estimate only edible meat grams.
   Do not include bone weight in grams.
+* For common soups, use specific soup names:
+  borscht, cabbage soup, vegetable soup, lentil soup, bean soup, chicken soup, tomato soup, kharcho, rassolnik, solyanka.
+  For Russian/Ukrainian "борщ", use:
+  "borscht": {"grams": ..., "state": "cooked"}
+  Do not classify soups as dry soup mix, sauce, gravy, oil, or fat.
+  Do not add sour cream unless it is visible or explicitly mentioned.
+  If bread is present, keep bread as a separate ingredient.
+  If the exact soup type is unclear, use:
+  "soup": {"grams": ..., "state": "cooked"}
 * For fish, be specific when possible:
   smoked mackerel, smoked herring, smoked salmon, smoked trout, whitefish, sardines, canned tuna.
   If fish is visibly smoked but species is unclear, use:
@@ -120,9 +131,13 @@ Response format:
 Return ONLY a valid JSON object in the following format:
 
 {
-"prediction": "Название блюда или еды на русском языке",
+"prediction": "Short English base dish name",
+"prediction_translated": "Short natural dish name in user language",
+"prediction_language": "ru",
 "ingredients": {
 "ingredient_name": {
+"name_translated": "name in user language",
+"name_language": "ru",
 "grams": number,
 "state": "state_value"
 }
@@ -132,25 +147,34 @@ Return ONLY a valid JSON object in the following format:
 
 Where:
 
-* "prediction" is a short Russian description of the recognized food or dish
+* "prediction" is a short English base/technical dish name for nutrition lookup
+* "prediction_translated" is the same dish described naturally in the user's language
 * "ingredients" is a dictionary:
-  ingredient_name → { grams, state }
+  English ingredient_name → { grams, state, optional name_translated, name_language }
 * "state" must be one of the allowed values
 * "confidence" is a number from 0 to 1 indicating how confident you are
 
 Example (food detected):
 {
-"prediction": "Паста с говяжим фаршем в томатном соусе",
+"prediction": "Pasta with ground beef in tomato sauce",
+"prediction_translated": "Паста с говяжьим фаршем в томатном соусе",
+"prediction_language": "ru",
 "ingredients": {
 "penne pasta": {
+"name_translated": "паста пенне",
+"name_language": "ru",
 "grams": 150,
 "state": "cooked"
 },
 "ground beef": {
+"name_translated": "говяжий фарш",
+"name_language": "ru",
 "grams": 100,
 "state": "fried"
 },
 "tomato sauce": {
+"name_translated": "томатный соус",
+"name_language": "ru",
 "grams": 50,
 "state": "cooked"
 }
@@ -163,33 +187,49 @@ If the image shows several chunks of tuna on a plate and only a small remaining 
 
 Correct:
 {
-"prediction": "Тунец с остатком овощного салата",
+"prediction": "Tuna with remaining vegetable salad",
+"prediction_translated": "Тунец с остатком овощного салата",
+"prediction_language": "ru",
 "ingredients": {
 "tuna": {
+"name_translated": "тунец",
+"name_language": "ru",
 "grams": 140,
 "state": "canned"
 },
 "cucumber": {
+"name_translated": "огурец",
+"name_language": "ru",
 "grams": 30,
 "state": "raw"
 },
 "tomato": {
+"name_translated": "помидор",
+"name_language": "ru",
 "grams": 20,
 "state": "raw"
 },
 "lettuce": {
+"name_translated": "салат",
+"name_language": "ru",
 "grams": 10,
 "state": "raw"
 },
 "green olives": {
+"name_translated": "зелёные оливки",
+"name_language": "ru",
 "grams": 10,
 "state": "canned"
 },
 "onion": {
+"name_translated": "лук",
+"name_language": "ru",
 "grams": 5,
 "state": "raw"
 },
 "dressing/sauce": {
+"name_translated": "соус/заправка",
+"name_language": "ru",
 "grams": 15,
 "state": "unknown"
 }
@@ -204,21 +244,31 @@ Incorrect for this case:
 
 Example (simple food):
 {
-"prediction": "Куриная грудка с рисом и овощами",
+"prediction": "Grilled chicken breast with rice and vegetables",
+"prediction_translated": "Куриная грудка с рисом и овощами",
+"prediction_language": "ru",
 "ingredients": {
 "chicken breast": {
+"name_translated": "куриная грудка",
+"name_language": "ru",
 "grams": 150,
 "state": "grilled"
 },
 "rice": {
+"name_translated": "рис",
+"name_language": "ru",
 "grams": 120,
 "state": "cooked"
 },
 "broccoli": {
+"name_translated": "брокколи",
+"name_language": "ru",
 "grams": 80,
 "state": "boiled"
 },
 "carrot": {
+"name_translated": "морковь",
+"name_language": "ru",
 "grams": 40,
 "state": "raw"
 }
