@@ -158,7 +158,9 @@ export function formatRecognitionQuestion(
   const keys = Object.keys(ingredients);
 
   if (keys.length) {
-    lines.push(keys.join(" • "));
+    lines.push(
+      keys.map((name) => ingredientDisplayName(name, ingredients[name])).join(" • "),
+    );
   } else {
     lines.push("—");
   }

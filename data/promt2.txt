@@ -25,10 +25,11 @@ unknown
 
 Rules:
 
-* The "prediction" field must be written in Russian
-* The "prediction" field should describe the recognized dish or food as a short phrase
-* The "prediction" field should sound natural for a Russian-speaking user
-* Use simple, standard ingredient names in English for "ingredients" (e.g., "milk", "chicken breast", "rice")
+* Write a short English base dish name in "prediction" and a short natural dish name in the user's language in "prediction_translated" (default user language: Russian, code "ru")
+* The "prediction_translated" field must sound natural for a Russian-speaking user
+* Ingredient object keys must always be simple standard English base names (e.g., "milk", "chicken breast", "rice")
+* Each ingredient object must include "name_translated" in the user's language and "name_language" (e.g. "ru")
+* Never use translated ingredient names as JSON keys. Translations go only into "name_translated"
 * If the portion is given (e.g., "1 glass", "1 plate", "1 piece"), convert it into grams using reasonable assumptions
 * If the weight is already provided, use it as is
 * If the description is vague, make a reasonable estimate
@@ -121,9 +122,13 @@ Response format:
 Return ONLY a valid JSON object in the following format:
 
 {
-"prediction": "Название блюда или еды на русском языке",
+"prediction": "Short English base dish name",
+"prediction_translated": "Short natural dish name in user language",
+"prediction_language": "ru",
 "ingredients": {
 "ingredient_name": {
+"name_translated": "name in user language",
+"name_language": "ru",
 "grams": number,
 "state": "state_value"
 }
@@ -133,9 +138,10 @@ Return ONLY a valid JSON object in the following format:
 
 Where:
 
-* "prediction" is a short Russian description of the recognized food or dish
+* "prediction" is a short English base/technical dish name for nutrition lookup
+* "prediction_translated" is the same dish described naturally in the user's language
 * "ingredients" is a dictionary:
-  ingredient_name → { grams, state }
+  English ingredient_name → { grams, state, name_translated, name_language }
 * "state" must be one of the allowed values
 * "confidence" is a number from 0 to 1 indicating how confident you are
 
@@ -144,17 +150,25 @@ Example input:
 
 Example output:
 {
-"prediction": "Манговый пудинг с кокосовым молоком и семенами чиа",
+"prediction": "Mango pudding with coconut milk and chia seeds",
+"prediction_translated": "Манговый пудинг с кокосовым молоком и семенами чиа",
+"prediction_language": "ru",
 "ingredients": {
 "mango": {
+"name_translated": "манго",
+"name_language": "ru",
 "grams": 100,
 "state": "raw"
 },
 "coconut milk": {
+"name_translated": "кокосовое молоко",
+"name_language": "ru",
 "grams": 150,
 "state": "canned"
 },
 "chia seeds": {
+"name_translated": "семена чиа",
+"name_language": "ru",
 "grams": 20,
 "state": "dry"
 }
@@ -167,25 +181,37 @@ Example input:
 
 Example output:
 {
-"prediction": "Гречка с курицей и овощами",
+"prediction": "Buckwheat with chicken and vegetables",
+"prediction_translated": "Гречка с курицей и овощами",
+"prediction_language": "ru",
 "ingredients": {
 "buckwheat": {
+"name_translated": "гречка",
+"name_language": "ru",
 "grams": 180,
 "state": "cooked"
 },
 "chicken breast": {
+"name_translated": "куриная грудка",
+"name_language": "ru",
 "grams": 120,
 "state": "fried"
 },
 "bell pepper": {
+"name_translated": "болгарский перец",
+"name_language": "ru",
 "grams": 35,
 "state": "fried"
 },
 "zucchini": {
+"name_translated": "кабачок",
+"name_language": "ru",
 "grams": 30,
 "state": "fried"
 },
 "carrot": {
+"name_translated": "морковь",
+"name_language": "ru",
 "grams": 15,
 "state": "boiled"
 }

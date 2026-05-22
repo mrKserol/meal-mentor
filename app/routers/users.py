@@ -131,7 +131,7 @@ def analyze_my_meal_text(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="text is required")
 
     check_text_ai_limits(db, current_user)
-    result = analyze_meal_from_text(body.text.strip())
+    result = analyze_meal_from_text(body.text.strip(), user_language=current_user.language or "ru")
     payload = result.to_api_dict()
     if payload.get("status") == "success":
         record_text_ai_usage(db, current_user)

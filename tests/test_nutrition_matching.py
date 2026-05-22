@@ -156,6 +156,13 @@ def test_prompt_files_salad_rule_and_no_mixed_veg_example() -> None:
     assert '"mixed vegetables":' not in p2
 
 
+def test_text_prompt_multilang_fields() -> None:
+    p2 = (_REPO_ROOT / "data" / "promt2.txt").read_text(encoding="utf-8")
+    assert "prediction_translated" in p2
+    assert "name_translated" in p2
+    assert '"prediction": "Short English base dish name"' in p2
+
+
 def test_milk_tea_not_powder_low_calories(nutrition_svc: NutritionService) -> None:
     if not nutrition_svc.aliases.is_loaded:
         pytest.skip("food_aliases.json not loaded")
