@@ -10,8 +10,12 @@ from typing import Any
 import zoneinfo
 from sqlalchemy.orm import Session, joinedload
 
-from app.db.models import Meal, MealItem, User
-from app.services.additive_totals import sum_additive_intakes_for_range
+from app.db.models import AdditiveIntake, Meal, MealItem, User
+from app.services.additive_totals import (
+    accumulate_additive_intakes_detailed,
+    list_additive_intakes_for_range,
+    sum_additive_intakes_for_range,
+)
 from app.db.nutrition_columns import MEAL_ITEM_NUTRITION_KEYS
 from app.services.meal_serialization import meal_composition_line
 from app.services.user_timezone import (
@@ -56,6 +60,54 @@ def _accumulate_detailed_meal_nutrients(meal: Meal, totals: dict[str, float]) ->
             continue
         for key in totals.keys():
             totals[key] += float(getattr(n, key, 0.0) or 0.0)
+
+
+def _merge_detailed_nutrients(a: dict[str, float], b: dict[str, float]) -> dict[str, float]:
+    keys = set(a.keys()) | set(b.keys())
+    return {k: float(a.get(k, 0.0) or 0.0) + float(b.get(k, 0.0) or 0.0) for k in keys}
+
+
+def _detailed_avgs(
+    meals_details: dict[str, float],
+    additives_details: dict[str, float],
+    div: int,
+) -> tuple[dict[str, float], dict[str, float], dict[str, float]]:
+    meals_avg = {k: round(v / div, 3) for k, v in meals_details.items()}
+    add_avg = {k: round(v / div, 3) for k, v in additives_details.items()}
+    combined = _merge_detailed_nutrients(meals_details, additives_details)
+    combined_avg = {k: round(v / div, 3) for k, v in combined.items()}
+    return meals_avg, add_avg, combined_avg
+
+
+def _apply_additive_intakes_to_period(
+    intakes: list[AdditiveIntake],
+    *,
+    tz: zoneinfo.ZoneInfo,
+    first_day: date,
+    last_day: date,
+    by_day_cal: dict[date, int],
+    period_p: int,
+    period_f: int,
+    period_cb: int,
+    period_fiber: float,
+    details_additives: dict[str, float],
+) -> tuple[int, int, int, float]:
+    """Add additive intake macros and per-day calories; return updated period totals."""
+    p, f, cb, fib = period_p, period_f, period_cb, period_fiber
+    in_range: list = []
+    for intake in intakes:
+        local = _utc_naive_to_local(intake.intake_datetime.replace(tzinfo=None), tz)
+        d = local.date()
+        if d < first_day or d > last_day:
+            continue
+        in_range.append(intake)
+        by_day_cal[d] += int(round(float(intake.calories or 0)))
+        p += int(round(float(intake.protein_g or 0)))
+        f += int(round(float(intake.fat_g or 0)))
+        cb += int(round(float(intake.carbs_g or 0)))
+        fib += float(intake.fiber_g or 0)
+    accumulate_additive_intakes_detailed(in_range, details_additives)
+    return p, f, cb, fib
 
 
 def _warn_suspicious_nutrient_mapping(avg_values: dict[str, float], *, avg_fat_g: float) -> None:
@@ -215,7 +267,8 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
     by_day_cal: dict[date, int] = defaultdict(int)
     week_p = week_f = week_cb = 0
     week_fiber = 0.0
-    week_details = _init_detailed_sums()
+    week_details_meals = _init_detailed_sums()
+    week_details_additives = _init_detailed_sums()
 
     for meal in meals_week:
         local = _utc_naive_to_local(_meal_naive_dt(meal), tz)
@@ -228,7 +281,21 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         week_f += t["fat_g"]
         week_cb += t["carbs_g"]
         week_fiber += float(t["fiber_g"])
-        _accumulate_detailed_meal_nutrients(meal, week_details)
+        _accumulate_detailed_meal_nutrients(meal, week_details_meals)
+
+    intakes_week = list_additive_intakes_for_range(db, user.id, week_start_utc, week_end_utc)
+    week_p, week_f, week_cb, week_fiber = _apply_additive_intakes_to_period(
+        intakes_week,
+        tz=tz,
+        first_day=week_first,
+        last_day=week_last,
+        by_day_cal=by_day_cal,
+        period_p=week_p,
+        period_f=week_f,
+        period_cb=week_cb,
+        period_fiber=week_fiber,
+        details_additives=week_details_additives,
+    )
 
     days_with_data = sum(1 for i in range(7) if by_day_cal.get(week_first + timedelta(days=i), 0) > 0)
     div = max(1, days_with_data)
@@ -245,7 +312,9 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         day_label = _WEEKDAY_RU[dd.weekday()]
         week_days.append(DiaryWeekDay(date=dd, weekday_short=day_label, calories=cal, bar_percent=pct))
 
-    week_detailed_avg = {k: round(v / div, 3) for k, v in week_details.items()}
+    week_meals_avg, week_add_avg, week_detailed_avg = _detailed_avgs(
+        week_details_meals, week_details_additives, div
+    )
     _warn_suspicious_nutrient_mapping(week_detailed_avg, avg_fat_g=round(week_f / div, 1))
     week_block = DiaryWeekBlock(
         days=week_days,
@@ -258,6 +327,8 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         avg_salt_g=round((week_detailed_avg.get("sodium_mg", 0.0) * 2.54 / 1000.0), 2),
         avg_saturated_fat_g=round(week_detailed_avg.get("saturated_fat_g", 0.0), 1),
         detailed_avg=week_detailed_avg,
+        detailed_avg_meals=week_meals_avg,
+        detailed_avg_additives=week_add_avg,
         days_with_data=days_with_data,
     )
 
@@ -271,7 +342,8 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
     month_by_cal: dict[date, int] = defaultdict(int)
     month_p = month_f = month_cb = 0
     month_fiber = 0.0
-    month_details = _init_detailed_sums()
+    month_details_meals = _init_detailed_sums()
+    month_details_additives = _init_detailed_sums()
     for meal in meals_month:
         local = _utc_naive_to_local(_meal_naive_dt(meal), tz_m)
         d = local.date()
@@ -283,7 +355,21 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         month_f += t["fat_g"]
         month_cb += t["carbs_g"]
         month_fiber += float(t["fiber_g"])
-        _accumulate_detailed_meal_nutrients(meal, month_details)
+        _accumulate_detailed_meal_nutrients(meal, month_details_meals)
+
+    intakes_month = list_additive_intakes_for_range(db, user.id, m_start_utc, m_end_utc)
+    month_p, month_f, month_cb, month_fiber = _apply_additive_intakes_to_period(
+        intakes_month,
+        tz=tz_m,
+        first_day=month_first,
+        last_day=month_last,
+        by_day_cal=month_by_cal,
+        period_p=month_p,
+        period_f=month_f,
+        period_cb=month_cb,
+        period_fiber=month_fiber,
+        details_additives=month_details_additives,
+    )
 
     month_span = 30
     month_days_with = sum(
@@ -305,7 +391,9 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         period_days.append(
             DiaryPeriodDay(date=dd, label=f"{dd.day}.{dd.month}", calories=cal, bar_percent=pct),
         )
-    month_detailed_avg = {k: round(v / month_div, 3) for k, v in month_details.items()}
+    month_meals_avg, month_add_avg, month_detailed_avg = _detailed_avgs(
+        month_details_meals, month_details_additives, month_div
+    )
     _warn_suspicious_nutrient_mapping(month_detailed_avg, avg_fat_g=round(month_f / month_div, 1))
     month_block = DiaryPeriodBlock(
         days=period_days,
@@ -318,6 +406,8 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         avg_salt_g=round((month_detailed_avg.get("sodium_mg", 0.0) * 2.54 / 1000.0), 2),
         avg_saturated_fat_g=round(month_detailed_avg.get("saturated_fat_g", 0.0), 1),
         detailed_avg=month_detailed_avg,
+        detailed_avg_meals=month_meals_avg,
+        detailed_avg_additives=month_add_avg,
         days_with_data=month_days_with,
     )
 

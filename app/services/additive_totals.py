@@ -68,6 +68,45 @@ def sum_additive_intakes_for_local_date(db: Session, user: User, d: date) -> dic
     return sum_additive_intakes_for_range(db, user.id, start_utc, end_utc)
 
 
+def _init_detailed_sums() -> dict[str, float]:
+    _primary = frozenset({"calories", "protein_g", "fat_g", "carbs_g", "fiber_g"})
+    return {k: 0.0 for k in MEAL_ITEM_NUTRITION_KEYS if k not in _primary}
+
+
+def accumulate_additive_intakes_detailed(rows: list[AdditiveIntake], totals: dict[str, float]) -> None:
+    for row in rows:
+        for key in totals.keys():
+            totals[key] += float(getattr(row, key, 0.0) or 0.0)
+
+
+def list_additive_intakes_for_range(
+    db: Session,
+    user_id: int,
+    start_utc: datetime,
+    end_utc: datetime,
+) -> list[AdditiveIntake]:
+    return (
+        db.query(AdditiveIntake)
+        .filter(
+            AdditiveIntake.user_id == user_id,
+            AdditiveIntake.intake_datetime >= start_utc,
+            AdditiveIntake.intake_datetime < end_utc,
+        )
+        .all()
+    )
+
+
+def primary_macros_from_intakes(rows: list[AdditiveIntake]) -> dict[str, float]:
+    out = {"calories": 0.0, "protein_g": 0.0, "fat_g": 0.0, "carbs_g": 0.0, "fiber_g": 0.0}
+    for row in rows:
+        out["calories"] += float(row.calories or 0)
+        out["protein_g"] += float(row.protein_g or 0)
+        out["fat_g"] += float(row.fat_g or 0)
+        out["carbs_g"] += float(row.carbs_g or 0)
+        out["fiber_g"] += float(row.fiber_g or 0)
+    return out
+
+
 def day_additive_totals_response(totals: dict[str, float]) -> dict[str, float]:
     """Shape for WebMealsDayResponse.additive_totals."""
     out = _empty_totals()

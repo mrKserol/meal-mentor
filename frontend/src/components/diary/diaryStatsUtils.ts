@@ -122,15 +122,31 @@ export function formatFixedRu(n: number, frac = 1): string {
   return new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 0, maximumFractionDigits: frac }).format(n);
 }
 
-export function nutrientProfileValue(
-  activeStats: DiarySnapshot["week"] | DiarySnapshot["month"] | null,
-  key: string,
-): number {
+type PeriodStats = DiarySnapshot["week"] | DiarySnapshot["month"] | null;
+
+export function nutrientProfileValueMeals(activeStats: PeriodStats, key: string): number {
+  if (!activeStats) return 0;
+  return activeStats.detailed_avg_meals?.[key] ?? 0;
+}
+
+export function nutrientProfileValueAdditives(activeStats: PeriodStats, key: string): number {
+  if (!activeStats) return 0;
+  return activeStats.detailed_avg_additives?.[key] ?? 0;
+}
+
+/** @deprecated use nutrientProfileValueMeals / nutrientProfileValueAdditives */
+export function nutrientProfileValue(activeStats: PeriodStats, key: string): number {
   if (!activeStats) return 0;
   if (key === "fat_g") return activeStats.avg_fat_g ?? 0;
   if (key === "sugar_g") return activeStats.avg_sugar_g ?? 0;
   if (key === "saturated_fat_g") return activeStats.avg_saturated_fat_g ?? 0;
   return activeStats.detailed_avg?.[key] ?? 0;
+}
+
+export function nutrientProfilePeriodTitle(period: "week" | "month"): string {
+  return period === "week"
+    ? "Средние суточные значения за неделю"
+    : "Средние суточные значения за месяц";
 }
 
 export function nutrientProfileFracDigits(key: string): number {

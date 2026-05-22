@@ -7,7 +7,9 @@ import {
   chartDayLabel,
   formatFixedRu,
   nutrientProfileFracDigits,
-  nutrientProfileValue,
+  nutrientProfilePeriodTitle,
+  nutrientProfileValueAdditives,
+  nutrientProfileValueMeals,
   type ChartDay,
 } from "./diaryStatsUtils";
 
@@ -164,7 +166,7 @@ export function DiaryStatsCard({ snapshot }: DiaryStatsCardProps) {
           <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 id="analysis-modal-title" className="text-xl font-semibold text-slate-900">
-                Нутриентный профиль (средние суточные значения)
+                {nutrientProfilePeriodTitle(statsPeriod)}
               </h2>
               <button
                 type="button"
@@ -175,21 +177,35 @@ export function DiaryStatsCard({ snapshot }: DiaryStatsCardProps) {
                 <X className="h-5 w-5" aria-hidden />
               </button>
             </div>
+            <div className="mb-4 grid grid-cols-[1fr_auto_auto] gap-x-4 gap-y-1 border-b border-slate-200 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <span />
+              <span className="text-right">Питание</span>
+              <span className="text-right">Добавки</span>
+            </div>
             <div className="space-y-5">
               {ANALYSIS_GROUPS.map((group) => (
                 <section key={group.title} className="rounded-xl border border-slate-200 p-4">
-                  <h3 className="mb-2 text-base font-semibold text-slate-900">{group.title}</h3>
-                  <div className="space-y-1">
-                    {group.items.map((item) => (
-                      <p key={item.key} className="text-sm text-slate-700">
-                        {item.label} -{" "}
-                        {formatFixedRu(
-                          nutrientProfileValue(activeStats, item.key),
-                          nutrientProfileFracDigits(item.key),
-                        )}{" "}
-                        {item.unit}
-                      </p>
-                    ))}
+                  <h3 className="mb-3 text-base font-semibold text-slate-900">{group.title}</h3>
+                  <div className="space-y-2">
+                    {group.items.map((item) => {
+                      const mealsVal = nutrientProfileValueMeals(activeStats, item.key);
+                      const addVal = nutrientProfileValueAdditives(activeStats, item.key);
+                      const frac = nutrientProfileFracDigits(item.key);
+                      return (
+                        <div
+                          key={item.key}
+                          className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-4 gap-y-0.5 text-sm text-slate-700"
+                        >
+                          <span className="font-medium text-slate-800">{item.label}</span>
+                          <span className="tabular-nums text-right text-slate-700">
+                            {formatFixedRu(mealsVal, frac)} {item.unit}
+                          </span>
+                          <span className="tabular-nums text-right text-violet-700">
+                            {formatFixedRu(addVal, frac)} {item.unit}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </section>
               ))}
