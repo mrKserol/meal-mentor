@@ -68,6 +68,37 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    curator_assignments_as_curator = relationship(
+        "CuratorUserAssignment",
+        foreign_keys="CuratorUserAssignment.curator_id",
+        back_populates="curator",
+        cascade="all, delete-orphan",
+    )
+    curator_assignments_as_user = relationship(
+        "CuratorUserAssignment",
+        foreign_keys="CuratorUserAssignment.user_id",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+
+class CuratorUserAssignment(Base):
+    """Links a curator (or admin acting as curator) to a supervised user."""
+
+    __tablename__ = "curator_user_assignments"
+    __table_args__ = (
+        UniqueConstraint("curator_id", "user_id", name="uq_curator_user_assignment"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    curator_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_by_admin_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    curator = relationship("User", foreign_keys=[curator_id], back_populates="curator_assignments_as_curator")
+    user = relationship("User", foreign_keys=[user_id], back_populates="curator_assignments_as_user")
+    created_by_admin = relationship("User", foreign_keys=[created_by_admin_id])
 
 
 class UserAuthIdentity(Base):

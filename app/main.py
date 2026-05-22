@@ -13,6 +13,7 @@ from app.interfaces.api.routes_nutrition import router as nutrition_router
 from app.interfaces.api.routes_subscriptions import router as subscriptions_router
 from app.routers.auth import router as auth_router
 from app.routers.admin import router as admin_router
+from app.routers.curator import router as curator_router
 from app.routers.users import router as users_web_router
 from app.core.use_cases.meal_analysis import analyze_meal_from_image_base64
 
@@ -35,6 +36,7 @@ app.include_router(subscriptions_router)
 app.include_router(auth_router)
 app.include_router(users_web_router)
 app.include_router(admin_router)
+app.include_router(curator_router)
 
 # StaticFiles checks the path at import time — before lifespan runs.
 _meal_photo_root = get_upload_root()

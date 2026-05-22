@@ -37,7 +37,7 @@ export interface AdminUser {
   telegram_id: number | null;
   username: string | null;
   first_name: string | null;
-  role: "user" | "admin";
+  role: "user" | "curator" | "admin";
   status: "active" | "blocked";
   subscription_status: string;
   created_at: string;
@@ -95,7 +95,7 @@ export interface AdminPlanFeaturePayload {
 }
 
 export interface AdminUserUpdatePayload {
-  role?: "user" | "admin";
+  role?: "user" | "curator" | "admin";
   status?: "active" | "blocked";
   subscription_status?: string;
 }
@@ -211,4 +211,46 @@ export const upsertUserFeatureOverride = async (
 
 export const deleteUserFeatureOverride = async (token: string, userId: number, featureKey: string) => {
   await authClient.delete(`/admin/users/${userId}/feature-overrides/${featureKey}`, { headers: authHeaders(token) });
+};
+
+export interface AdminCuratorUserAssignment {
+  id: number;
+  curator_id: number;
+  curator_email: string | null;
+  curator_name: string | null;
+  user_id: number;
+  user_email: string | null;
+  user_name: string | null;
+  created_by_admin_id: number | null;
+  created_at: string | null;
+}
+
+export const getAdminCurators = async (token: string) => {
+  const response = await authClient.get<AdminUser[]>("/admin/curators", { headers: authHeaders(token) });
+  return response.data;
+};
+
+export const getAdminCuratorAssignments = async (
+  token: string,
+  params?: { curator_id?: number; user_id?: number },
+) => {
+  const response = await authClient.get<AdminCuratorUserAssignment[]>("/admin/curator-assignments", {
+    params,
+    headers: authHeaders(token),
+  });
+  return response.data;
+};
+
+export const createAdminCuratorAssignment = async (
+  token: string,
+  payload: { curator_id: number; user_id: number },
+) => {
+  const response = await authClient.post<AdminCuratorUserAssignment>("/admin/curator-assignments", payload, {
+    headers: authHeaders(token),
+  });
+  return response.data;
+};
+
+export const deleteAdminCuratorAssignment = async (token: string, assignmentId: number) => {
+  await authClient.delete(`/admin/curator-assignments/${assignmentId}`, { headers: authHeaders(token) });
 };
