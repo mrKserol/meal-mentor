@@ -1,14 +1,18 @@
-import { Shield, SlidersHorizontal, UsersRound } from "lucide-react";
+import { ClipboardList, Shield, SlidersHorizontal, UsersRound } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 import {
   cancelSubscription,
+  createAdminCuratorAssignment,
   createAdminPlan,
+  deleteAdminCuratorAssignment,
   deleteAdminPlan,
   deleteAdminUser,
   deletePlanFeature,
+  getAdminCuratorAssignments,
+  getAdminCurators,
   getAdminPlans,
   getAdminSubscriptions,
   getAdminUser,
@@ -18,6 +22,7 @@ import {
   updateAdminUser,
   upsertPlanFeature,
   upsertUserFeatureOverride,
+  type AdminCuratorUserAssignment,
   type AdminPlan,
   type AdminPlanFeaturePayload,
   type AdminSubscription,
@@ -37,7 +42,7 @@ import { SwipeableUserRow } from "../components/admin/SwipeableUserRow";
 import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
 
-type TabKey = "users" | "plans" | "subscriptions";
+type TabKey = "users" | "curators" | "plans" | "subscriptions";
 
 function formatDate(value: string | null | undefined) {
   if (!value) return "—";
@@ -82,6 +87,10 @@ export function AdminPage() {
   const [overrideForm, setOverrideForm] = useState<AdminUserOverridePayload>(emptyOverride);
   const [grantPlanId, setGrantPlanId] = useState<number | "">("");
   const [grantDays, setGrantDays] = useState("");
+  const [curators, setCurators] = useState<AdminUser[]>([]);
+  const [curatorAssignments, setCuratorAssignments] = useState<AdminCuratorUserAssignment[]>([]);
+  const [selectedCuratorId, setSelectedCuratorId] = useState<number | null>(null);
+  const [assignUserId, setAssignUserId] = useState<number | "">("");
   const [planForm, setPlanForm] = useState({
     code: "",
     name: "",
@@ -141,6 +150,42 @@ export function AdminPage() {
   useEffect(() => {
     void loadAdminData();
   }, [loadAdminData]);
+
+  const loadCuratorsTab = useCallback(async () => {
+    if (!token) return;
+    try {
+      const [curatorsList, assignments] = await Promise.all([
+        getAdminCurators(token),
+        getAdminCuratorAssignments(
+          token,
+          selectedCuratorId != null ? { curator_id: selectedCuratorId } : undefined,
+        ),
+      ]);
+      setCurators(curatorsList);
+      setCuratorAssignments(assignments);
+      if (selectedCuratorId == null && curatorsList.length > 0) {
+        setSelectedCuratorId(curatorsList[0].id);
+      }
+    } catch (err) {
+      setError(errorMessage(err, "Не удалось загрузить кураторов"));
+    }
+  }, [selectedCuratorId, token]);
+
+  useEffect(() => {
+    if (tab !== "curators" || !token) return;
+    void loadCuratorsTab();
+  }, [loadCuratorsTab, tab, token]);
+
+  const assignableUsers = useMemo(
+    () =>
+      users.filter(
+        (u) =>
+          u.role === "user" &&
+          u.id !== selectedCuratorId &&
+          !curatorAssignments.some((a) => a.user_id === u.id),
+      ),
+    [curatorAssignments, selectedCuratorId, users],
+  );
 
   const refreshUserDetail = useCallback(
     async (userId: number) => {
@@ -272,9 +317,10 @@ export function AdminPage() {
                 Пользователи, тарифы, подписки и ручные права в одном месте.
               </p>
             </div>
-            <div className="grid grid-cols-3 gap-2 rounded-2xl bg-green-50 p-1 text-sm font-semibold text-slate-700">
+            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-green-50 p-1 text-sm font-semibold text-slate-700 sm:grid-cols-4">
               {([
                 ["users", "Пользователи", UsersRound],
+                ["curators", "Кураторы", ClipboardList],
                 ["plans", "Тарифы", SlidersHorizontal],
                 ["subscriptions", "Подписки", Shield],
               ] as const).map(([key, label, Icon]) => (
@@ -355,21 +401,22 @@ export function AdminPage() {
                               </div>
                               <div className="w-[40%] px-2 py-3 md:w-[14%] md:px-3">
                                 <div className="flex flex-wrap gap-2">
-                                  <button
-                                    type="button"
-                                    disabled={saving}
-                                    onClick={() =>
+                                  <select
+                                    value={adminUser.role}
+                                    disabled={saving || adminUser.id === user?.id}
+                                    onChange={(e) => {
+                                      const nextRole = e.target.value as "user" | "curator" | "admin";
                                       void runAction(async () => {
                                         if (!token) return;
-                                        await updateAdminUser(token, adminUser.id, {
-                                          role: adminUser.role === "admin" ? "user" : "admin",
-                                        });
-                                      })
-                                    }
-                                    className="rounded-full border border-green-200 px-3 py-1 text-xs font-semibold text-green-700 hover:bg-green-50"
+                                        await updateAdminUser(token, adminUser.id, { role: nextRole });
+                                      });
+                                    }}
+                                    className="rounded-full border border-green-200 bg-white px-2 py-1 text-xs font-semibold text-green-700"
                                   >
-                                    {adminUser.role === "admin" ? "Сделать user" : "Сделать admin"}
-                                  </button>
+                                    <option value="user">user</option>
+                                    <option value="curator">curator</option>
+                                    <option value="admin">admin</option>
+                                  </select>
                                   <button
                                     type="button"
                                     disabled={saving}
@@ -484,6 +531,128 @@ export function AdminPage() {
                 <p className="text-sm text-slate-500">Выберите пользователя, чтобы открыть детали, подписки и ручные права.</p>
               )}
             </aside>
+          </section>
+        ) : null}
+
+        {tab === "curators" ? (
+          <section className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
+            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-green-700">Кураторы</p>
+              <p className="mt-1 text-sm text-slate-500">Пользователи с ролью curator или admin.</p>
+              <ul className="mt-4 space-y-1">
+                {curators.length === 0 ? (
+                  <li className="text-sm text-slate-500">
+                    Нет кураторов и администраторов. Назначьте роль curator или используйте существующих admin.
+                  </li>
+                ) : (
+                  curators.map((curator) => (
+                    <li key={curator.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCuratorId(curator.id);
+                          setAssignUserId("");
+                        }}
+                        className={`w-full rounded-xl px-3 py-2.5 text-left text-sm transition ${
+                          selectedCuratorId === curator.id
+                            ? "bg-green-50 font-semibold text-green-800"
+                            : "text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        <span className="block truncate">{userLabel(curator)}</span>
+                        <span className="text-xs text-slate-500">{curator.role}</span>
+                      </button>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              {selectedCuratorId == null ? (
+                <p className="text-sm text-slate-500">Выберите куратора слева.</p>
+              ) : (
+                <div className="space-y-5">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-950">
+                      {(() => {
+                        const selected = curators.find((c) => c.id === selectedCuratorId);
+                        return selected ? userLabel(selected) : `ID ${selectedCuratorId}`;
+                      })()}
+                    </h2>
+                    <p className="text-sm text-slate-500">Привязанные пользователи</p>
+                  </div>
+
+                  <ul className="divide-y divide-slate-100 rounded-2xl border border-slate-100">
+                    {curatorAssignments.length === 0 ? (
+                      <li className="px-4 py-6 text-center text-sm text-slate-500">Нет привязанных пользователей.</li>
+                    ) : (
+                      curatorAssignments.map((assignment) => (
+                        <li
+                          key={assignment.id}
+                          className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-900">
+                              {assignment.user_name || assignment.user_email || `ID ${assignment.user_id}`}
+                            </p>
+                            <p className="truncate text-xs text-slate-500">{assignment.user_email || "—"}</p>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() =>
+                              void runAction(async () => {
+                                if (!token) return;
+                                await deleteAdminCuratorAssignment(token, assignment.id);
+                                await loadCuratorsTab();
+                              })
+                            }
+                            className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50"
+                          >
+                            Удалить
+                          </button>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+
+                  <div className="space-y-3 rounded-2xl bg-green-50 p-4">
+                    <p className="font-semibold text-slate-900">Привязать пользователя</p>
+                    <select
+                      value={assignUserId}
+                      onChange={(e) => setAssignUserId(e.target.value ? Number(e.target.value) : "")}
+                      className="w-full rounded-xl border border-green-100 bg-white px-3 py-2 text-sm"
+                    >
+                      <option value="">Выберите пользователя</option>
+                      {assignableUsers.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {userLabel(u)} ({u.email || `ID ${u.id}`})
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={saving || assignUserId === ""}
+                      onClick={() =>
+                        void runAction(async () => {
+                          if (!token || assignUserId === "" || selectedCuratorId == null) return;
+                          await createAdminCuratorAssignment(token, {
+                            curator_id: selectedCuratorId,
+                            user_id: assignUserId,
+                          });
+                          setAssignUserId("");
+                          await loadCuratorsTab();
+                        })
+                      }
+                      className="rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                    >
+                      Привязать
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </section>
         ) : null}
 

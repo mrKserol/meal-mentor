@@ -19,7 +19,7 @@ class AdminUserListItem(BaseModel):
 
 
 class AdminUserUpdateRequest(BaseModel):
-    role: str | None = Field(default=None, pattern="^(user|admin)$")
+    role: str | None = Field(default=None, pattern="^(user|curator|admin)$")
     status: str | None = Field(default=None, pattern="^(active|blocked)$")
     subscription_status: str | None = None
 
@@ -140,3 +140,20 @@ class AdminUserDetail(AdminUserListItem):
     active_subscription: AdminSubscriptionResponse | None = None
     subscriptions: list[AdminSubscriptionResponse] = Field(default_factory=list)
     feature_overrides: list[AdminUserFeatureOverrideResponse] = Field(default_factory=list)
+
+
+class AdminCuratorUserAssignmentResponse(BaseModel):
+    id: int
+    curator_id: int
+    curator_email: str | None = None
+    curator_name: str | None = None
+    user_id: int
+    user_email: str | None = None
+    user_name: str | None = None
+    created_by_admin_id: int | None = None
+    created_at: datetime | None = None
+
+
+class AdminCuratorUserAssignRequest(BaseModel):
+    curator_id: int
+    user_id: int

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth.dependencies import require_admin
 from app.db.models import (
+    CuratorUserAssignment,
     DailySummary,
     FeatureUsage,
     Meal,
@@ -21,6 +22,8 @@ from app.db.models import (
 from app.db.repository import get_active_subscription
 from app.db.session import get_db
 from app.schemas.admin import (
+    AdminCuratorUserAssignRequest,
+    AdminCuratorUserAssignmentResponse,
     AdminGrantSubscriptionRequest,
     AdminPlanCreateRequest,
     AdminPlanFeatureResponse,
@@ -107,6 +110,26 @@ def _serialize_user_list_item(db: Session, user: User) -> AdminUserListItem:
     )
 
 
+def _user_display_name(user: User | None) -> str | None:
+    if not user:
+        return None
+    return user.first_name or user.username or user.email
+
+
+def _serialize_curator_assignment(row: CuratorUserAssignment) -> AdminCuratorUserAssignmentResponse:
+    return AdminCuratorUserAssignmentResponse(
+        id=row.id,
+        curator_id=row.curator_id,
+        curator_email=row.curator.email if row.curator else None,
+        curator_name=_user_display_name(row.curator),
+        user_id=row.user_id,
+        user_email=row.user.email if row.user else None,
+        user_name=_user_display_name(row.user),
+        created_by_admin_id=row.created_by_admin_id,
+        created_at=row.created_at,
+    )
+
+
 def _apply_feature_payload(row: PlanFeature | UserFeatureOverride, payload: AdminPlanFeatureUpsertRequest | AdminUserFeatureOverrideUpsertRequest) -> None:
     row.feature_key = payload.feature_key
     row.value_type = payload.value_type
@@ -185,6 +208,10 @@ def update_user(
     _ = admin
     user = _get_user_or_404(db, user_id)
     data = payload.model_dump(exclude_unset=True)
+    if "role" in data and data["role"] != "curator":
+        db.query(CuratorUserAssignment).filter(CuratorUserAssignment.curator_id == user.id).delete(
+            synchronize_session=False
+        )
     for field, value in data.items():
         setattr(user, field, value)
     user.updated_at = datetime.utcnow()
@@ -457,4 +484,115 @@ def delete_user_feature_override(user_id: int, feature_key: str, admin: User = D
     if not override:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Override not found")
     db.delete(override)
+    db.commit()
+
+
+@router.get("/curators", response_model=list[AdminUserListItem])
+def list_curators(admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    _ = admin
+    curators = (
+        db.query(User)
+        .options(joinedload(User.auth_identities))
+        .filter(User.role.in_(("curator", "admin")))
+        .order_by(User.created_at.desc())
+        .all()
+    )
+    return [_serialize_user_list_item(db, u) for u in curators]
+
+
+@router.get("/curator-assignments", response_model=list[AdminCuratorUserAssignmentResponse])
+def list_curator_assignments(
+    curator_id: int | None = None,
+    user_id: int | None = None,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    _ = admin
+    query = (
+        db.query(CuratorUserAssignment)
+        .options(
+            joinedload(CuratorUserAssignment.curator),
+            joinedload(CuratorUserAssignment.user),
+        )
+        .order_by(CuratorUserAssignment.created_at.desc())
+    )
+    if curator_id is not None:
+        query = query.filter(CuratorUserAssignment.curator_id == curator_id)
+    if user_id is not None:
+        query = query.filter(CuratorUserAssignment.user_id == user_id)
+    return [_serialize_curator_assignment(row) for row in query.all()]
+
+
+@router.post("/curator-assignments", response_model=AdminCuratorUserAssignmentResponse)
+def create_curator_assignment(
+    payload: AdminCuratorUserAssignRequest,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    if payload.curator_id == payload.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="curator_id and user_id must differ",
+        )
+
+    curator = _get_user_or_404(db, payload.curator_id)
+    target = _get_user_or_404(db, payload.user_id)
+
+    if curator.role not in ("curator", "admin"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="curator_id must be a user with role curator or admin",
+        )
+    if target.role == "admin":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Cannot assign admin users as supervised users",
+        )
+
+    existing = (
+        db.query(CuratorUserAssignment)
+        .options(
+            joinedload(CuratorUserAssignment.curator),
+            joinedload(CuratorUserAssignment.user),
+        )
+        .filter(
+            CuratorUserAssignment.curator_id == payload.curator_id,
+            CuratorUserAssignment.user_id == payload.user_id,
+        )
+        .first()
+    )
+    if existing:
+        return _serialize_curator_assignment(existing)
+
+    row = CuratorUserAssignment(
+        curator_id=payload.curator_id,
+        user_id=payload.user_id,
+        created_by_admin_id=admin.id,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    row = (
+        db.query(CuratorUserAssignment)
+        .options(
+            joinedload(CuratorUserAssignment.curator),
+            joinedload(CuratorUserAssignment.user),
+        )
+        .filter(CuratorUserAssignment.id == row.id)
+        .first()
+    )
+    return _serialize_curator_assignment(row)
+
+
+@router.delete("/curator-assignments/{assignment_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_curator_assignment(
+    assignment_id: int,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    _ = admin
+    row = db.query(CuratorUserAssignment).filter(CuratorUserAssignment.id == assignment_id).first()
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found")
+    db.delete(row)
     db.commit()

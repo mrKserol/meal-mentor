@@ -2,11 +2,12 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 import { Apple, Beef, ChevronLeft, ChevronRight, Coffee, EggFried, Flame, Leaf, Salad, Target, Wheat, X } from "lucide-react";
 
 import { getMyNutritionTarget } from "../../api/authApi";
+import type { MyNutritionTargetEnvelope } from "../../types/auth";
 import { deleteMyMeal, getMyMealsForDay } from "../../api/diaryApi";
 import { EditMealModal } from "../layout/EditMealModal";
 import { MealMacroInline, MealMacroLines } from "../meals/MealMacroLines";
 import type { NutritionTarget } from "../../types/auth";
-import type { WebMealDayItemLine, WebMealDayRow } from "../../types/mealsDay";
+import type { WebMealDayItemLine, WebMealDayRow, WebMealsDayResponse } from "../../types/mealsDay";
 import { formatIntRu, formatMacroGramsRu } from "../../utils/recentMeals";
 
 const DELETE_PANEL_PX = 96;
@@ -330,10 +331,12 @@ function MealDayDetailModal({
   meal,
   onClose,
   onEdit,
+  readonly = false,
 }: {
   meal: WebMealDayRow;
   onClose: () => void;
   onEdit: () => void;
+  readonly?: boolean;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const large = meal.meal_photo_large_url || meal.meal_photo_thumb_url;
@@ -413,7 +416,7 @@ function MealDayDetailModal({
                         <li key={it.id} className="flex flex-wrap items-start justify-between gap-2 px-3 py-2">
                           <div className="min-w-0 flex-1">
                             <span className="text-slate-800">
-                              {it.item_name || "—"}
+                              {it.display_name || it.name_translated || it.item_name || "—"}
                               {it.estimated_weight_g != null ? ` · ${it.estimated_weight_g} г` : ""}
                             </span>
                             <MealMacroInline
@@ -438,13 +441,15 @@ function MealDayDetailModal({
               ) : null}
             </div>
 
-          <button
-            type="button"
-            onClick={onEdit}
-            className="w-full rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700"
-          >
-            Редактировать
-          </button>
+          {!readonly ? (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="w-full rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700"
+            >
+              Редактировать
+            </button>
+          ) : null}
         </div>
       </div>
     </div>
@@ -486,6 +491,9 @@ interface MealHistoryDaySectionProps {
   onAddMealForDay?: (dateYmd: string) => void;
   /** Увеличивается после сохранения приёма из модалки — перезагрузка списка за выбранный день. */
   refreshToken?: number;
+  readonly?: boolean;
+  getMealsForDay?: (accessToken: string, dateYmd: string) => Promise<WebMealsDayResponse>;
+  getNutritionTargetForDay?: (accessToken: string, dateYmd: string) => Promise<MyNutritionTargetEnvelope>;
 }
 
 export function MealHistoryDaySection({
@@ -494,6 +502,9 @@ export function MealHistoryDaySection({
   onMealsChanged,
   onAddMealForDay,
   refreshToken = 0,
+  readonly = false,
+  getMealsForDay = getMyMealsForDay,
+  getNutritionTargetForDay = getMyNutritionTarget,
 }: MealHistoryDaySectionProps) {
   const [day, setDay] = useState(() => formatLocalYmd(new Date()));
   const [items, setItems] = useState<WebMealDayRow[]>([]);
@@ -509,8 +520,8 @@ export function MealHistoryDaySection({
     setError(null);
     try {
       const [mealsRes, targetRes] = await Promise.all([
-        getMyMealsForDay(accessToken, day),
-        getMyNutritionTarget(accessToken, day),
+        getMealsForDay(accessToken, day),
+        getNutritionTargetForDay(accessToken, day),
       ]);
       setItems(mealsRes.items);
       setDayNutritionTarget(targetRes.nutrition_target);
@@ -519,7 +530,7 @@ export function MealHistoryDaySection({
       setError(e instanceof Error ? e.message : "Не удалось загрузить приёмы");
       setPhase("error");
     }
-  }, [accessToken, day]);
+  }, [accessToken, day, getMealsForDay, getNutritionTargetForDay]);
 
   useEffect(() => {
     void load();
@@ -593,7 +604,7 @@ export function MealHistoryDaySection({
                 <ChevronRight className="h-5 w-5" />
               </button>
             </div>
-            {onAddMealForDay ? (
+            {!readonly && onAddMealForDay ? (
               <button
                 type="button"
                 onClick={() => onAddMealForDay(day)}
@@ -641,21 +652,40 @@ export function MealHistoryDaySection({
       ) : null}
 
       <div>
-        {items.map((meal) => (
-          <SwipeMealRow
-            key={meal.id}
-            disabled={deletingId === meal.id}
-            onDelete={() => void handleDelete(meal.id)}
-            onOpen={() => setDetail(meal)}
-          >
-            <MealDayRowContent meal={meal} />
-          </SwipeMealRow>
-        ))}
+        {items.map((meal) =>
+          readonly ? (
+            <div
+              key={meal.id}
+              className="cursor-pointer border-b border-slate-100 last:border-b-0"
+              onClick={() => setDetail(meal)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setDetail(meal);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+            >
+              <MealDayRowContent meal={meal} />
+            </div>
+          ) : (
+            <SwipeMealRow
+              key={meal.id}
+              disabled={deletingId === meal.id}
+              onDelete={() => void handleDelete(meal.id)}
+              onOpen={() => setDetail(meal)}
+            >
+              <MealDayRowContent meal={meal} />
+            </SwipeMealRow>
+          ),
+        )}
       </div>
 
       {detail ? (
         <MealDayDetailModal
           meal={detail}
+          readonly={readonly}
           onClose={() => setDetail(null)}
           onEdit={() => {
             setEditingMeal(detail);
@@ -664,16 +694,18 @@ export function MealHistoryDaySection({
         />
       ) : null}
 
-      <EditMealModal
-        open={editingMeal != null}
-        meal={editingMeal}
-        accessToken={accessToken}
-        onClose={() => setEditingMeal(null)}
-        onSaved={() => {
-          void load();
-          onMealsChanged?.();
-        }}
-      />
+      {!readonly ? (
+        <EditMealModal
+          open={editingMeal != null}
+          meal={editingMeal}
+          accessToken={accessToken}
+          onClose={() => setEditingMeal(null)}
+          onSaved={() => {
+            void load();
+            onMealsChanged?.();
+          }}
+        />
+      ) : null}
     </section>
   );
 }

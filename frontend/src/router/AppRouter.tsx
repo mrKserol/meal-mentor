@@ -1,8 +1,11 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AdminRoute } from "../components/AdminRoute";
+import { CuratorRoute } from "../components/CuratorRoute";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import { AdminPage } from "../pages/AdminPage";
+import { CuratorPage } from "../pages/CuratorPage";
+import { CuratorUserDiaryPage } from "../pages/CuratorUserDiaryPage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { DiaryPage } from "../pages/DiaryPage";
 import { LoginPage } from "../pages/LoginPage";
@@ -25,6 +28,10 @@ export function AppRouter() {
         <Route path="/diary" element={<DiaryPage />} />
         <Route element={<AdminRoute />}>
           <Route path="/admin" element={<AdminPage />} />
+        </Route>
+        <Route element={<CuratorRoute />}>
+          <Route path="/curator" element={<CuratorPage />} />
+          <Route path="/curator/users/:userId" element={<CuratorUserDiaryPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />

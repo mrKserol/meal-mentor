@@ -80,7 +80,7 @@ export interface User {
   timezone: string | null;
   language: string;
   telegram_id: number | null;
-  role: "user" | "admin";
+  role: "user" | "curator" | "admin";
   status: "active" | "blocked";
   subscription_status: string;
   created_at: string;
