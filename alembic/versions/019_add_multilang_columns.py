@@ -3,7 +3,7 @@
 from alembic import op
 import sqlalchemy as sa
 
-revision = "019_add_user_language_and_food_display_names"
+revision = "019_add_multilang_columns"
 down_revision = "018_seed_plan_features_v2"
 branch_labels = None
 depends_on = None
