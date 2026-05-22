@@ -197,7 +197,7 @@ function MealIconCard({ mealType }: { mealType: string | null }) {
 }
 
 function predictionHeading(m: WebMealDayRow): string {
-  const p = (m.prediction || "").trim();
+  const p = (m.display_prediction || m.prediction_translated || m.prediction || "").trim();
   if (p) return p;
   const u = (m.user_text || "").trim();
   if (u) return u.length <= 120 ? u : `${u.slice(0, 119)}…`;

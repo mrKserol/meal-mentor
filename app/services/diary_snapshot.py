@@ -205,7 +205,7 @@ def _meal_list_title(meal: Meal, max_len: int = 160) -> str:
     ut = (meal.user_text or "").strip()
     if ut:
         return ut if len(ut) <= max_len else ut[: max_len - 1] + "…"
-    pr = (meal.prediction or "").strip()
+    pr = (meal.prediction_translated or meal.prediction or "").strip()
     if pr:
         return pr if len(pr) <= max_len else pr[: max_len - 1] + "…"
     return _meal_title_from_items(meal)

@@ -16,6 +16,8 @@ class AliasEntry:
     canonical: str
     default_state: str
     category: str | None = None
+    language: str | None = None
+    display: dict[str, str] | None = None
 
 
 class FoodAliasIndex:
@@ -51,11 +53,24 @@ class FoodAliasIndex:
                 ds = "unknown"
             cat = val.get("category")
             cat_s = cat.strip() if isinstance(cat, str) and cat.strip() else None
+            lang = val.get("language")
+            lang_s = lang.strip().lower() if isinstance(lang, str) and lang.strip() else None
+            display_raw = val.get("display")
+            display_map: dict[str, str] | None = None
+            if isinstance(display_raw, dict):
+                display_map = {}
+                for dk, dv in display_raw.items():
+                    if isinstance(dk, str) and isinstance(dv, str) and dk.strip() and dv.strip():
+                        display_map[dk.strip().lower()] = dv.strip()
+                if not display_map:
+                    display_map = None
             nk = _norm_key(key)
             self._by_norm[nk] = AliasEntry(
                 canonical=canon.strip(),
                 default_state=ds.strip().lower(),
                 category=cat_s,
+                language=lang_s,
+                display=display_map,
             )
         logger.info("Loaded %s food alias entries from %s", len(self._by_norm), path)
 

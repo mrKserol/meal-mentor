@@ -78,6 +78,7 @@ export interface User {
   activity_level: string | null;
   target_weight_kg: number | null;
   timezone: string | null;
+  language: string;
   telegram_id: number | null;
   role: "user" | "admin";
   status: "active" | "blocked";
@@ -111,4 +112,5 @@ export interface ProfileUpdatePayload {
     | "1.5";
   target_weight_kg?: number;
   allergens?: string[];
+  language?: "ru" | "en" | "es" | "de" | "fr";
 }

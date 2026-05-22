@@ -8,7 +8,7 @@ from app.db.models import Meal
 def meal_composition_line(meal: Meal) -> str:
     parts: list[str] = []
     for it in meal.items:
-        name = (it.item_name or "").strip()
+        name = (it.name_translated or it.item_name or "").strip()
         if not name:
             continue
         w = it.estimated_weight_g

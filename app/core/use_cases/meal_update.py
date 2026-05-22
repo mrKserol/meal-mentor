@@ -14,6 +14,8 @@ def update_meal_composition(
     meal_id: int,
     ingredients: dict[str, Any],
     prediction: str | None = None,
+    prediction_translated: str | None = None,
+    prediction_language: str | None = None,
 ) -> dict[str, Any]:
     if not ingredients:
         return {"status": "error", "error": "ingredients required"}
@@ -27,5 +29,13 @@ def update_meal_composition(
         return {"status": "error", "error": "empty specs"}
 
     pred = prediction.strip() if isinstance(prediction, str) and prediction.strip() else None
-    ok = replace_meal_items_for_user(db, meal_id, user_id, specs, prediction=pred)
+    ok = replace_meal_items_for_user(
+        db,
+        meal_id,
+        user_id,
+        specs,
+        prediction=pred,
+        prediction_translated=prediction_translated,
+        prediction_language=prediction_language,
+    )
     return {"status": "ok" if ok else "error", "error": "" if ok else "update failed"}

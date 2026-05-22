@@ -1,6 +1,9 @@
 export interface WebMealDayItemLine {
   id: number;
   item_name: string | null;
+  name_translated?: string | null;
+  name_language?: string | null;
+  display_name?: string | null;
   ingredient_state?: string | null;
   estimated_weight_g: number | null;
   calories: number | null;
@@ -13,6 +16,9 @@ export interface WebMealDayItemLine {
 export interface WebMealDayRow {
   id: number;
   prediction: string | null;
+  prediction_translated?: string | null;
+  prediction_language?: string | null;
+  display_prediction?: string | null;
   user_text: string | null;
   time_local: string;
   meal_type: string | null;

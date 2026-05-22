@@ -174,12 +174,24 @@ def _build_meal_items(ingredients: dict[str, Any], nutrition_svc: NutritionServi
         if nutrition == {}:
             nutrition = None
         ing_state = ni.state if ni is not None else None
+        name_translated = None
+        name_language = None
+        payload = ingredients.get(name)
+        if isinstance(payload, dict):
+            raw_translated = payload.get("name_translated")
+            if isinstance(raw_translated, str) and raw_translated.strip():
+                name_translated = raw_translated.strip()
+            raw_lang = payload.get("name_language")
+            if isinstance(raw_lang, str) and raw_lang.strip():
+                name_language = raw_lang.strip().lower()
         items.append(
             {
                 "item_name": name,
                 "estimated_weight_g": w,
                 "ingredient_state": ing_state,
                 "nutrition": nutrition,
+                "name_translated": name_translated,
+                "name_language": name_language,
             }
         )
     return items
@@ -205,6 +217,10 @@ def _meal_result_from_vision_dict(out: dict[str, Any]) -> MealAnalysisResult:
     conf = out.get("confidence")
     pred = out.get("prediction")
     prediction = pred.strip() if isinstance(pred, str) and pred.strip() else None
+    pt = out.get("prediction_translated")
+    prediction_translated = pt.strip() if isinstance(pt, str) and pt.strip() else None
+    pl = out.get("prediction_language")
+    prediction_language = pl.strip().lower() if isinstance(pl, str) and pl.strip() else None
     nutrition_svc = _get_nutrition()
     nutrition = None
     nutrition_full: dict[str, float] | None = None
@@ -220,6 +236,8 @@ def _meal_result_from_vision_dict(out: dict[str, Any]) -> MealAnalysisResult:
         nutrition=nutrition,
         nutrition_full=nutrition_full,
         prediction=prediction,
+        prediction_translated=prediction_translated,
+        prediction_language=prediction_language,
         error="",
     )
 
@@ -355,6 +373,8 @@ def persist_meal_to_database(db: Session, req: MealLogRequest) -> MealLogRespons
         meal_datetime=datetime.utcnow(),
         telegram_file_id=req.telegram_file_id,
         prediction=req.prediction,
+        prediction_translated=req.prediction_translated,
+        prediction_language=req.prediction_language,
         user_text=req.user_text,
         meal_photo_large=lg,
         meal_photo_thumb=th,

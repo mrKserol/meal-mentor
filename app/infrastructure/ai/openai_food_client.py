@@ -45,6 +45,12 @@ def _normalize_model_json(parsed: Any) -> tuple[dict[str, Any], float | None]:
                     continue
                 st_s = str(st).strip().lower() if isinstance(st, str) else "unknown"
                 cleaned[key] = {"grams": gf, "state": st_s}
+                name_translated = v.get("name_translated")
+                name_language = v.get("name_language")
+                if isinstance(name_translated, str) and name_translated.strip():
+                    cleaned[key]["name_translated"] = name_translated.strip()
+                if isinstance(name_language, str) and name_language.strip():
+                    cleaned[key]["name_language"] = name_language.strip().lower()
             else:
                 try:
                     float(v)
@@ -114,6 +120,7 @@ class OpenAIVisionService:
                 "ingredients": {},
                 "confidence": None,
                 "prediction": None,
+                "prediction_translated": None,
                 "result": {},
                 "error": "",
             }
@@ -124,15 +131,25 @@ class OpenAIVisionService:
                 raw = json.loads(content[start : end + 1])
                 ingredients, confidence = _normalize_model_json(raw)
                 prediction = None
+                prediction_translated = None
+                prediction_language = None
                 if isinstance(raw, dict):
                     p = raw.get("prediction")
                     if isinstance(p, str) and p.strip():
                         prediction = p.strip()
+                    pt = raw.get("prediction_translated")
+                    if isinstance(pt, str) and pt.strip():
+                        prediction_translated = pt.strip()
+                    pl = raw.get("prediction_language")
+                    if isinstance(pl, str) and pl.strip():
+                        prediction_language = pl.strip().lower()
                 return {
                     "status": "success",
                     "ingredients": ingredients,
                     "confidence": confidence,
                     "prediction": prediction,
+                    "prediction_translated": prediction_translated,
+                    "prediction_language": prediction_language,
                     "result": ingredients,
                     "error": "",
                 }
@@ -142,6 +159,7 @@ class OpenAIVisionService:
                     "ingredients": {},
                     "confidence": None,
                     "prediction": None,
+                    "prediction_translated": None,
                     "result": {},
                     "error": str(e),
                 }
@@ -150,6 +168,7 @@ class OpenAIVisionService:
             "ingredients": {},
             "confidence": None,
             "prediction": None,
+            "prediction_translated": None,
             "result": {},
             "error": f"No JSON in response: {content[:100]}",
         }
@@ -169,6 +188,7 @@ class OpenAIVisionService:
                     "ingredients": {},
                     "confidence": None,
                     "prediction": None,
+                    "prediction_translated": None,
                     "result": {},
                     "error": "Empty model response",
                 }
@@ -179,6 +199,7 @@ class OpenAIVisionService:
                 "ingredients": {},
                 "confidence": None,
                 "prediction": None,
+                "prediction_translated": None,
                 "result": {},
                 "error": str(e),
             }
@@ -230,12 +251,21 @@ Important correction mode:
 - If an item is visible but uncertain, include it with the most likely name and lower confidence.
 - Return ONLY valid JSON in the same format:
 {{
-  "prediction": "short human-readable dish name in Russian",
+  "prediction": "short English base dish name",
+  "prediction_translated": "short natural dish name in the user's language",
+  "prediction_language": "ru",
   "ingredients": {{
-    "ingredient_name": grams
+    "ingredient_name": {{
+      "name_translated": "name in user language",
+      "name_language": "ru",
+      "grams": 100,
+      "state": "cooked"
+    }}
   }},
   "confidence": 0.0
 }}
+
+Never use translated ingredient names as JSON keys. Ingredient keys must stay in English.
 
 Example:
 Previous AI recognition:
@@ -255,14 +285,16 @@ User clarification:
 
 Correct output:
 {{
-  "prediction": "Пшенная каша с яйцами, сыром, фундуком, финиками и шоколадным трюфелем",
+  "prediction": "Millet porridge with eggs, cheese, hazelnuts, dates and chocolate truffle",
+  "prediction_translated": "Пшенная каша с яйцами, сыром, фундуком, финиками и шоколадным трюфелем",
+  "prediction_language": "ru",
   "ingredients": {{
-    "millet porridge": 150,
-    "boiled egg": 100,
-    "cheese": 30,
-    "hazelnuts": 20,
-    "dates": 40,
-    "chocolate truffle": 15
+    "millet porridge": {{"name_translated": "пшенная каша", "name_language": "ru", "grams": 150, "state": "cooked"}},
+    "boiled egg": {{"name_translated": "яйцо", "name_language": "ru", "grams": 100, "state": "boiled"}},
+    "cheese": {{"name_translated": "сыр", "name_language": "ru", "grams": 30, "state": "unknown"}},
+    "hazelnuts": {{"name_translated": "фундук", "name_language": "ru", "grams": 20, "state": "raw"}},
+    "dates": {{"name_translated": "финики", "name_language": "ru", "grams": 40, "state": "dry"}},
+    "chocolate truffle": {{"name_translated": "шоколадный трюфель", "name_language": "ru", "grams": 15, "state": "unknown"}}
   }},
   "confidence": 0.82
 }}
@@ -295,6 +327,7 @@ Incorrect:
                     "ingredients": {},
                     "confidence": None,
                     "prediction": None,
+                    "prediction_translated": None,
                     "result": {},
                     "error": "Empty model response",
                 }
@@ -307,6 +340,7 @@ Incorrect:
                 "ingredients": {},
                 "confidence": None,
                 "prediction": None,
+                "prediction_translated": None,
                 "result": {},
                 "error": str(e),
             }
@@ -328,6 +362,7 @@ Incorrect:
                     "ingredients": {},
                     "confidence": None,
                     "prediction": None,
+                    "prediction_translated": None,
                     "result": {},
                     "error": "Empty model response",
                 }
@@ -338,6 +373,7 @@ Incorrect:
                 "ingredients": {},
                 "confidence": None,
                 "prediction": None,
+                "prediction_translated": None,
                 "result": {},
                 "error": str(e),
             }

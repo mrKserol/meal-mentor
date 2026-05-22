@@ -98,6 +98,24 @@ def test_legacy_numeric(nutrition_svc: NutritionService) -> None:
     assert agg["calories"] >= 0
 
 
+def test_multilang_ingredient_format_uses_english_key(nutrition_svc: NutritionService) -> None:
+    """Extra display fields must not change nutrition lookup for the English key."""
+    base = {"rice": {"grams": 100, "state": "cooked"}}
+    plain = nutrition_svc.aggregate_nutrition(base)
+    with_display = nutrition_svc.aggregate_nutrition(
+        {
+            "rice": {
+                "grams": 100,
+                "state": "cooked",
+                "name_translated": "рис",
+                "name_language": "ru",
+            }
+        }
+    )
+    assert plain is not None and with_display is not None
+    assert plain["calories"] == with_display["calories"]
+
+
 def test_russian_alias_grechka(nutrition_svc: NutritionService) -> None:
     if not nutrition_svc.aliases.is_loaded:
         pytest.skip("food_aliases.json not loaded")

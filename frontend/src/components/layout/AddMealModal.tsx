@@ -14,6 +14,8 @@ import { MealCompositionForm } from "../meals/MealCompositionForm";
 import { MealPhotoPreview } from "../meals/MealPhotoPreview";
 import {
   fileToBase64,
+  ingredientDisplayName,
+  mealDisplayPrediction,
   needsUserDescription,
   parseAnalyzeResponse,
   type IngredientEntry,
@@ -28,6 +30,8 @@ type MealData = {
   source_type: string;
   telegram_file_id: string | null;
   prediction: string | null;
+  prediction_translated?: string | null;
+  prediction_language?: string | null;
   user_text?: string | null;
   image_base64?: string | null;
 };
@@ -113,7 +117,8 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
         setUi({ kind: "error", message: parsed.error || "Не удалось разобрать еду на фото." });
         return;
       }
-      const { ingredients, confidence, nutrition, prediction } = parsed;
+      const { ingredients, confidence, nutrition, prediction, prediction_translated, prediction_language } =
+        parsed;
       if (needsUserDescription(ingredients, confidence)) {
         setUi({
           kind: "text",
@@ -131,6 +136,8 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
           source_type: "photo",
           telegram_file_id: null,
           prediction,
+          prediction_translated,
+          prediction_language,
           image_base64: b64,
         },
       });
@@ -175,7 +182,8 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
         setUi({ kind: "error", message: parsed.error || "Ошибка анализа текста." });
         return;
       }
-      const { ingredients, confidence, nutrition, prediction } = parsed;
+      const { ingredients, confidence, nutrition, prediction, prediction_translated, prediction_language } =
+        parsed;
       if (needsUserDescription(ingredients, confidence)) {
         setUi({
           kind: "text",
@@ -195,6 +203,8 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
         source_type: mode === "after_photo" ? "photo_text" : "text",
         telegram_file_id: null,
         prediction,
+        prediction_translated,
+        prediction_language,
         user_text: trimmed,
         ...(mode === "after_photo" && photoB64Ref.current
           ? { image_base64: photoB64Ref.current }
@@ -233,6 +243,8 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
         source_type: ui.mealData.source_type,
         telegram_file_id: ui.mealData.telegram_file_id,
         prediction: ui.mealData.prediction,
+        prediction_translated: ui.mealData.prediction_translated ?? null,
+        prediction_language: ui.mealData.prediction_language ?? null,
         user_text: ui.mealData.user_text ?? undefined,
         image_base64: ui.mealData.image_base64 ?? undefined,
         meal_local_date: mealLocalDate ?? undefined,
@@ -349,18 +361,20 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
             <div className="space-y-4">
               <MealPhotoPreview imageBase64={ui.mealData.image_base64} />
               <div className="space-y-3 text-center text-sm leading-relaxed text-slate-800">
-                {ui.mealData.prediction?.trim() ? (
+                {mealDisplayPrediction(ui.mealData) ? (
                   <p>
                     Похоже, что это:{" "}
                     <span className="text-[15px] font-bold leading-snug text-slate-900">
-                      {ui.mealData.prediction.trim()}
+                      {mealDisplayPrediction(ui.mealData)}
                     </span>
                   </p>
                 ) : null}
                 <p className="font-medium text-slate-900">Примерный состав:</p>
                 <p>
                   {Object.keys(ui.mealData.ingredients).length
-                    ? Object.keys(ui.mealData.ingredients).join(" • ")
+                    ? Object.entries(ui.mealData.ingredients)
+                        .map(([name, entry]) => ingredientDisplayName(name, entry))
+                        .join(" • ")
                     : "—"}
                 </p>
                 <p>Я верно определил?</p>
@@ -436,14 +450,19 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
                 ingredients: ui.mealData.ingredients,
                 nutrition: ui.mealData.nutrition,
                 prediction: ui.mealData.prediction,
+                prediction_translated: ui.mealData.prediction_translated,
+                prediction_language: ui.mealData.prediction_language,
                 image_base64: ui.mealData.image_base64,
               }}
+              accessToken={getAccessToken() ?? undefined}
               onMealDataChange={(comp: MealCompositionState) =>
                 updateConfirmMealData((md) => ({
                   ...md,
                   ingredients: comp.ingredients,
                   nutrition: comp.nutrition,
                   prediction: comp.prediction,
+                  prediction_translated: comp.prediction_translated,
+                  prediction_language: comp.prediction_language,
                 }))
               }
               savePrompt="Записать прием пищи в дневник?"
