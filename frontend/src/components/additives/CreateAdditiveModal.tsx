@@ -15,6 +15,8 @@ type Props = {
 
 export function CreateAdditiveModal({ open, accessToken, onClose, onSaved }: Props) {
   const cameraRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const previewUrlRef = useRef<string | null>(null);
   const [phase, setPhase] = useState<"intro" | "analyzing" | "form" | "saving" | "error">("intro");
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -29,7 +31,10 @@ export function CreateAdditiveModal({ open, accessToken, onClose, onSaved }: Pro
   const reset = useCallback(() => {
     setPhase("intro");
     setError(null);
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
     setPreviewUrl(null);
     setImageB64(null);
     setAdditiveName("");
@@ -37,7 +42,7 @@ export function CreateAdditiveModal({ open, accessToken, onClose, onSaved }: Pro
     setServingSizeG("");
     setNutrients({});
     setIgnored([]);
-  }, [previewUrl]);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -45,7 +50,9 @@ export function CreateAdditiveModal({ open, accessToken, onClose, onSaved }: Pro
     void getAdditiveNutrientFields(accessToken)
       .then(setNutrientFields)
       .catch(() => setNutrientFields([]));
-  }, [open, accessToken, reset]);
+    // reset only when modal opens — do not depend on reset/previewUrl (would wipe state after photo)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, accessToken]);
 
   const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -53,8 +60,10 @@ export function CreateAdditiveModal({ open, accessToken, onClose, onSaved }: Pro
     if (!file) return;
     setPhase("analyzing");
     setError(null);
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(URL.createObjectURL(file));
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    const url = URL.createObjectURL(file);
+    previewUrlRef.current = url;
+    setPreviewUrl(url);
     try {
       const b64 = await fileToBase64(file);
       setImageB64(b64);
@@ -133,24 +142,42 @@ export function CreateAdditiveModal({ open, accessToken, onClose, onSaved }: Pro
               <p className="text-sm text-slate-600 text-center">
                 Сфотографируйте состав одной порции добавки на обратной стороне упаковки
               </p>
-              <button
-                type="button"
-                onClick={() => cameraRef.current?.click()}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 py-3 text-sm font-semibold text-white"
-              >
-                <Camera className="h-5 w-5" aria-hidden />
-                Сфотографировать
-              </button>
-              <input
-                ref={cameraRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="sr-only"
-                onChange={onFile}
-              />
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => cameraRef.current?.click()}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-green-600 py-3 text-sm font-semibold text-white"
+                >
+                  <Camera className="h-5 w-5" aria-hidden />
+                  Сфотографировать
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-800"
+                >
+                  Загрузить фото
+                </button>
+              </div>
             </>
           ) : null}
+
+          {/* Inputs stay mounted so mobile camera `change` is not lost on phase switch */}
+          <input
+            ref={cameraRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/*"
+            capture="environment"
+            className="sr-only"
+            onChange={onFile}
+          />
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/*"
+            className="sr-only"
+            onChange={onFile}
+          />
 
           {phase === "analyzing" ? (
             <div className="flex flex-col items-center gap-3 py-8 text-slate-600">
