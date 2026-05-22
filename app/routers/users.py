@@ -36,6 +36,8 @@ from app.schemas.auth import (
 )
 from app.schemas.diary import DiarySnapshotResponse
 from app.services.diary_snapshot import _resolve_tz, build_diary_snapshot, meal_datetime_for_local_date_end
+from app.schemas.additives import DayNutritionTotals
+from app.services.additive_totals import day_additive_totals_response, sum_additive_intakes_for_local_date
 from app.services.web_meals_day import build_web_meal_day_row
 from app.core.use_cases.meal_analysis import (
     analyze_meal_from_image_and_text,
@@ -301,7 +303,9 @@ def get_my_meals_for_day(
     tz = _resolve_tz(current_user)
     meals = list_meals_for_user_local_date(db, current_user.id, date_q, tz)
     rows = [build_web_meal_day_row(m, current_user) for m in meals]
-    return WebMealsDayResponse(date=date_q, items=rows)
+    additive_raw = sum_additive_intakes_for_local_date(db, current_user, date_q)
+    additive_totals = DayNutritionTotals(**day_additive_totals_response(additive_raw))
+    return WebMealsDayResponse(date=date_q, items=rows, additive_totals=additive_totals)
 
 
 @router.patch("/me/meals/{meal_id}", response_model=WebMealUpdateResponse)

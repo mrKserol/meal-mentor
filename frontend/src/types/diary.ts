@@ -42,6 +42,8 @@ export interface DiaryWeekBlock {
   avg_salt_g: number;
   avg_saturated_fat_g: number;
   detailed_avg: Record<string, number>;
+  detailed_avg_meals?: Record<string, number>;
+  detailed_avg_additives?: Record<string, number>;
   days_with_data: number;
 }
 
@@ -76,6 +78,8 @@ export interface DiaryPeriodBlock {
   avg_salt_g: number;
   avg_saturated_fat_g: number;
   detailed_avg: Record<string, number>;
+  detailed_avg_meals?: Record<string, number>;
+  detailed_avg_additives?: Record<string, number>;
   days_with_data: number;
 }
 

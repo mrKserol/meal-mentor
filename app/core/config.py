@@ -117,6 +117,10 @@ MEAL_PHOTO_UPLOAD_DIR = Path(os.getenv("MEAL_PHOTO_UPLOAD_DIR", "data/uploads/me
 if not MEAL_PHOTO_UPLOAD_DIR.is_absolute():
     MEAL_PHOTO_UPLOAD_DIR = REPO_ROOT / MEAL_PHOTO_UPLOAD_DIR
 
+ADDITIVE_PHOTO_UPLOAD_DIR = Path(os.getenv("ADDITIVE_PHOTO_UPLOAD_DIR", "data/uploads/additives"))
+if not ADDITIVE_PHOTO_UPLOAD_DIR.is_absolute():
+    ADDITIVE_PHOTO_UPLOAD_DIR = REPO_ROOT / ADDITIVE_PHOTO_UPLOAD_DIR
+
 # Auth / JWT
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change-me-in-production")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")

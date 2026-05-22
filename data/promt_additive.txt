@@ -1,0 +1,45 @@
+You are extracting supplement facts from a supplement/nutrition label.
+
+Task:
+Read the image and return ONLY valid JSON.
+
+Extract nutrient amounts PER ONE SERVING, not per container and not per tablet unless serving size equals one tablet.
+
+Allowed nutrient keys:
+{allowed_nutrient_keys}
+
+Rules:
+- Use only allowed nutrient keys.
+- If the label contains a nutrient that is not in allowed keys, put it into ignored.
+- Convert units to the unit encoded in the key:
+  - *_g = grams
+  - *_mg = milligrams
+  - *_mcg = micrograms
+  - *_iu = IU
+- If Vitamin D is shown in mcg and only vitamin_d_iu is allowed, convert mcg to IU using 1 mcg = 40 IU.
+- If Vitamin A is shown in mcg RAE and vitamin_a_rae_mcg is allowed, use mcg RAE.
+- If Vitamin A IU is available and vitamin_a_iu is allowed, use IU.
+- Do not invent missing values.
+- Do not include Daily Value percentages as nutrient amounts.
+- Return numeric values only.
+- If serving size is visible, return it in serving_label, for example "3 tablets" or "1 scoop 35g".
+- If serving weight in grams is visible, return serving_size_g.
+- If the image is unreadable, return status "error".
+
+JSON schema:
+{
+  "status": "success",
+  "serving_label": "string or null",
+  "serving_size_g": number or null,
+  "nutrients": {
+    "nutrient_key": number
+  },
+  "ignored": [
+    {
+      "label": "string",
+      "amount": "string or null",
+      "reason": "field_not_supported | unreadable | no_amount"
+    }
+  ],
+  "confidence": number
+}

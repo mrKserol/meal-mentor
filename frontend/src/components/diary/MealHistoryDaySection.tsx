@@ -7,7 +7,9 @@ import { deleteMyMeal, getMyMealsForDay } from "../../api/diaryApi";
 import { EditMealModal } from "../layout/EditMealModal";
 import { MealMacroInline, MealMacroLines } from "../meals/MealMacroLines";
 import type { NutritionTarget } from "../../types/auth";
-import type { WebMealDayItemLine, WebMealDayRow, WebMealsDayResponse } from "../../types/mealsDay";
+import { AdditiveIntakesDayModal } from "../additives/AdditiveIntakesDayModal";
+import type { DayNutritionTotals, WebMealDayItemLine, WebMealDayRow, WebMealsDayResponse } from "../../types/mealsDay";
+import { zeroDayNutritionTotals } from "../../types/mealsDay";
 import { formatIntRu, formatMacroGramsRu } from "../../utils/recentMeals";
 
 const DELETE_PANEL_PX = 96;
@@ -83,10 +85,14 @@ function goalIconClass(tone: DayGoalItem["tone"]): string {
   return "text-slate-700";
 }
 
-function buildDayGoals(nutritionTarget: NutritionTarget | null, meals: WebMealDayRow[]): DayGoalItem[] {
+function buildDayGoals(
+  nutritionTarget: NutritionTarget | null,
+  meals: WebMealDayRow[],
+  additiveTotals: DayNutritionTotals,
+): DayGoalItem[] {
   if (!nutritionTarget) return [];
 
-  const totals = meals.reduce(
+  const mealTotals = meals.reduce(
     (acc, meal) => ({
       calories: acc.calories + meal.calories,
       protein_g: acc.protein_g + (meal.protein_g ?? 0),
@@ -96,6 +102,14 @@ function buildDayGoals(nutritionTarget: NutritionTarget | null, meals: WebMealDa
     }),
     { calories: 0, protein_g: 0, fat_g: 0, carbs_g: 0, fiber_g: 0 },
   );
+
+  const totals = {
+    calories: mealTotals.calories + additiveTotals.calories,
+    protein_g: mealTotals.protein_g + additiveTotals.protein_g,
+    fat_g: mealTotals.fat_g + additiveTotals.fat_g,
+    carbs_g: mealTotals.carbs_g + additiveTotals.carbs_g,
+    fiber_g: mealTotals.fiber_g + additiveTotals.fiber_g,
+  };
 
   const c = pctCurrentTarget(totals.calories, nutritionTarget.target_calories);
   const p = pctCurrentTarget(totals.protein_g, nutritionTarget.target_protein_g);
@@ -514,6 +528,8 @@ export function MealHistoryDaySection({
   const [detail, setDetail] = useState<WebMealDayRow | null>(null);
   const [editingMeal, setEditingMeal] = useState<WebMealDayRow | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [additiveTotals, setAdditiveTotals] = useState<DayNutritionTotals>(zeroDayNutritionTotals);
+  const [additiveModalOpen, setAdditiveModalOpen] = useState(false);
 
   const load = useCallback(async () => {
     setPhase("loading");
@@ -524,6 +540,7 @@ export function MealHistoryDaySection({
         getNutritionTargetForDay(accessToken, day),
       ]);
       setItems(mealsRes.items);
+      setAdditiveTotals(mealsRes.additive_totals ?? zeroDayNutritionTotals());
       setDayNutritionTarget(targetRes.nutrition_target);
       setPhase("ready");
     } catch (e) {
@@ -543,7 +560,10 @@ export function MealHistoryDaySection({
   const todayYmd = useMemo(() => formatLocalYmd(new Date()), []);
   const tomorrowYmd = useMemo(() => addDaysYmd(todayYmd, 1), [todayYmd]);
   const dateLabel = useMemo(() => ymdToRuLong(day), [day]);
-  const dayGoals = useMemo(() => buildDayGoals(dayNutritionTarget, items), [dayNutritionTarget, items]);
+  const dayGoals = useMemo(
+    () => buildDayGoals(dayNutritionTarget, items, additiveTotals),
+    [dayNutritionTarget, items, additiveTotals],
+  );
 
   useEffect(() => {
     if (day > tomorrowYmd) setDay(tomorrowYmd);
@@ -604,15 +624,26 @@ export function MealHistoryDaySection({
                 <ChevronRight className="h-5 w-5" />
               </button>
             </div>
-            {!readonly && onAddMealForDay ? (
-              <button
-                type="button"
-                onClick={() => onAddMealForDay(day)}
-                title="Добавить приём за выбранный день"
-                className="mt-3 w-full rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 sm:w-auto sm:min-w-[10rem]"
-              >
-                Добавить
-              </button>
+            {!readonly ? (
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                {onAddMealForDay ? (
+                  <button
+                    type="button"
+                    onClick={() => onAddMealForDay(day)}
+                    title="Добавить приём за выбранный день"
+                    className="w-full rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 sm:flex-1"
+                  >
+                    + Прием пищи
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setAdditiveModalOpen(true)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 sm:flex-1"
+                >
+                  Добавки
+                </button>
+              </div>
             ) : null}
           </div>
 
@@ -706,6 +737,17 @@ export function MealHistoryDaySection({
           }}
         />
       ) : null}
+
+      <AdditiveIntakesDayModal
+        open={additiveModalOpen}
+        dateYmd={day}
+        accessToken={accessToken}
+        onClose={() => setAdditiveModalOpen(false)}
+        onChanged={() => {
+          void load();
+          onMealsChanged?.();
+        }}
+      />
     </section>
   );
 }

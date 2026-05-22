@@ -1,5 +1,7 @@
 """Column names on MealItemNutrition used when persisting CSV-derived rows (excluding id, meal_item_id, created_at)."""
 
+from sqlalchemy import Column, Float, Integer
+
 MEAL_ITEM_NUTRITION_KEYS: tuple[str, ...] = (
     "calories",
     "protein_g",
@@ -77,3 +79,20 @@ MEAL_ITEM_NUTRITION_KEYS: tuple[str, ...] = (
     "theobromine_mg",
     "water_g",
 )
+
+INTEGER_NUTRITION_KEYS: frozenset[str] = frozenset(
+    {"calories", "protein_g", "fat_g", "carbs_g", "sugar_g", "sodium_mg"},
+)
+
+
+def nutrition_column(key: str) -> Column:
+    """SQLAlchemy column for a meal-item nutrient field (Additive / AdditiveIntake)."""
+    if key in INTEGER_NUTRITION_KEYS:
+        return Column(Integer, nullable=True)
+    return Column(Float, nullable=True)
+
+
+def apply_nutrition_columns_to_model(model_cls: type) -> None:
+    """Attach MEAL_ITEM_NUTRITION_KEYS columns to a declarative model class."""
+    for key in MEAL_ITEM_NUTRITION_KEYS:
+        setattr(model_cls, key, nutrition_column(key))

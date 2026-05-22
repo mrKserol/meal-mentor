@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 
 import { authClient } from "../api/authApi";
+import { AdditivesProfileBlock } from "../components/additives/AdditivesProfileBlock";
 import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
 import type { ProfileUpdatePayload, User } from "../types/auth";
@@ -322,6 +323,8 @@ export function ProfileOnboardingPage() {
                 </label>
               </div>
             </div>
+
+            <AdditivesProfileBlock />
 
             <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
               <div className="mb-6 flex items-center gap-4">

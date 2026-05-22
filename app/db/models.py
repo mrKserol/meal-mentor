@@ -16,6 +16,8 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
+from app.db.nutrition_columns import MEAL_ITEM_NUTRITION_KEYS, apply_nutrition_columns_to_model
+
 Base = declarative_base()
 
 
@@ -65,6 +67,16 @@ class User(Base):
     )
     auth_identities = relationship(
         "UserAuthIdentity",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    additives = relationship(
+        "Additive",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    additive_intakes = relationship(
+        "AdditiveIntake",
         back_populates="user",
         cascade="all, delete-orphan",
     )
@@ -457,6 +469,44 @@ class UserMeasurement(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="measurements")
+
+
+class Additive(Base):
+    __tablename__ = "additives"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    additive_name = Column(String(255), nullable=False)
+    photo_large = Column(String(512), nullable=True)
+    photo_thumb = Column(String(512), nullable=True)
+    serving_label = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    deleted_at = Column(DateTime, nullable=True)
+
+    user = relationship("User", back_populates="additives")
+    intakes = relationship("AdditiveIntake", back_populates="additive")
+
+
+apply_nutrition_columns_to_model(Additive)
+
+
+class AdditiveIntake(Base):
+    __tablename__ = "additive_intakes"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    additive_id = Column(Integer, ForeignKey("additives.id", ondelete="SET NULL"), nullable=True, index=True)
+    additive_name_snapshot = Column(String(255), nullable=False)
+    servings_count = Column(Float, nullable=False, default=1.0)
+    intake_datetime = Column(DateTime, nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="additive_intakes")
+    additive = relationship("Additive", back_populates="intakes")
+
+
+apply_nutrition_columns_to_model(AdditiveIntake)
 
 
 class RefreshToken(Base):

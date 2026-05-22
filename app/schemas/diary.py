@@ -47,6 +47,8 @@ class DiaryWeekBlock(BaseModel):
     avg_salt_g: float
     avg_saturated_fat_g: float
     detailed_avg: dict[str, float] = Field(default_factory=dict)
+    detailed_avg_meals: dict[str, float] = Field(default_factory=dict)
+    detailed_avg_additives: dict[str, float] = Field(default_factory=dict)
     days_with_data: int = Field(
         ...,
         description="Дней с ненулевыми калориями; средние делятся на это число (минимум 1)",
@@ -87,6 +89,8 @@ class DiaryPeriodBlock(BaseModel):
     avg_salt_g: float
     avg_saturated_fat_g: float
     detailed_avg: dict[str, float] = Field(default_factory=dict)
+    detailed_avg_meals: dict[str, float] = Field(default_factory=dict)
+    detailed_avg_additives: dict[str, float] = Field(default_factory=dict)
     days_with_data: int = Field(
         ...,
         description="Дней с ненулевыми калориями; средние делятся на это число (минимум 1)",
