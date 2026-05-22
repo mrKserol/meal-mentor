@@ -105,7 +105,7 @@ export function AppTopBar({ title = "Meal Mentor", avatarFallback, onLogout }: A
                 }}
                 className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
               >
-                <UserRound className="h-4 w-4 text-slate-500" aria-hidden />
+                <UserRound className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
                 Мой профиль
               </button>
 
@@ -119,7 +119,7 @@ export function AppTopBar({ title = "Meal Mentor", avatarFallback, onLogout }: A
                   }}
                   className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                 >
-                  <Shield className="h-4 w-4 text-slate-500" aria-hidden />
+                  <Shield className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
                   Администрирование
                 </button>
               ) : null}
@@ -134,7 +134,7 @@ export function AppTopBar({ title = "Meal Mentor", avatarFallback, onLogout }: A
                   }}
                   className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                 >
-                  <ClipboardList className="h-4 w-4 text-slate-500" aria-hidden />
+                  <ClipboardList className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
                   Режим куратора
                 </button>
               ) : null}
@@ -148,7 +148,7 @@ export function AppTopBar({ title = "Meal Mentor", avatarFallback, onLogout }: A
                 }}
                 className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
               >
-                <LogOut className="h-4 w-4" aria-hidden />
+                <LogOut className="h-4 w-4 shrink-0" aria-hidden />
                 Выйти
               </button>
             </div>

@@ -541,7 +541,9 @@ export function AdminPage() {
               <p className="mt-1 text-sm text-slate-500">Пользователи с ролью curator или admin.</p>
               <ul className="mt-4 space-y-1">
                 {curators.length === 0 ? (
-                  <li className="text-sm text-slate-500">Нет кураторов. Назначьте роль curator в списке пользователей.</li>
+                  <li className="text-sm text-slate-500">
+                    Нет кураторов и администраторов. Назначьте роль curator или используйте существующих admin.
+                  </li>
                 ) : (
                   curators.map((curator) => (
                     <li key={curator.id}>

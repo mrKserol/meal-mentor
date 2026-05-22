@@ -493,7 +493,7 @@ def list_curators(admin: User = Depends(require_admin), db: Session = Depends(ge
     curators = (
         db.query(User)
         .options(joinedload(User.auth_identities))
-        .filter(User.role == "curator")
+        .filter(User.role.in_(("curator", "admin")))
         .order_by(User.created_at.desc())
         .all()
     )
