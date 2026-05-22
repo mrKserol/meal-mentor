@@ -1,4 +1,5 @@
 import type { DiaryRecentMeal, DiarySnapshot } from "../types/diary";
+import { mealDisplayPrediction } from "./mealFlow";
 
 export type MealHistoryItem = {
   id: string;
@@ -39,8 +40,13 @@ export function mealThumbSrcForRecent(m: DiaryRecentMeal): string | undefined {
 export function mapTodayMealsToHistory(snapshot: DiarySnapshot | null): MealHistoryItem[] {
   if (!snapshot?.today_meals?.length) return [];
   return snapshot.today_meals.map((m) => {
-    const title = typeof m.title === "string" ? m.title.trim() : "";
-    const predictionLine = title || "—";
+    const predictionLine =
+      mealDisplayPrediction({
+        prediction: m.prediction,
+        prediction_translated: m.prediction_translated,
+      }) ||
+      (typeof m.title === "string" ? m.title.trim() : "") ||
+      "—";
     return {
       id: String(m.id),
       mealType: m.meal_type_label,

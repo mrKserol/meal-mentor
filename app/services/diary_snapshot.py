@@ -205,10 +205,7 @@ def _meal_title_from_items(meal: Meal, max_parts: int = 3) -> str:
 
 
 def _meal_list_title(meal: Meal, max_len: int = 160) -> str:
-    """Строка для списка «История»: user_text, иначе prediction, иначе старая сводка из meal_items."""
-    ut = (meal.user_text or "").strip()
-    if ut:
-        return ut if len(ut) <= max_len else ut[: max_len - 1] + "…"
+    """Строка для списка: prediction_translated, иначе prediction, иначе сводка из meal_items (как в дневнике)."""
     pr = (meal.prediction_translated or meal.prediction or "").strip()
     if pr:
         return pr if len(pr) <= max_len else pr[: max_len - 1] + "…"
@@ -383,6 +380,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
                 water_g=tot["water_g"],
                 recorded_at=recorded,
                 prediction=meal.prediction,
+                prediction_translated=meal.prediction_translated,
                 user_text=meal.user_text,
                 composition=meal_composition_line(meal),
                 meal_photo_large=meal.meal_photo_large,
