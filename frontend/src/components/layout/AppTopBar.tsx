@@ -120,7 +120,7 @@ export function AppTopBar({ title = "Meal Mentor", avatarFallback, onLogout }: A
                   className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                 >
                   <Shield className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
-                  Администрирование
+                  Администратор
                 </button>
               ) : null}
 
