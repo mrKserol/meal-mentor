@@ -192,7 +192,11 @@ def _meal_naive_dt(meal: Meal) -> datetime:
 
 
 def _meal_title_from_items(meal: Meal, max_parts: int = 3) -> str:
-    names = [it.item_name for it in meal.items if it.item_name]
+    names = []
+    for it in meal.items:
+        label = (it.name_translated or it.item_name or "").strip()
+        if label:
+            names.append(label)
     if not names:
         return "Приём пищи"
     head = names[:max_parts]

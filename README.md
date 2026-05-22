@@ -74,6 +74,12 @@ python -m app.bot.telegram_bot
 | API | FastAPI, SQLAlchemy, Alembic, JWT |
 | AI | OpenAI (vision + text) |
 | Nutrition | `data/nutrition.csv`, aliases, fuzzy / optional semantic match; soup category scoring (see docs) |
+
+### Weight estimation (vision / text)
+
+Vision LLM can overestimate grams for single sweets and light bakery items (e.g. one small glazed pryanik logged as 200 g). Prompt rules in `data/promt.txt` and `data/promt2.txt` include typical piece weights for cookies, gingerbread, donuts, and muffins. **Do not** scale grams in `NutritionService` — the issue is LLM portion size, not per-100g math.
+
+**TODO:** category-based weight calibration / caps for single-item servings.
 | Web UI | React, Vite, TypeScript, Tailwind, PWA |
 | Bot | Python, long polling → HTTP API |
 

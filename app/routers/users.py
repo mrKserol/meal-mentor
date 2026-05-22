@@ -453,7 +453,7 @@ def patch_my_profile(
     if new_password:
         current_user.hashed_password = hash_password(new_password)
 
-    for field in ("sex", "birth_date", "height_cm", "weight_kg", "goal", "activity_level", "target_weight_kg"):
+    for field in ("sex", "birth_date", "height_cm", "weight_kg", "activity_level", "target_weight_kg"):
         if field in data:
             setattr(current_user, field, data[field])
 

@@ -133,15 +133,12 @@ def patch_profile(body: ProfilePatch, db: Session = Depends(get_db)):
 
 @router.post("/weights")
 def add_weight(body: WeightBody, db: Session = Depends(get_db)):
+    from app.services.weight_measurements import record_weight_measurement
+
     user = get_user_by_telegram_id(db, body.telegram_id)
     if not user:
         raise HTTPException(404, "user not found")
-    m = create_user_measurement(
-        db,
-        user.id,
-        datetime.utcnow(),
-        weight_kg=body.weight_kg,
-    )
+    m, _ = record_weight_measurement(db, user, weight_kg=body.weight_kg)
     return {"status": "ok", "id": m.id, "weight_kg": body.weight_kg}
 
 

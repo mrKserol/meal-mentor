@@ -12,7 +12,6 @@ interface RegisterFormState {
   birth_date: string;
   height_cm: string;
   weight_kg: string;
-  goal: "lose_weight" | "maintain_weight" | "gain_weight";
   activity_level: "1.2" | "1.375" | "1.55" | "1.725" | "1.9";
   target_weight_kg: string;
   email: string;
@@ -28,7 +27,6 @@ const initialForm: RegisterFormState = {
   birth_date: "",
   height_cm: "",
   weight_kg: "",
-  goal: "maintain_weight",
   activity_level: "1.375",
   target_weight_kg: "",
   email: "",
@@ -79,7 +77,6 @@ export function RegisterPage() {
         birth_date: form.birth_date,
         height_cm: Number(form.height_cm),
         weight_kg: Number(form.weight_kg),
-        goal: form.goal,
         activity_level: form.activity_level,
         target_weight_kg: Number(form.target_weight_kg),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
@@ -205,22 +202,6 @@ export function RegisterPage() {
                   step="0.1"
                 />
               </div>
-            </div>
-
-            <div className="space-y-xs">
-              <label className="font-label-sm text-label-sm text-on-surface-variant ml-1" htmlFor="goal">
-                Цель
-              </label>
-              <select
-                id="goal"
-                value={form.goal}
-                onChange={(e) => setForm((prev) => ({ ...prev, goal: e.target.value as RegisterFormState["goal"] }))}
-                className="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary-container focus:border-primary transition-all outline-none text-on-surface"
-              >
-                <option value="lose_weight">lose_weight</option>
-                <option value="maintain_weight">maintain_weight</option>
-                <option value="gain_weight">gain_weight</option>
-              </select>
             </div>
 
             <div className="space-y-xs">

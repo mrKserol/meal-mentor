@@ -52,6 +52,17 @@ Rules:
 * Never use translated ingredient names as JSON keys. Translations go only into "name_translated"
 * If multiple ingredients are mixed in one dish, try to separate them logically
 * If the exact weight is unknown, make a reasonable estimate
+* For single small bakery or sweet items, estimate realistic piece weight and avoid overestimating.
+  Typical weights:
+  - small cookie: 10–25 g
+  - gingerbread / pryanik: 30–80 g
+  - small glazed gingerbread: 40–70 g
+  - donut: 50–90 g
+  - muffin / cupcake: 60–120 g
+  - small candy / truffle: 10–25 g
+  Do not estimate one small cookie, gingerbread or pryanik as 200 g unless it is clearly very large or there are multiple pieces.
+  If only one pryanik / gingerbread is visible, use 50–70 g by default.
+  Count only visible pieces; if exactly one small glazed pryanik/cookie is in the photo, prefer 40–70 g (not 150–200 g).
 * Ignore non-food objects (plates, utensils, packaging, etc.)
 * For salads, Greek salad, or vegetable salads: do NOT use one vague ingredient name "mixed vegetables".
   List separate, visible components in English (e.g. cucumber, tomato, bell pepper, red onion, feta cheese, olives; add olive oil only if clearly visible as a separate layer or dressing).

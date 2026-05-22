@@ -5359,6 +5359,41 @@
       "canonical": "Zwieback",
       "default_state": "unknown"
     },
+    "pryanik": {
+      "canonical": "Cookies, gingersnaps",
+      "default_state": "unknown",
+      "category": "sweet"
+    },
+    "gingerbread": {
+      "canonical": "Cookies, gingersnaps",
+      "default_state": "unknown",
+      "category": "sweet"
+    },
+    "glazed gingerbread": {
+      "canonical": "Cookies, gingersnaps",
+      "default_state": "unknown",
+      "category": "sweet"
+    },
+    "пряник": {
+      "canonical": "Cookies, gingersnaps",
+      "default_state": "unknown",
+      "category": "sweet"
+    },
+    "пряники": {
+      "canonical": "Cookies, gingersnaps",
+      "default_state": "unknown",
+      "category": "sweet"
+    },
+    "глазированный пряник": {
+      "canonical": "Cookies, gingersnaps",
+      "default_state": "unknown",
+      "category": "sweet"
+    },
+    "имбирный пряник": {
+      "canonical": "Cookies, gingersnaps",
+      "default_state": "unknown",
+      "category": "sweet"
+    },
     "авокадо": {
       "canonical": "Avocados, all commercial varieties, raw",
       "default_state": "raw",

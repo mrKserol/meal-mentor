@@ -28,6 +28,7 @@ from app.core.config import (
     YANDEX_REDIRECT_URI,
 )
 from app.db.models import RefreshToken, User, UserAuthIdentity
+from app.services.user_goal import sync_user_goal
 from app.schemas.auth import (
     AuthTelegramCallbackRequest,
     AuthTelegramRequest,
@@ -299,7 +300,7 @@ def register_user(
         birth_date=birth_date,
         height_cm=height_cm,
         weight_kg=weight_kg,
-        goal=goal,
+        goal=None,
         activity_level=activity_level,
         target_weight_kg=target_weight_kg,
         timezone=timezone,
@@ -307,6 +308,8 @@ def register_user(
         subscription_status="Free",
     )
     db.add(user)
+    db.flush()
+    sync_user_goal(user)
     db.commit()
     db.refresh(user)
     return user

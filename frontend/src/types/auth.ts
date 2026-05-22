@@ -27,7 +27,7 @@ export interface RegisterPayload {
   birth_date: string;
   height_cm: number;
   weight_kg: number;
-  goal: "lose_weight" | "maintain_weight" | "gain_weight";
+  goal?: "lose_weight" | "maintain_weight" | "gain_weight";
   activity_level: "1.2" | "1.375" | "1.55" | "1.725" | "1.9";
   target_weight_kg: number;
   timezone: string;

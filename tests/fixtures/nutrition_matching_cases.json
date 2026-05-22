@@ -650,5 +650,25 @@
         "tomato soup": ["dry mix", "powder", "gravy", "oil", "fat"]
       }
     }
+  },
+  {
+    "name": "single pryanik",
+    "description": "One small pryanik should not be estimated as 200g in prompt examples; matching should stay within realistic kcal per 100g",
+    "ingredients": {
+      "pryanik": {"grams": 60, "state": "unknown"}
+    },
+    "expected": {
+      "calories_min": 150,
+      "calories_max": 280,
+      "carbohydrates_min": 25,
+      "carbohydrates_max": 55,
+      "fat_max": 15,
+      "required_contains_any": {
+        "pryanik": ["gingerbread", "cookie", "cake", "sweet"]
+      },
+      "forbidden_match_contains": {
+        "pryanik": ["oil", "fat", "butter", "syrup", "sugar, granulated"]
+      }
+    }
   }
 ]

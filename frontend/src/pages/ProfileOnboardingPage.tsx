@@ -1,6 +1,6 @@
 import axios from "axios";
 import type { ChangeEvent } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -26,13 +26,13 @@ import { authClient } from "../api/authApi";
 import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
 import type { ProfileUpdatePayload, User } from "../types/auth";
+import { deriveGoalFromWeights, getGoalLabel } from "../utils/profileLabels";
 
 type ProfileFormState = {
   sex: string;
   birth_date: string;
   height_cm: string;
   weight_kg: string;
-  goal: string;
   activity_level: string;
   target_weight_kg: string;
   allergens: string[];
@@ -58,7 +58,6 @@ const emptyForm: ProfileFormState = {
   birth_date: "",
   height_cm: "",
   weight_kg: "",
-  goal: "",
   activity_level: "",
   target_weight_kg: "",
   allergens: [],
@@ -72,7 +71,6 @@ function userToForm(u: User): ProfileFormState {
     birth_date: u.birth_date ?? "",
     height_cm: u.height_cm != null ? String(u.height_cm) : "",
     weight_kg: u.weight_kg != null ? String(u.weight_kg) : "",
-    goal: u.goal ?? "",
     activity_level: u.activity_level ?? "",
     target_weight_kg: u.target_weight_kg != null ? String(u.target_weight_kg) : "",
     allergens: (u.allergens ?? []).filter((key) => KNOWN_ALLERGEN_KEYS.has(key)),
@@ -85,7 +83,6 @@ function buildPayload(form: ProfileFormState, includeAllergens: boolean): Profil
   if (form.birth_date) payload.birth_date = form.birth_date;
   if (form.height_cm) payload.height_cm = Number(form.height_cm);
   if (form.weight_kg) payload.weight_kg = Number(form.weight_kg);
-  if (form.goal) payload.goal = form.goal as ProfileUpdatePayload["goal"];
   if (form.activity_level) {
     payload.activity_level = form.activity_level as ProfileUpdatePayload["activity_level"];
   }
@@ -131,6 +128,13 @@ export function ProfileOnboardingPage() {
     if (!user) return;
     setForm(userToForm(user));
   }, [user]);
+
+  const derivedGoalLabel = useMemo(() => {
+    const weight = form.weight_kg ? Number(form.weight_kg) : null;
+    const target = form.target_weight_kg ? Number(form.target_weight_kg) : null;
+    const goal = deriveGoalFromWeights(weight, target);
+    return getGoalLabel(goal);
+  }, [form.target_weight_kg, form.weight_kg]);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
@@ -274,16 +278,6 @@ export function ProfileOnboardingPage() {
                 </label>
 
                 <label className="min-w-0 flex flex-col gap-1">
-                  <span className="text-sm font-medium text-slate-600">Цель</span>
-                  <select name="goal" value={form.goal} onChange={handleChange} className={inputClass}>
-                    <option value="">Не указано</option>
-                    <option value="lose_weight">Снижение веса</option>
-                    <option value="maintain_weight">Поддержание веса</option>
-                    <option value="gain_weight">Набор массы</option>
-                  </select>
-                </label>
-
-                <label className="min-w-0 flex flex-col gap-1">
                   <span className="text-sm font-medium text-slate-600">Желаемый вес, кг</span>
                   <input
                     name="target_weight_kg"
@@ -297,6 +291,16 @@ export function ProfileOnboardingPage() {
                     className={inputClass}
                   />
                 </label>
+
+                <div className="min-w-0 flex flex-col gap-1 md:col-span-2">
+                  <span className="text-sm font-medium text-slate-600">Цель</span>
+                  <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-800">
+                    {derivedGoalLabel}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Определяется автоматически по актуальному и желаемому весу. Обновляется при взвешивании.
+                  </p>
+                </div>
 
                 <label className="min-w-0 flex flex-col gap-1 md:col-span-2">
                   <span className="text-sm font-medium text-slate-600">Уровень активности</span>
