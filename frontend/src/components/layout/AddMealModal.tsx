@@ -144,30 +144,34 @@ function MealScheduledTimeBlock({
         Приём будет записан на {formatScheduledHint(scheduled.date, scheduled.time)}
       </button>
       {editOpen ? (
-        <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-end">
-          <label className="min-w-0 flex-1 text-sm">
-            <span className="mb-1 block font-medium text-slate-700">Дата</span>
-            <input
-              type="date"
-              value={scheduled.date}
-              max={tomorrowYmd}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (!v) return;
-                onScheduledChange({ ...scheduled, date: v > tomorrowYmd ? tomorrowYmd : v });
-              }}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2"
-            />
-          </label>
-          <label className="w-full shrink-0 text-sm sm:w-[7.25rem]">
-            <span className="mb-1 block font-medium text-slate-700">Время</span>
-            <input
-              type="time"
-              value={scheduled.time}
-              onChange={(e) => onScheduledChange({ ...scheduled, time: e.target.value })}
-              className="box-border w-full max-w-full rounded-lg border border-slate-200 px-3 py-2"
-            />
-          </label>
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_7.5rem] sm:items-end sm:gap-2">
+            <label className="block min-w-0 max-w-full text-sm">
+              <span className="mb-1 block font-medium text-slate-700">Дата</span>
+              <input
+                type="date"
+                value={scheduled.date}
+                max={tomorrowYmd}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (!v) return;
+                  onScheduledChange({ ...scheduled, date: v > tomorrowYmd ? tomorrowYmd : v });
+                }}
+                className="box-border w-full min-w-0 max-w-full rounded-lg border border-slate-200 px-3 py-2"
+              />
+            </label>
+            <label className="block min-w-0 w-full max-w-full text-sm sm:w-auto sm:max-w-[7.5rem]">
+              <span className="mb-1 block font-medium text-slate-700">Время</span>
+              <div className="min-w-0 w-full max-w-full overflow-hidden">
+                <input
+                  type="time"
+                  value={scheduled.time}
+                  onChange={(e) => onScheduledChange({ ...scheduled, time: e.target.value })}
+                  className="meal-time-input box-border w-full min-w-0 max-w-full rounded-lg border border-slate-200 px-2 py-2 text-sm sm:px-2.5"
+                />
+              </div>
+            </label>
+          </div>
         </div>
       ) : null}
     </div>
