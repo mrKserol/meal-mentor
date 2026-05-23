@@ -121,8 +121,21 @@ function MealScheduledTimeBlock({
   onEditOpenChange: (open: boolean) => void;
   onScheduledChange: (next: ScheduledLocal) => void;
 }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!editOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const root = wrapRef.current;
+      if (!root || root.contains(e.target as Node)) return;
+      onEditOpenChange(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [editOpen, onEditOpenChange]);
+
   return (
-    <div className="space-y-2">
+    <div ref={wrapRef} className="space-y-2">
       <button
         type="button"
         onClick={() => onEditOpenChange(!editOpen)}
@@ -131,7 +144,7 @@ function MealScheduledTimeBlock({
         Приём будет записан на {formatScheduledHint(scheduled.date, scheduled.time)}
       </button>
       {editOpen ? (
-        <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-end">
+        <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-end">
           <label className="min-w-0 flex-1 text-sm">
             <span className="mb-1 block font-medium text-slate-700">Дата</span>
             <input
@@ -146,13 +159,13 @@ function MealScheduledTimeBlock({
               className="w-full rounded-lg border border-slate-200 px-3 py-2"
             />
           </label>
-          <label className="min-w-0 flex-1 text-sm">
+          <label className="w-full shrink-0 text-sm sm:w-[7.25rem]">
             <span className="mb-1 block font-medium text-slate-700">Время</span>
             <input
               type="time"
               value={scheduled.time}
               onChange={(e) => onScheduledChange({ ...scheduled, time: e.target.value })}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2"
+              className="box-border w-full max-w-full rounded-lg border border-slate-200 px-3 py-2"
             />
           </label>
         </div>
