@@ -25,8 +25,8 @@ export function CircularMacroProgress({
   const targetFmt = Number.isInteger(target) ? String(target) : target.toFixed(1);
 
   return (
-    <div className="flex flex-col items-center rounded-xl bg-surface-container-low p-4">
-      <div className="relative mb-2 h-20 w-20">
+    <div className="flex min-w-0 flex-col items-center rounded-xl bg-surface-container-low p-2 sm:p-4">
+      <div className="relative mb-1 h-14 w-14 sm:mb-2 sm:h-20 sm:w-20">
         <svg className="h-full w-full -rotate-90" viewBox="0 0 80 80" aria-hidden>
           <circle
             className="text-surface-container-highest"
@@ -50,12 +50,14 @@ export function CircularMacroProgress({
             strokeDashoffset={dashOffset}
           />
         </svg>
-        <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-on-surface">
+        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-on-surface sm:text-sm">
           {pct}%
         </div>
       </div>
-      <p className="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">{label}</p>
-      <p className="font-h3 text-h3 text-center text-on-surface">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant sm:font-label-sm sm:text-label-sm sm:tracking-wider">
+        {label}
+      </p>
+      <p className="text-center text-[11px] font-semibold leading-tight text-on-surface sm:font-h3 sm:text-h3">
         {currentFmt}
         {unit} / {targetFmt}
         {unit}

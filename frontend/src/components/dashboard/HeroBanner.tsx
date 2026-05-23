@@ -10,7 +10,9 @@ export function HeroBanner({ greetingName, subtitleLine }: HeroBannerProps) {
         <span className="inline-block rounded-full bg-white/20 px-3 py-1 font-label-sm text-label-sm text-white backdrop-blur-sm">
           Welcome back, {greetingName}!
         </span>
-        <h2 className="font-h1 text-h1 leading-tight text-white">Цели на сегодня</h2>
+        <h2 className="text-lg font-bold leading-tight text-white sm:font-h1 sm:text-h1">
+          Питание на сегодня
+        </h2>
         <p className="max-w-xl font-body-md text-body-md text-white/95">{subtitleLine}</p>
       </div>
       <div className="relative z-10 flex shrink-0 items-center justify-end">

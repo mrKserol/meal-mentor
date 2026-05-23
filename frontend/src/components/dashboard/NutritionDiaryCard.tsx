@@ -82,7 +82,7 @@ export function NutritionDiaryCard({ nutritionTarget, todayTotals }: NutritionDi
         </div>
       </div>
 
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-4">
         <CircularMacroProgress
           label="Белки"
           current={t.protein_g}
@@ -91,18 +91,18 @@ export function NutritionDiaryCard({ nutritionTarget, todayTotals }: NutritionDi
           ringClass="text-primary"
         />
         <CircularMacroProgress
-          label="Углеводы"
-          current={t.carbs_g}
-          target={nutritionTarget.target_carbs_g}
-          unit="g"
-          ringClass="text-tertiary"
-        />
-        <CircularMacroProgress
           label="Жиры"
           current={t.fat_g}
           target={nutritionTarget.target_fat_g}
           unit="g"
           ringClass="text-secondary"
+        />
+        <CircularMacroProgress
+          label="Углеводы"
+          current={t.carbs_g}
+          target={nutritionTarget.target_carbs_g}
+          unit="g"
+          ringClass="text-tertiary"
         />
       </div>
     </div>
