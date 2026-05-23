@@ -150,12 +150,7 @@ export function DashboardPage() {
           </div>
           <div className="flex flex-col gap-8">
             <ProfileCard user={profile} />
-            <SubscriptionCard
-              subscriptionStatus={profile?.subscription_status}
-              onUpgradeClick={() => {
-                /* платёжный поток будет подключён отдельно */
-              }}
-            />
+            <SubscriptionCard subscriptionStatus={profile?.subscription_status} />
           </div>
         </div>
       </div>
