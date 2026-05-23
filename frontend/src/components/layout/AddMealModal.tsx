@@ -1,6 +1,6 @@
 import axios from "axios";
 import type { ChangeEvent } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Camera, Droplets, FileUp, Loader2, PenLine, Pill, X } from "lucide-react";
 
 import { recordWaterIntake } from "../../api/additivesApi";
@@ -59,14 +59,123 @@ interface AddMealModalProps {
   open: boolean;
   onClose: () => void;
   onMealSaved?: () => void;
-  /** YYYY-MM-DD: приём сохранится на этот день в 23:59 (часовой пояс профиля). */
+  /** YYYY-MM-DD: день записи из истории; время по умолчанию — текущее локальное. */
   mealLocalDate?: string | null;
 }
 
-function formatMealLocalDateHint(ymd: string): string {
-  const [y, mo, da] = ymd.split("-").map(Number);
-  const dt = new Date(y, mo - 1, da);
-  return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(dt);
+type ScheduledLocal = { date: string; time: string };
+
+function formatLocalYmd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function buildDefaultScheduled(dateYmd: string): ScheduledLocal {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, "0");
+  const m = String(now.getMinutes()).padStart(2, "0");
+  return { date: dateYmd, time: `${h}:${m}` };
+}
+
+function formatScheduledHint(dateYmd: string, timeHm: string): string {
+  const [y, mo, da] = dateYmd.split("-").map(Number);
+  const [hh, mm] = timeHm.split(":").map(Number);
+  const dt = new Date(y, mo - 1, da, hh, mm);
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(dt);
+}
+
+function toMealLocalDatetime(scheduled: ScheduledLocal): string {
+  return `${scheduled.date}T${scheduled.time}`;
+}
+
+function validateScheduled(scheduled: ScheduledLocal, tomorrowYmd: string): string | null {
+  const [y, mo, da] = scheduled.date.split("-").map(Number);
+  const [hh, mm] = scheduled.time.split(":").map(Number);
+  const chosen = new Date(y, mo - 1, da, hh, mm);
+  const [ty, tmo, tda] = tomorrowYmd.split("-").map(Number);
+  const max = new Date(ty, tmo - 1, tda, 23, 59, 59, 999);
+  if (chosen > max) {
+    return "Дата и время не могут быть позже завтрашнего дня.";
+  }
+  return null;
+}
+
+function MealScheduledTimeBlock({
+  scheduled,
+  tomorrowYmd,
+  editOpen,
+  onEditOpenChange,
+  onScheduledChange,
+}: {
+  scheduled: ScheduledLocal;
+  tomorrowYmd: string;
+  editOpen: boolean;
+  onEditOpenChange: (open: boolean) => void;
+  onScheduledChange: (next: ScheduledLocal) => void;
+}) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!editOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const root = wrapRef.current;
+      if (!root || root.contains(e.target as Node)) return;
+      onEditOpenChange(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [editOpen, onEditOpenChange]);
+
+  return (
+    <div ref={wrapRef} className="space-y-2">
+      <button
+        type="button"
+        onClick={() => onEditOpenChange(!editOpen)}
+        className="w-full rounded-xl border border-green-200 bg-green-50 px-3 py-2.5 text-center text-sm text-green-900 transition hover:bg-green-100"
+      >
+        Приём будет записан на {formatScheduledHint(scheduled.date, scheduled.time)}
+      </button>
+      {editOpen ? (
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_7.5rem] sm:items-end sm:gap-2">
+            <label className="block min-w-0 max-w-full text-sm">
+              <span className="mb-1 block font-medium text-slate-700">Дата</span>
+              <input
+                type="date"
+                value={scheduled.date}
+                max={tomorrowYmd}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (!v) return;
+                  onScheduledChange({ ...scheduled, date: v > tomorrowYmd ? tomorrowYmd : v });
+                }}
+                className="box-border w-full min-w-0 max-w-full rounded-lg border border-slate-200 px-3 py-2"
+              />
+            </label>
+            <label className="block min-w-0 w-full max-w-full text-sm sm:w-auto sm:max-w-[7.5rem]">
+              <span className="mb-1 block font-medium text-slate-700">Время</span>
+              <div className="min-w-0 w-full max-w-full overflow-hidden">
+                <input
+                  type="time"
+                  value={scheduled.time}
+                  onChange={(e) => onScheduledChange({ ...scheduled, time: e.target.value })}
+                  className="meal-time-input box-border w-full min-w-0 max-w-full rounded-lg border border-slate-200 px-2 py-2 text-sm sm:px-2.5"
+                />
+              </div>
+            </label>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddMealModalProps) {
@@ -75,6 +184,8 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
   const [takeAdditiveOpen, setTakeAdditiveOpen] = useState(false);
   const [waterSaving, setWaterSaving] = useState(false);
   const [textDraft, setTextDraft] = useState("");
+  const [scheduled, setScheduled] = useState<ScheduledLocal | null>(null);
+  const [scheduleEditOpen, setScheduleEditOpen] = useState(false);
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const photoB64Ref = useRef<string | null>(null);
@@ -92,13 +203,36 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
     });
   }, []);
 
+  const tomorrowYmd = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return formatLocalYmd(d);
+  }, []);
+
   useEffect(() => {
     if (open) {
       reset();
       setTakeAdditiveOpen(false);
       setWaterSaving(false);
+      setScheduleEditOpen(false);
+      if (mealLocalDate) {
+        setScheduled(buildDefaultScheduled(mealLocalDate));
+      } else {
+        setScheduled(null);
+      }
     }
-  }, [open, reset]);
+  }, [open, reset, mealLocalDate]);
+
+  const scheduleBlock =
+    scheduled != null ? (
+      <MealScheduledTimeBlock
+        scheduled={scheduled}
+        tomorrowYmd={tomorrowYmd}
+        editOpen={scheduleEditOpen}
+        onEditOpenChange={setScheduleEditOpen}
+        onScheduledChange={setScheduled}
+      />
+    ) : null;
 
   useEffect(() => {
     if (!open) return;
@@ -241,6 +375,14 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
 
   const confirmSave = async () => {
     if (ui.kind !== "confirm") return;
+    if (scheduled) {
+      const err = validateScheduled(scheduled, tomorrowYmd);
+      if (err) {
+        setUi({ kind: "error", message: err });
+        setScheduleEditOpen(true);
+        return;
+      }
+    }
     setUi({ kind: "busy", message: "Сохраняю в дневник…" });
     try {
       const ok = await validateSession();
@@ -256,7 +398,7 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
         prediction_language: ui.mealData.prediction_language ?? null,
         user_text: ui.mealData.user_text ?? undefined,
         image_base64: ui.mealData.image_base64 ?? undefined,
-        meal_local_date: mealLocalDate ?? undefined,
+        meal_local_datetime: scheduled ? toMealLocalDatetime(scheduled) : undefined,
       });
       onMealSaved?.();
       setUi({ kind: "menu" });
@@ -306,11 +448,7 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           {ui.kind === "menu" ? (
             <div className="space-y-4">
-              {mealLocalDate ? (
-                <p className="rounded-xl border border-green-100 bg-green-50 px-3 py-2 text-center text-sm text-green-900">
-                  Приём будет записан на {formatMealLocalDateHint(mealLocalDate)}, 23:59
-                </p>
-              ) : null}
+              {scheduleBlock}
               <p className="text-center text-sm text-slate-600">
                 Сфотографируйте еду, загрузите снимок или опишите блюдо текстом
               </p>
@@ -411,6 +549,7 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
 
           {ui.kind === "recognition" ? (
             <div className="space-y-4">
+              {scheduleBlock}
               <MealPhotoPreview imageBase64={ui.mealData.image_base64} />
               <div className="space-y-3 text-center text-sm leading-relaxed text-slate-800">
                 {mealDisplayPrediction(ui.mealData) ? (
@@ -465,6 +604,7 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
 
           {ui.kind === "text" ? (
             <div className="space-y-3">
+              {scheduleBlock}
               {ui.mode === "after_photo" ? (
                 <MealPhotoPreview imageBase64={photoB64Ref.current} />
               ) : null}
@@ -497,6 +637,8 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
           ) : null}
 
           {ui.kind === "confirm" ? (
+            <div className="space-y-4">
+              {scheduleBlock}
             <MealCompositionForm
               mealData={{
                 ingredients: ui.mealData.ingredients,
@@ -526,6 +668,7 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
                 onClose();
               }}
             />
+            </div>
           ) : null}
 
 

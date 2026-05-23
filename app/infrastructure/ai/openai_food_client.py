@@ -239,6 +239,7 @@ User clarification:
 
 Important correction mode:
 - The user is correcting the previous AI recognition, not necessarily describing every visible item from scratch.
+- User text overrides image interpretation when it specifies the edible part or product (e.g. photo shows a whole coconut, user writes "coconut water" / "кокосовая вода" → return coconut water, not coconut meat).
 - Use the user's clarification as the primary hint for the items they mention.
 - Keep previously detected ingredients if they are still visible in the image and the user did not explicitly remove or deny them.
 - Replace only the ingredients that the user's clarification clearly corrects.

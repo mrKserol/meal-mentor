@@ -560,6 +560,130 @@ def is_bean_soup_like_ingredient(ni: NormalizedIngredient) -> bool:
     return any(t in blob for t in ("bean soup", "фасолевый суп", "суп фасолевый"))
 
 
+_ZERO_SOFT_DRINK_TERMS = (
+    "zero",
+    "diet",
+    "light",
+    "lite",
+    "sugar free",
+    "sugar-free",
+    "no sugar",
+    "без сахара",
+    "зеро",
+    "лайт",
+    "диет",
+    "диетическая",
+)
+
+
+def is_soft_drink_like_ingredient(ni: NormalizedIngredient) -> bool:
+    if NutritionCategory.SOFT_DRINK.value in ni.categories:
+        return True
+    if NutritionCategory.ZERO_SOFT_DRINK.value in ni.categories:
+        return True
+    blob = _ingredient_blob(ni)
+    if re.search(r"\b(coke|pepsi|sprite|soda|soft drink|carbonated)\b", blob):
+        return True
+    if re.search(r"\bcoca[\s-]*cola\b", blob) or "coca cola" in blob:
+        return True
+    if re.search(r"\bcola\b", blob):
+        return True
+    if "кока" in blob and "кола" in blob:
+        return True
+    if re.search(r"(?:^|\s)кола(?:\s|$)", blob):
+        return True
+    return False
+
+
+def is_zero_soft_drink_like_ingredient(ni: NormalizedIngredient) -> bool:
+    if NutritionCategory.ZERO_SOFT_DRINK.value in ni.categories:
+        return True
+    blob = _ingredient_blob(ni)
+    if not is_soft_drink_like_ingredient(ni):
+        return False
+    return any(t in blob for t in _ZERO_SOFT_DRINK_TERMS)
+
+
+_COCONUT_WATER_TERMS = (
+    "coconut water",
+    "coconut juice",
+    "coconut liquid",
+    "кокосовая вода",
+    "вода кокоса",
+    "вода из кокоса",
+    "кокосовый сок",
+    "сок кокоса",
+    "жидкость кокоса",
+    "жидкость из кокоса",
+    "вода из молодого кокоса",
+)
+
+
+def is_coconut_water_like_ingredient(ni: NormalizedIngredient) -> bool:
+    if NutritionCategory.COCONUT_WATER.value in ni.categories:
+        return True
+    if ni.alias_category == "coconut_water":
+        return True
+    blob = _ingredient_blob(ni)
+    return any(t in blob for t in _COCONUT_WATER_TERMS)
+
+
+def is_coconut_meat_like_ingredient(ni: NormalizedIngredient) -> bool:
+    if is_coconut_water_like_ingredient(ni):
+        return False
+    if NutritionCategory.COCONUT_MEAT.value in ni.categories:
+        return True
+    if ni.alias_category == "coconut_meat":
+        return True
+    blob = _ingredient_blob(ni)
+    if any(
+        t in blob
+        for t in (
+            "coconut meat",
+            "raw coconut",
+            "coconut flesh",
+            "мякоть кокоса",
+            "кокосовая мякоть",
+        )
+    ):
+        return True
+    if re.search(r"\bcoconut\b", blob) or re.search(r"\bкокос\b", blob):
+        if not any(
+            t in blob
+            for t in (
+                "water",
+                "milk",
+                "cream",
+                "oil",
+                "вода",
+                "молок",
+                "сливк",
+                "масл",
+                "сок",
+            )
+        ):
+            return True
+    return False
+
+
+def is_coconut_milk_like_ingredient(ni: NormalizedIngredient) -> bool:
+    if NutritionCategory.COCONUT_MILK.value in ni.categories:
+        return True
+    if ni.alias_category == "coconut_milk":
+        return True
+    blob = _ingredient_blob(ni)
+    return "coconut milk" in blob or "кокосовое молоко" in blob
+
+
+def is_coconut_oil_like_ingredient(ni: NormalizedIngredient) -> bool:
+    if NutritionCategory.OIL.value in ni.categories and (
+        ni.alias_category == "oil" or "coconut" in _ingredient_blob(ni)
+    ):
+        return True
+    blob = _ingredient_blob(ni)
+    return "coconut oil" in blob or "кокосовое масло" in blob
+
+
 def is_beef_like_ingredient(ni: NormalizedIngredient) -> bool:
     if is_soup_like_ingredient(ni) and not any(
         t in _ingredient_blob(ni)

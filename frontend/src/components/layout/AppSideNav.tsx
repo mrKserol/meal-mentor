@@ -1,4 +1,4 @@
-import { BarChart3, CalendarDays, LayoutDashboard, LogOut, Plus, UserRound } from "lucide-react";
+import { BarChart3, CalendarDays, LayoutDashboard, Plus, UserRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import type { AppNavItem } from "./appNav";
@@ -11,12 +11,11 @@ const navDisabled = `${navBtnBase} cursor-not-allowed text-slate-400 opacity-60`
 
 interface AppSideNavProps {
   activeItem: AppNavItem;
-  onLogout: () => void | Promise<void>;
   onNewMeal?: () => void;
   onCompositionClick?: () => void;
 }
 
-export function AppSideNav({ activeItem, onLogout, onNewMeal, onCompositionClick }: AppSideNavProps) {
+export function AppSideNav({ activeItem, onNewMeal, onCompositionClick }: AppSideNavProps) {
   const navigate = useNavigate();
   const meal = onNewMeal ?? (() => {});
 
@@ -71,15 +70,7 @@ export function AppSideNav({ activeItem, onLogout, onNewMeal, onCompositionClick
           className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 font-bold text-white shadow-sm transition hover:bg-green-700 active:scale-[0.98]"
         >
           <Plus className="h-5 w-5 shrink-0" aria-hidden />
-          Сканер
-        </button>
-        <button
-          type="button"
-          onClick={() => void onLogout()}
-          className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-red-700"
-        >
-          <LogOut className="h-5 w-5 shrink-0" aria-hidden />
-          <span>Выйти</span>
+          Запись
         </button>
       </div>
     </aside>

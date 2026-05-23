@@ -3312,7 +3312,7 @@
       "default_state": "unknown"
     },
     "nuts, coconut water (liquid from coconuts)": {
-      "canonical": "Nuts, coconut water (liquid from coconuts)",
+      "canonical": "Beverages, unsweetened, ready-to-drink, Coconut water",
       "default_state": "unknown"
     },
     "nuts, hazelnuts or filberts": {
@@ -8063,6 +8063,291 @@
       "canonical": "Soup, prepared with equal volume water, canned, chicken noodle",
       "default_state": "cooked",
       "category": "soup"
+    },
+    "coca cola zero": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "coca-cola zero": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "coke zero": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "cola zero": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "zero cola": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "diet coke": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "diet cola": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "sugar free cola": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "sugar-free cola": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "coke no sugar": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "coca cola no sugar": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "кока кола зеро": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "кока-кола зеро": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "кола зеро": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "кола zero": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "кока кола zero": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "кока-кола zero": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "кока кола без сахара": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "кока-кола без сахара": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "кола без сахара": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "диетическая кола": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "кола лайт": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "кока кола лайт": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "кока-кола лайт": {
+      "canonical": "Beverages, contains caffeine, with aspartame, cola or pepper-type, low calorie, carbonated",
+      "default_state": "unknown",
+      "category": "zero_soft_drink"
+    },
+    "coca cola": {
+      "canonical": "Beverages, regular, cola, carbonated",
+      "default_state": "unknown",
+      "category": "soft_drink"
+    },
+    "coca-cola": {
+      "canonical": "Beverages, regular, cola, carbonated",
+      "default_state": "unknown",
+      "category": "soft_drink"
+    },
+    "coke": {
+      "canonical": "Beverages, regular, cola, carbonated",
+      "default_state": "unknown",
+      "category": "soft_drink"
+    },
+    "cola": {
+      "canonical": "Beverages, regular, cola, carbonated",
+      "default_state": "unknown",
+      "category": "soft_drink"
+    },
+    "кока кола": {
+      "canonical": "Beverages, regular, cola, carbonated",
+      "default_state": "unknown",
+      "category": "soft_drink"
+    },
+    "кока-кола": {
+      "canonical": "Beverages, regular, cola, carbonated",
+      "default_state": "unknown",
+      "category": "soft_drink"
+    },
+    "кола": {
+      "canonical": "Beverages, regular, cola, carbonated",
+      "default_state": "unknown",
+      "category": "soft_drink"
+    },
+    "coconut water": {
+      "canonical": "Beverages, unsweetened, ready-to-drink, Coconut water",
+      "default_state": "unknown",
+      "category": "coconut_water"
+    },
+    "coconut juice": {
+      "canonical": "Beverages, unsweetened, ready-to-drink, Coconut water",
+      "default_state": "unknown",
+      "category": "coconut_water"
+    },
+    "coconut liquid": {
+      "canonical": "Beverages, unsweetened, ready-to-drink, Coconut water",
+      "default_state": "unknown",
+      "category": "coconut_water"
+    },
+    "fresh coconut water": {
+      "canonical": "Beverages, unsweetened, ready-to-drink, Coconut water",
+      "default_state": "unknown",
+      "category": "coconut_water"
+    },
+    "young coconut water": {
+      "canonical": "Beverages, unsweetened, ready-to-drink, Coconut water",
+      "default_state": "unknown",
+      "category": "coconut_water"
+    },
+    "кокосовая вода": {
+      "canonical": "Beverages, unsweetened, ready-to-drink, Coconut water",
+      "default_state": "unknown",
+      "category": "coconut_water"
+    },
+    "вода кокоса": {
+      "canonical": "Beverages, unsweetened, ready-to-drink, Coconut water",
+      "default_state": "unknown",
+      "category": "coconut_water"
+    },
+    "вода из кокоса": {
+      "canonical": "Beverages, unsweetened, ready-to-drink, Coconut water",
+      "default_state": "unknown",
+      "category": "coconut_water"
+    },
+    "кокосовый сок": {
+      "canonical": "Beverages, unsweetened, ready-to-drink, Coconut water",
+      "default_state": "unknown",
+      "category": "coconut_water"
+    },
+    "сок кокоса": {
+      "canonical": "Beverages, unsweetened, ready-to-drink, Coconut water",
+      "default_state": "unknown",
+      "category": "coconut_water"
+    },
+    "жидкость кокоса": {
+      "canonical": "Beverages, unsweetened, ready-to-drink, Coconut water",
+      "default_state": "unknown",
+      "category": "coconut_water"
+    },
+    "жидкость из кокоса": {
+      "canonical": "Beverages, unsweetened, ready-to-drink, Coconut water",
+      "default_state": "unknown",
+      "category": "coconut_water"
+    },
+    "вода из молодого кокоса": {
+      "canonical": "Beverages, unsweetened, ready-to-drink, Coconut water",
+      "default_state": "unknown",
+      "category": "coconut_water"
+    },
+    "coconut meat": {
+      "canonical": "Nuts, raw, coconut meat",
+      "default_state": "raw",
+      "category": "coconut_meat"
+    },
+    "raw coconut": {
+      "canonical": "Nuts, raw, coconut meat",
+      "default_state": "raw",
+      "category": "coconut_meat"
+    },
+    "coconut flesh": {
+      "canonical": "Nuts, raw, coconut meat",
+      "default_state": "raw",
+      "category": "coconut_meat"
+    },
+    "мякоть кокоса": {
+      "canonical": "Nuts, raw, coconut meat",
+      "default_state": "raw",
+      "category": "coconut_meat"
+    },
+    "кокосовая мякоть": {
+      "canonical": "Nuts, raw, coconut meat",
+      "default_state": "raw",
+      "category": "coconut_meat"
+    },
+    "кокос": {
+      "canonical": "Nuts, raw, coconut meat",
+      "default_state": "raw",
+      "category": "coconut_meat"
+    },
+    "coconut": {
+      "canonical": "Nuts, raw, coconut meat",
+      "default_state": "raw",
+      "category": "coconut_meat"
+    },
+    "coconut milk": {
+      "canonical": "Nuts, raw (liquid expressed from grated meat and water), coconut milk",
+      "default_state": "unknown",
+      "category": "coconut_milk"
+    },
+    "кокосовое молоко": {
+      "canonical": "Nuts, raw (liquid expressed from grated meat and water), coconut milk",
+      "default_state": "unknown",
+      "category": "coconut_milk"
+    },
+    "coconut cream": {
+      "canonical": "Nuts, raw (liquid expressed from grated meat), coconut cream",
+      "default_state": "unknown",
+      "category": "coconut_cream"
+    },
+    "кокосовые сливки": {
+      "canonical": "Nuts, raw (liquid expressed from grated meat), coconut cream",
+      "default_state": "unknown",
+      "category": "coconut_cream"
+    },
+    "coconut oil": {
+      "canonical": "Oil, coconut",
+      "default_state": "unknown",
+      "category": "oil"
+    },
+    "кокосовое масло": {
+      "canonical": "Oil, coconut",
+      "default_state": "unknown",
+      "category": "oil"
     }
   }
 }

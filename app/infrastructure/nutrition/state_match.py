@@ -696,6 +696,207 @@ def _fish_candidate_adjustment(
     return max(score, -520.0), reasons
 
 
+def _soft_drink_candidate_adjustment(
+    candidate_name: str,
+    query_lower: str,
+    *,
+    candidate_calories_per100: float = 0.0,
+    candidate_protein_per100: float = 0.0,
+    candidate_fat_per100: float = 0.0,
+    candidate_carbs_per100: float = 0.0,
+    zero_soft_drink_q: bool = False,
+) -> tuple[float, list[str]]:
+    """Prefer carbonated cola beverages; penalize oil/fat/syrup/dessert rows."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = candidate_name.lower()
+    ql = query_lower.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if "beverage" in nl or "beverages" in nl:
+        add(80, "soft_drink_beverage")
+    if "carbonated" in nl:
+        add(70, "soft_drink_carbonated")
+    if re.search(r"\bcola\b", nl):
+        add(60, "soft_drink_cola")
+    if "soft drink" in nl:
+        add(40, "soft_drink_phrase")
+
+    for bad, pen in (
+        ("oil", 250),
+        ("fat", 250),
+        ("butter", 220),
+    ):
+        if bad in nl and bad not in ql:
+            add(-pen, f"soft_drink_bad_{bad}")
+    if "syrup" in nl and "syrup" not in ql and "сироп" not in ql:
+        add(-200, "soft_drink_syrup")
+    if "dessert" in nl:
+        add(-180, "soft_drink_dessert")
+    if "sauce" in nl and "sauce" not in ql:
+        add(-180, "soft_drink_sauce")
+    for bad in ("powder", "dry mix"):
+        if bad in nl:
+            add(-150, f"soft_drink_bad_{bad.replace(' ', '_')}")
+    if "cocoa" in nl and "cocoa" not in ql:
+        add(-150, "soft_drink_cocoa")
+    if "coconut" in nl and "coconut" not in ql and not zero_soft_drink_q:
+        add(-150, "soft_drink_coconut")
+
+    sugary_expected = not zero_soft_drink_q and not any(
+        x in ql for x in ("zero", "diet", "light", "lite", "sugar free", "no sugar", "без сахара", "зеро", "лайт")
+    )
+    if not zero_soft_drink_q and any(
+        x in nl for x in ("low calorie", "diet", "sugar free", "sugar-free", "no sugar")
+    ):
+        add(-180, "soft_drink_low_calorie_unrequested")
+    if sugary_expected and "regular" in nl:
+        add(40, "soft_drink_regular_cola")
+    if candidate_fat_per100 > 1:
+        add(-300, "soft_drink_high_fat")
+    if candidate_protein_per100 > 2:
+        add(-200, "soft_drink_high_protein")
+    if candidate_calories_per100 > 80 and not sugary_expected:
+        add(-200, "soft_drink_high_calories")
+
+    _ = candidate_carbs_per100
+    return max(score, -900.0), reasons
+
+
+def _zero_soft_drink_candidate_adjustment(
+    candidate_name: str,
+    query_lower: str,
+    candidate_calories_per100: float = 0.0,
+    candidate_protein_per100: float = 0.0,
+    candidate_fat_per100: float = 0.0,
+    candidate_carbs_per100: float = 0.0,
+) -> tuple[float, list[str]]:
+    """Diet/zero cola: low calorie rows only; block fat/oil and regular sweetened cola."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = candidate_name.lower()
+    ql = query_lower.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if "low calorie" in nl:
+        add(120, "zero_low_calorie")
+    if "diet" in nl:
+        add(100, "zero_diet")
+    if "sugar free" in nl or "sugar-free" in nl:
+        add(90, "zero_sugar_free")
+    if "no sugar" in nl:
+        add(80, "zero_no_sugar")
+    if re.search(r"\bcola\b", nl):
+        add(70, "zero_cola")
+    if "carbonated" in nl:
+        add(60, "zero_carbonated")
+
+    for bad in ("oil", "fat", "butter"):
+        if bad in nl:
+            add(-300, f"zero_bad_{bad}")
+    if "regular" in nl and "low calorie" not in nl and "diet" not in nl:
+        add(-250, "zero_regular_cola")
+    if "sweetened" in nl and not any(x in nl for x in ("low calorie", "diet", "sugar free", "sugar-free")):
+        add(-220, "zero_sweetened")
+    if candidate_carbs_per100 > 2:
+        add(-220, "zero_high_carbs")
+    if candidate_calories_per100 > 10:
+        add(-220, "zero_high_calories")
+    for bad in ("syrup", "dessert", "sauce", "powder", "dry mix"):
+        if bad in nl:
+            add(-180, f"zero_bad_{bad.replace(' ', '_')}")
+
+    if candidate_calories_per100 > 5:
+        add(-250, "zero_macro_calories")
+    if candidate_carbs_per100 > 1:
+        add(-250, "zero_macro_carbs")
+    if candidate_fat_per100 > 0.5:
+        add(-300, "zero_macro_fat")
+    if candidate_protein_per100 > 1:
+        add(-200, "zero_macro_protein")
+
+    _ = ql
+    return max(score, -950.0), reasons
+
+
+def _coconut_water_candidate_adjustment(
+    candidate_name: str,
+    query_lower: str,
+    candidate_calories_per100: float = 0.0,
+    candidate_protein_per100: float = 0.0,
+    candidate_fat_per100: float = 0.0,
+    candidate_carbs_per100: float = 0.0,
+    candidate_fiber_per100: float = 0.0,
+) -> tuple[float, list[str]]:
+    """Prefer coconut water beverage rows; penalize meat/milk/cream/oil/dried coconut."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = candidate_name.lower()
+    ql = query_lower.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if "coconut water" in nl:
+        add(140, "coconut_water_phrase")
+    if "liquid from coconuts" in nl:
+        add(120, "coconut_water_liquid_from_coconuts")
+    if "coconut" in nl and "water" in nl:
+        add(100, "coconut_water_words")
+    if "beverage" in nl or "beverages" in nl:
+        add(80, "coconut_water_beverage")
+    if "juice" in nl and "coconut" in nl:
+        add(60, "coconut_water_juice")
+
+    for bad, pen in (
+        ("coconut oil", 300),
+        ("oil,", 280),
+    ):
+        if bad in nl and "oil" not in ql:
+            add(-pen, f"coconut_water_bad_{bad.replace(' ', '_')}")
+    if re.search(r"\boil\b", nl) and "oil" not in ql and "масл" not in ql:
+        add(-300, "coconut_water_oil")
+    for bad, pen in (
+        ("coconut meat", 260),
+        ("raw coconut", 240),
+        ("dried coconut", 240),
+        ("desiccated", 240),
+    ):
+        if bad in nl:
+            add(-pen, f"coconut_water_bad_{bad.replace(' ', '_')}")
+    if "coconut cream" in nl:
+        add(-220, "coconut_water_cream")
+    if "coconut milk" in nl and "milk" not in ql and "молок" not in ql:
+        add(-200, "coconut_water_milk")
+    for bad in ("flour", "butter", "candy", "dessert", "sweetened", "cream"):
+        if bad in nl and bad not in ql:
+            add(-180 if bad != "cream" else -160, f"coconut_water_bad_{bad}")
+
+    if candidate_fat_per100 > 2:
+        add(-300, "coconut_water_high_fat")
+    if candidate_fiber_per100 > 2:
+        add(-250, "coconut_water_high_fiber")
+    if candidate_calories_per100 > 80:
+        add(-250, "coconut_water_high_calories")
+    if candidate_calories_per100 > 150:
+        add(-400, "coconut_water_impossible_calories")
+    if candidate_fat_per100 > 10:
+        add(-400, "coconut_water_impossible_fat")
+
+    _ = candidate_protein_per100, candidate_carbs_per100, ql
+    return max(score, -1000.0), reasons
+
+
 def _soup_candidate_adjustment(
     candidate_name: str,
     query_lower: str,
@@ -1093,6 +1294,44 @@ def _category_common_adjustment(
         blob = f"{ql} {il}"
         return any(w in blob for w in words)
 
+    # Coconut water
+    if "coconut_water" in cats:
+        if "coconut water" in nl or "liquid from coconuts" in nl:
+            add(50, "cat_coconut_water_row")
+        if "beverage" in nl:
+            add(30, "cat_coconut_water_beverage")
+        for bad in (
+            "oil",
+            "coconut oil",
+            "coconut meat",
+            "dried",
+            "desiccated",
+            "coconut milk",
+            "coconut cream",
+            "flour",
+            "butter",
+        ):
+            if bad in nl and not q_has(bad):
+                add(-120, f"cat_coconut_water_bad_{bad.replace(' ', '_')}")
+
+    # Soft drinks / zero-calorie cola
+    if "zero_soft_drink" in cats:
+        if any(x in nl for x in ("low calorie", "diet", "sugar free", "sugar-free", "no sugar")):
+            add(40, "cat_zero_soft_drink_marker")
+        if "carbonated" in nl or "beverage" in nl:
+            add(30, "cat_zero_soft_drink_beverage")
+        for bad in ("oil", "fat", "butter", "syrup", "dessert", "sauce", "powder", "dry mix"):
+            if bad in nl and not q_has(bad):
+                add(-120, f"cat_zero_bad_{bad.replace(' ', '_')}")
+        if "regular" in nl and not any(x in nl for x in ("low calorie", "diet", "sugar free")):
+            add(-100, "cat_zero_regular")
+    elif "soft_drink" in cats:
+        if any(x in nl for x in ("beverage", "carbonated", "cola")):
+            add(30, "cat_soft_drink_row")
+        for bad in ("oil", "fat", "butter", "syrup", "dessert", "sauce"):
+            if bad in nl and not q_has(bad):
+                add(-100, f"cat_soft_drink_bad_{bad}")
+
     # Soup / prepared dishes
     if "soup" in cats or "prepared_soup" in cats or "prepared_dish" in cats:
         if "soup" in nl:
@@ -1235,6 +1474,7 @@ def state_score(
     candidate_calories_per100: float = 0.0,
     candidate_protein_per100: float = 0.0,
     candidate_fat_per100: float = 0.0,
+    candidate_fiber_per100: float = 0.0,
     categories: tuple[str, ...] = (),
     is_grain_like: bool,
     is_legume_like: bool = False,
@@ -1248,6 +1488,12 @@ def state_score(
     beef_patty_q: bool = False,
     soup_like_q: bool = False,
     borscht_like_q: bool = False,
+    soft_drink_like_q: bool = False,
+    zero_soft_drink_like_q: bool = False,
+    coconut_water_like_q: bool = False,
+    coconut_meat_like_q: bool = False,
+    coconut_milk_like_q: bool = False,
+    coconut_oil_like_q: bool = False,
     fish_like_q: bool = False,
     smoked_fish_q: bool = False,
     porridge_like_grain_q: bool = False,
@@ -1465,6 +1711,43 @@ def state_score(
         gg, ggr = _generic_grain_candidate_adjustment(n, query_lower, rs)
         score += gg
         reasons.extend(ggr)
+
+    if coconut_water_like_q:
+        cw, cwr = _coconut_water_candidate_adjustment(
+            n,
+            query_lower,
+            candidate_calories_per100=candidate_calories_per100,
+            candidate_protein_per100=candidate_protein_per100,
+            candidate_fat_per100=candidate_fat_per100,
+            candidate_carbs_per100=candidate_carbs_per100,
+            candidate_fiber_per100=candidate_fiber_per100,
+        )
+        score += cw
+        reasons.extend(cwr)
+
+    if soft_drink_like_q:
+        sd, sdr = _soft_drink_candidate_adjustment(
+            n,
+            query_lower,
+            candidate_calories_per100=candidate_calories_per100,
+            candidate_protein_per100=candidate_protein_per100,
+            candidate_fat_per100=candidate_fat_per100,
+            candidate_carbs_per100=candidate_carbs_per100,
+            zero_soft_drink_q=zero_soft_drink_like_q,
+        )
+        score += sd
+        reasons.extend(sdr)
+    if zero_soft_drink_like_q:
+        zd, zdr = _zero_soft_drink_candidate_adjustment(
+            n,
+            query_lower,
+            candidate_calories_per100=candidate_calories_per100,
+            candidate_protein_per100=candidate_protein_per100,
+            candidate_fat_per100=candidate_fat_per100,
+            candidate_carbs_per100=candidate_carbs_per100,
+        )
+        score += zd
+        reasons.extend(zdr)
 
     if soup_like_q:
         sp, spr = _soup_candidate_adjustment(

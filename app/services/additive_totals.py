@@ -7,7 +7,7 @@ from datetime import date, datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 
 from app.db.models import AdditiveIntake, User
-from app.db.nutrition_columns import INTEGER_NUTRITION_KEYS, MEAL_ITEM_NUTRITION_KEYS
+from app.db.nutrition_columns import INTEGER_NUTRITION_KEYS, MEAL_ITEM_NUTRITION_KEYS, init_detailed_nutrient_sums
 from app.services.user_timezone import resolve_tz
 
 _PRIMARY_DAY_TOTAL_KEYS = (
@@ -69,8 +69,7 @@ def sum_additive_intakes_for_local_date(db: Session, user: User, d: date) -> dic
 
 
 def _init_detailed_sums() -> dict[str, float]:
-    _primary = frozenset({"calories", "protein_g", "fat_g", "carbs_g", "fiber_g"})
-    return {k: 0.0 for k in MEAL_ITEM_NUTRITION_KEYS if k not in _primary}
+    return init_detailed_nutrient_sums()
 
 
 def accumulate_additive_intakes_detailed(rows: list[AdditiveIntake], totals: dict[str, float]) -> None:

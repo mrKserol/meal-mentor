@@ -42,8 +42,12 @@ textarea {
   }
 }
 
-input[type="date"] {
+input[type="date"],
+input[type="time"],
+.meal-time-input {
   min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   -webkit-appearance: none;
   appearance: none;
 }
