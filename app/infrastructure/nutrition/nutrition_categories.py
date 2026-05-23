@@ -37,9 +37,16 @@ class NutritionCategory(str, Enum):
     ALCOHOLIC_BEVERAGE = "alcoholic_beverage"
     BEER = "beer"
     SWEET = "sweet"
+    SOFT_DRINK = "soft_drink"
+    ZERO_SOFT_DRINK = "zero_soft_drink"
     SOUP = "soup"
     PREPARED_SOUP = "prepared_soup"
     PREPARED_DISH = "prepared_dish"
+    COCONUT_WATER = "coconut_water"
+    COCONUT_MEAT = "coconut_meat"
+    COCONUT_MILK = "coconut_milk"
+    COCONUT_CREAM = "coconut_cream"
+    OIL = "oil"
     UNKNOWN = "unknown"
 
 
@@ -97,6 +104,95 @@ _SPECIFIC_GRAIN_TERMS = (
 
 def _norm(*parts: str | None) -> str:
     return " ".join(p.strip().lower() for p in parts if isinstance(p, str) and p.strip())
+
+
+_ZERO_SOFT_DRINK_MARKERS = (
+    "zero",
+    "diet",
+    "light",
+    "lite",
+    "sugar free",
+    "sugar-free",
+    "no sugar",
+    "без сахара",
+    "зеро",
+    "лайт",
+    "диет",
+    "диетическая",
+    "нулев",
+)
+
+
+def _is_soft_drink_blob(blob: str) -> bool:
+    if re.search(r"\b(coke|pepsi|sprite|soda|soft drink|carbonated)\b", blob):
+        return True
+    if re.search(r"\bcoca[\s-]*cola\b", blob) or "coca cola" in blob:
+        return True
+    if re.search(r"\bcola\b", blob):
+        return True
+    if "кока" in blob and ("кола" in blob or "cola" in blob):
+        return True
+    if re.search(r"(?:^|\s)кола(?:\s|$)", blob):
+        return True
+    return False
+
+
+def _is_zero_soft_drink_blob(blob: str) -> bool:
+    return any(m in blob for m in _ZERO_SOFT_DRINK_MARKERS)
+
+
+_COCONUT_WATER_TERMS = (
+    "coconut water",
+    "coconut juice",
+    "coconut liquid",
+    "fresh coconut water",
+    "young coconut water",
+    "кокосовая вода",
+    "вода кокоса",
+    "вода из кокоса",
+    "кокосовый сок",
+    "сок кокоса",
+    "жидкость кокоса",
+    "жидкость из кокоса",
+    "вода из молодого кокоса",
+)
+
+
+def _is_coconut_water_blob(blob: str) -> bool:
+    return any(t in blob for t in _COCONUT_WATER_TERMS)
+
+
+def _is_coconut_milk_blob(blob: str) -> bool:
+    return "coconut milk" in blob or "кокосовое молоко" in blob or "кокосовое молок" in blob
+
+
+def _is_coconut_cream_blob(blob: str) -> bool:
+    return "coconut cream" in blob or "кокосовые сливки" in blob or "кокосовые слив" in blob
+
+
+def _is_coconut_oil_blob(blob: str) -> bool:
+    return "coconut oil" in blob or "кокосовое масло" in blob
+
+
+def _is_coconut_meat_blob(blob: str) -> bool:
+    if _is_coconut_water_blob(blob) or _is_coconut_milk_blob(blob) or _is_coconut_cream_blob(blob):
+        return False
+    if _is_coconut_oil_blob(blob):
+        return False
+    if any(
+        t in blob
+        for t in (
+            "coconut meat",
+            "raw coconut",
+            "coconut flesh",
+            "мякоть кокоса",
+            "кокосовая мякоть",
+        )
+    ):
+        return True
+    if re.search(r"\bcoconut\b", blob) or re.search(r"\bкокос\b", blob):
+        return True
+    return False
 
 
 def detect_ingredient_categories(
@@ -157,6 +253,57 @@ def detect_ingredient_categories(
         mark(NutritionCategory.TEA, NutritionCategory.BEVERAGE, reason="tea_like")
     if "coffee" in blob or "кофе" in blob:
         mark(NutritionCategory.COFFEE, NutritionCategory.BEVERAGE, reason="coffee_like")
+
+    if ac == "coconut_water" or _is_coconut_water_blob(blob):
+        mark(
+            NutritionCategory.COCONUT_WATER,
+            NutritionCategory.BEVERAGE,
+            reason="coconut_water_like",
+        )
+    elif ac == "coconut_milk" or _is_coconut_milk_blob(blob):
+        mark(
+            NutritionCategory.COCONUT_MILK,
+            NutritionCategory.BEVERAGE,
+            NutritionCategory.DAIRY,
+            reason="coconut_milk_like",
+        )
+    elif ac == "coconut_cream" or _is_coconut_cream_blob(blob):
+        mark(
+            NutritionCategory.COCONUT_CREAM,
+            NutritionCategory.DAIRY,
+            reason="coconut_cream_like",
+        )
+    elif ac == "oil" or _is_coconut_oil_blob(blob):
+        mark(NutritionCategory.OIL, reason="coconut_oil_like")
+    elif ac == "coconut_meat" or _is_coconut_meat_blob(blob):
+        mark(NutritionCategory.COCONUT_MEAT, NutritionCategory.NUT, reason="coconut_meat_like")
+
+    if ac == "zero_soft_drink":
+        mark(
+            NutritionCategory.ZERO_SOFT_DRINK,
+            NutritionCategory.SOFT_DRINK,
+            NutritionCategory.BEVERAGE,
+            reason="alias_zero_soft_drink",
+        )
+    elif ac == "soft_drink":
+        mark(
+            NutritionCategory.SOFT_DRINK,
+            NutritionCategory.BEVERAGE,
+            reason="alias_soft_drink",
+        )
+    elif _is_soft_drink_blob(blob):
+        mark(
+            NutritionCategory.SOFT_DRINK,
+            NutritionCategory.BEVERAGE,
+            reason="soft_drink_like",
+        )
+        if _is_zero_soft_drink_blob(blob):
+            mark(
+                NutritionCategory.ZERO_SOFT_DRINK,
+                NutritionCategory.SOFT_DRINK,
+                NutritionCategory.BEVERAGE,
+                reason="zero_soft_drink_like",
+            )
 
     _SOUP_TERMS_EN = (
         "soup",
@@ -330,6 +477,17 @@ def detect_ingredient_categories(
             NutritionCategory.PREPARED_DISH,
         ),
         "prepared_dish": (NutritionCategory.PREPARED_DISH,),
+        "soft_drink": (NutritionCategory.SOFT_DRINK, NutritionCategory.BEVERAGE),
+        "zero_soft_drink": (
+            NutritionCategory.ZERO_SOFT_DRINK,
+            NutritionCategory.SOFT_DRINK,
+            NutritionCategory.BEVERAGE,
+        ),
+        "coconut_water": (NutritionCategory.COCONUT_WATER, NutritionCategory.BEVERAGE),
+        "coconut_meat": (NutritionCategory.COCONUT_MEAT, NutritionCategory.NUT),
+        "coconut_milk": (NutritionCategory.COCONUT_MILK, NutritionCategory.BEVERAGE),
+        "coconut_cream": (NutritionCategory.COCONUT_CREAM, NutritionCategory.DAIRY),
+        "oil": (NutritionCategory.OIL,),
     }
     if ac in alias_map:
         vals = alias_map[ac]
@@ -355,8 +513,11 @@ def detect_ingredient_categories(
         cats.add(NutritionCategory.EGG)
     if any(x in blob for x in ("seed", "seeds", "chia", "pumpkin seed", "pepitas", "семеч", "семен")):
         cats.add(NutritionCategory.SEED)
-    if any(x in blob for x in ("almond", "pecan", "walnut", "cashew", "nut", "nuts", "миндал", "орех")):
-        cats.add(NutritionCategory.NUT)
+    if not re.search(r"\bcoconut\b", blob) and not re.search(r"\bкокос\b", blob):
+        if any(x in blob for x in ("almond", "pecan", "walnut", "cashew", "миндал", "орех")):
+            cats.add(NutritionCategory.NUT)
+        elif re.search(r"\b(nut|nuts)\b", blob):
+            cats.add(NutritionCategory.NUT)
     if any(x in blob for x in ("tea", "coffee", "juice", "drink", "beverage", "чай", "кофе", "сок", "напит")):
         cats.add(NutritionCategory.BEVERAGE)
     if any(x in blob for x in ("chocolate", "truffle", "dessert", "cookie", "candy", "sweet")):
@@ -367,6 +528,13 @@ def detect_ingredient_categories(
     if primary == NutritionCategory.UNKNOWN:
         # Prefer a sensible generic primary if only generic categories were found.
         for candidate in (
+            NutritionCategory.COCONUT_WATER,
+            NutritionCategory.COCONUT_MILK,
+            NutritionCategory.COCONUT_CREAM,
+            NutritionCategory.COCONUT_MEAT,
+            NutritionCategory.OIL,
+            NutritionCategory.ZERO_SOFT_DRINK,
+            NutritionCategory.SOFT_DRINK,
             NutritionCategory.SOUP,
             NutritionCategory.PREPARED_SOUP,
             NutritionCategory.GRAIN,

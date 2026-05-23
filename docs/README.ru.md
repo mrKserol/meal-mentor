@@ -362,6 +362,10 @@ pytest tests/test_feature_access.py
 
 **Nutrition matching:** фикстуры в `tests/fixtures/nutrition_matching_cases.json`. При багах матчинга добавляйте кейсы и гоняйте регрессию. Подробные логи: `NUTRITION_DEBUG_MATCHING=1`.
 
+**Category-aware matching (кокос):** явное разделение coconut water / meat / milk / cream / oil. В flow «фото + текст» текст пользователя важнее распознавания объекта на фото (например, фото кокоса + «кокосовая вода» → coconut water, не мякоть).
+
+**Category-aware matching (zero/diet напитки):** aliases и scoring для `zero_soft_drink` / `soft_drink`. Нормализатор alias keys приводит к одному ключу варианты вроде «Кока-Кола Зеро», «Кока-кола зеро», «кока кола зеро». Zero-напитки не должны матчиться на regular cola, oil/fat; обычная кола — не на diet/low calorie без явного zero/diet/без сахара.
+
 **Category-aware matching (супы):** добавлены категории `soup` / `prepared_soup`. Они защищают распространённые супы от матчинга на dry mix, condensed, powder, sauce, gravy, oil, fat, shortening и dehydrated rows. Примеры: borscht with bread, generic soup with bread, lentil soup, tomato soup, щи / kharcho / rassolnik / solyanka (aliases). Если пользователь называет распространённое блюдо-суп, сначала добавляйте alias + fixture, а не полагайтесь только на fuzzy search.
 
 **Usage limits:** атомарный инкремент нескольких счётчиков за один AI-запрос.

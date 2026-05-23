@@ -652,6 +652,83 @@
     }
   },
   {
+    "name": "coca cola zero ru can",
+    "ingredients": {
+      "Кока-Кола Зеро": {"grams": 320, "state": "unknown"}
+    },
+    "expected": {
+      "calories_min": 0,
+      "calories_max": 10,
+      "protein_max": 1,
+      "fat_max": 1,
+      "carbohydrates_max": 2,
+      "required_contains_any": {
+        "Кока-Кола Зеро": ["cola", "carbonated", "diet", "low calorie"]
+      },
+      "forbidden_match_contains": {
+        "Кока-Кола Зеро": [
+          "oil",
+          "fat",
+          "butter",
+          "syrup",
+          "dessert",
+          "sauce",
+          "powder",
+          "dry mix"
+        ]
+      }
+    }
+  },
+  {
+    "name": "regular cola can",
+    "ingredients": {
+      "Coca-Cola": {"grams": 320, "state": "unknown"}
+    },
+    "expected": {
+      "calories_min": 100,
+      "calories_max": 180,
+      "fat_max": 1,
+      "carbohydrates_min": 25,
+      "carbohydrates_max": 50,
+      "forbidden_match_contains": {
+        "Coca-Cola": ["oil", "fat", "butter", "dessert", "sauce", "powder", "dry mix"]
+      }
+    }
+  },
+  {
+    "name": "coconut water from whole coconut",
+    "description": "User text says coconut water; should not match coconut meat/oil/cream",
+    "ingredients": {
+      "кокосовая вода": {"grams": 400, "state": "unknown"}
+    },
+    "expected": {
+      "calories_min": 40,
+      "calories_max": 120,
+      "protein_max": 3,
+      "fat_max": 2,
+      "carbohydrates_min": 8,
+      "carbohydrates_max": 30,
+      "fiber_max": 2,
+      "required_contains_any": {
+        "кокосовая вода": ["coconut water", "liquid from coconuts", "beverage"]
+      },
+      "forbidden_match_contains": {
+        "кокосовая вода": [
+          "oil",
+          "coconut oil",
+          "coconut meat",
+          "raw coconut",
+          "dried coconut",
+          "desiccated",
+          "coconut milk",
+          "coconut cream",
+          "flour",
+          "butter"
+        ]
+      }
+    }
+  },
+  {
     "name": "single pryanik",
     "description": "One small pryanik should not be estimated as 200g in prompt examples; matching should stay within realistic kcal per 100g",
     "ingredients": {

@@ -19,6 +19,12 @@ from app.infrastructure.nutrition.ingredient_input import (
     is_beef_patty_like_ingredient,
     is_borscht_like_ingredient,
     is_soup_like_ingredient,
+    is_soft_drink_like_ingredient,
+    is_zero_soft_drink_like_ingredient,
+    is_coconut_water_like_ingredient,
+    is_coconut_meat_like_ingredient,
+    is_coconut_milk_like_ingredient,
+    is_coconut_oil_like_ingredient,
     is_fish_like_ingredient,
     is_smoked_fish_like_ingredient,
     is_porridge_like_grain,
@@ -343,6 +349,12 @@ class NutritionService:
         beef_patty_q = is_beef_patty_like_ingredient(ni)
         soup_q = is_soup_like_ingredient(ni)
         borscht_q = is_borscht_like_ingredient(ni)
+        soft_drink_q = is_soft_drink_like_ingredient(ni)
+        zero_soft_drink_q = is_zero_soft_drink_like_ingredient(ni)
+        coconut_water_q = is_coconut_water_like_ingredient(ni)
+        coconut_meat_q = is_coconut_meat_like_ingredient(ni)
+        coconut_milk_q = is_coconut_milk_like_ingredient(ni)
+        coconut_oil_q = is_coconut_oil_like_ingredient(ni)
         fish_q = is_fish_like_ingredient(ni)
         smoked_fish_q = is_smoked_fish_like_ingredient(ni)
         porridge_grain_q = is_porridge_like_grain(ni)
@@ -363,6 +375,7 @@ class NutritionService:
                 candidate_calories_per100=float(row.get("calories") or 0),
                 candidate_protein_per100=float(row.get("proteins") or 0),
                 candidate_fat_per100=float(row.get("fats") or 0),
+                candidate_fiber_per100=float(row.get("fiber_g") or 0),
                 categories=ni.categories,
                 is_grain_like=grain,
                 is_legume_like=legume,
@@ -376,6 +389,12 @@ class NutritionService:
                 beef_patty_q=beef_patty_q,
                 soup_like_q=soup_q,
                 borscht_like_q=borscht_q,
+                soft_drink_like_q=soft_drink_q,
+                zero_soft_drink_like_q=zero_soft_drink_q,
+                coconut_water_like_q=coconut_water_q,
+                coconut_meat_like_q=coconut_meat_q,
+                coconut_milk_like_q=coconut_milk_q,
+                coconut_oil_like_q=coconut_oil_q,
                 fish_like_q=fish_q,
                 smoked_fish_q=smoked_fish_q,
                 porridge_like_grain_q=porridge_grain_q,

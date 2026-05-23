@@ -4,9 +4,23 @@ from __future__ import annotations
 
 import json
 import logging
+import re
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+# Unicode dash/minus variants → normalized to ASCII space for alias lookup.
+_UNICODE_DASHES = (
+    "\u2010",
+    "\u2011",
+    "\u2012",
+    "\u2013",
+    "\u2014",
+    "\u2212",
+    "\u00ad",
+    "-",
+)
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +80,7 @@ class FoodAliasIndex:
                         display_map[dk.strip().lower()] = dv.strip()
                 if not display_map:
                     display_map = None
-            nk = _norm_key(key)
+            nk = normalize_alias_key(key)
             self._by_norm[nk] = AliasEntry(
                 canonical=canon.strip(),
                 default_state=ds.strip().lower(),
@@ -86,7 +100,11 @@ class FoodAliasIndex:
     def lookup(self, name: str) -> AliasEntry | None:
         if not name or not self._by_norm:
             return None
-        return self._by_norm.get(_norm_key(name))
+        for key in alias_lookup_keys(name):
+            hit = self._by_norm.get(key)
+            if hit is not None:
+                return hit
+        return None
 
     def russian_display_for(self, english_key: str) -> str | None:
         """Best-effort Russian UI label for an English ingredient key."""
@@ -116,5 +134,30 @@ def _ru_alias_rank(key: str) -> tuple[int, int]:
     return (single_word, sweet_spot)
 
 
+def normalize_alias_key(s: str) -> str:
+    """
+    Canonical alias lookup key: lowercase, ё→е, unicode dashes→space,
+    collapsed whitespace, light punctuation strip.
+    """
+    t = unicodedata.normalize("NFKC", (s or "").strip().lower())
+    t = t.replace("ё", "е")
+    for d in _UNICODE_DASHES:
+        t = t.replace(d, " ")
+    t = re.sub(r"[^\w\s]", " ", t, flags=re.UNICODE)
+    return " ".join(t.split())
+
+
+def alias_lookup_keys(s: str) -> tuple[str, ...]:
+    """Keys to try for alias lookup (normalized + hyphen-as-space variant)."""
+    primary = normalize_alias_key(s)
+    if not primary:
+        return ()
+    alt = primary.replace("-", " ")
+    alt = " ".join(alt.split())
+    if alt == primary:
+        return (primary,)
+    return (primary, alt)
+
+
 def _norm_key(s: str) -> str:
-    return " ".join(s.strip().lower().split())
+    return normalize_alias_key(s)

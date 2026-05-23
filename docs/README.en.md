@@ -358,6 +358,10 @@ pytest tests/test_feature_access.py
 
 **Nutrition matching:** fixtures in `tests/fixtures/nutrition_matching_cases.json`. Add cases when fixing matcher bugs. Verbose logs: `NUTRITION_DEBUG_MATCHING=1`.
 
+**Category-aware matching (coconut):** explicit disambiguation of coconut water, meat, milk, cream, and oil. In photo+text flow, user text overrides image object labels when it names the edible part (e.g. coconut photo + «кокосовая вода» → coconut water, not meat).
+
+**Category-aware matching (zero/diet drinks):** aliases and `zero_soft_drink` / `soft_drink` scoring. The alias normalizer unifies spellings such as «Кока-Кола Зеро», «Кока-кола зеро», and «кока кола зеро». Zero drinks must not match regular cola or oil/fat rows; regular cola must not match diet/low calorie unless zero/diet/no sugar is explicit.
+
 **Category-aware matching (soups):** `soup` / `prepared_soup` categories block incorrect matches to dry mix, condensed, powder, sauce, gravy, oil, fat, shortening, and dehydrated rows. Covered cases include borscht with bread, generic soup with bread, lentil soup, tomato soup, and aliases for cabbage soup / kharcho / rassolnik / solyanka. For common named soups, add an alias and fixture first instead of relying on fuzzy search alone.
 
 **Usage limits:** atomic multi-counter increment per AI request.

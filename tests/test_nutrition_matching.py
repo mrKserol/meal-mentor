@@ -529,6 +529,172 @@ def test_beef_patty_not_fat(nutrition_svc: NutritionService) -> None:
     assert cb <= 5.0, f"beef patty 150g carbs {cb}"
 
 
+def _assert_zero_cola_match(data: dict[str, Any], *, label: str) -> None:
+    m = (data.get("match") or "").lower()
+    assert any(x in m for x in ("low calorie", "diet", "cola", "carbonated")), (
+        f"{label}: match {m!r} must be diet/low-calorie cola"
+    )
+    for bad in (
+        "oil",
+        "fat",
+        "butter",
+        "syrup",
+        "regular",
+        "sweetened",
+        "dessert",
+        "sauce",
+        "powder",
+        "dry mix",
+    ):
+        assert bad not in m, f"{label}: match must not contain {bad!r}, got {m!r}"
+    cal = int(data.get("calories") or 0)
+    p = float(data.get("proteins") or 0)
+    f = float(data.get("fats") or 0)
+    cb = float(data.get("carbohydrates") or 0)
+    assert cal <= 10, f"{label}: calories {cal}"
+    assert p <= 1.0, f"{label}: proteins {p}"
+    assert f <= 0.5, f"{label}: fats {f}"
+    assert cb <= 2.0, f"{label}: carbs {cb}"
+
+
+def test_coca_cola_zero_ru_case_insensitive(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"Кока-Кола Зеро": {"grams": 320, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    _assert_zero_cola_match(data, label="Кока-Кола Зеро")
+
+
+def test_coca_cola_zero_ru_lowercase_hyphen(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"Кока-кола зеро": {"grams": 320, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    _assert_zero_cola_match(data, label="Кока-кола зеро")
+
+
+def test_coca_cola_zero_ru_no_hyphen(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"кока кола зеро": {"grams": 320, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    _assert_zero_cola_match(data, label="кока кола зеро")
+
+
+def test_coke_zero_en(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"Coke Zero": {"grams": 320, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    _assert_zero_cola_match(data, label="Coke Zero")
+
+
+def test_regular_cola_not_zero(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"Coca-Cola": {"grams": 320, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "low calorie" not in m and "diet" not in m, f"regular cola matched diet row: {m!r}"
+    for bad in ("oil", "fat", "butter"):
+        assert bad not in m
+    cal = int(data.get("calories") or 0)
+    cb = float(data.get("carbohydrates") or 0)
+    assert 120 <= cal <= 160, f"regular cola 320g calories {cal}"
+    assert 30.0 <= cb <= 45.0, f"regular cola 320g carbs {cb}"
+
+
+def _assert_coconut_water_match(data: dict[str, Any], *, label: str) -> None:
+    m = (data.get("match") or "").lower()
+    assert any(
+        x in m for x in ("coconut water", "liquid from coconuts", "beverage")
+    ), f"{label}: match {m!r} must be coconut water beverage"
+    for bad in (
+        "oil",
+        "coconut oil",
+        "coconut meat",
+        "raw coconut",
+        "dried coconut",
+        "desiccated",
+        "coconut milk",
+        "coconut cream",
+        "flour",
+        "butter",
+    ):
+        assert bad not in m, f"{label}: match must not contain {bad!r}, got {m!r}"
+    cal = int(data.get("calories") or 0)
+    p = float(data.get("proteins") or 0)
+    f = float(data.get("fats") or 0)
+    cb = float(data.get("carbohydrates") or 0)
+    fiber = float(data.get("fiber_g") or data.get("fiber") or 0)
+    assert 40 <= cal <= 120, f"{label}: calories {cal}"
+    assert p <= 3.0, f"{label}: proteins {p}"
+    assert f <= 2.0, f"{label}: fats {f}"
+    assert 8.0 <= cb <= 30.0, f"{label}: carbs {cb}"
+    assert fiber <= 2.0, f"{label}: fiber {fiber}"
+
+
+def test_coconut_water_not_coconut_meat(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"coconut water": {"grams": 400, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    _assert_coconut_water_match(data, label="coconut water")
+
+
+def test_coconut_water_ru(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"кокосовая вода": {"grams": 400, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    _assert_coconut_water_match(data, label="кокосовая вода")
+
+
+def test_coconut_meat_still_high_calorie(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"coconut meat": {"grams": 100, "state": "raw"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "coconut" in m
+    assert "water" not in m
+    cal = int(data.get("calories") or 0)
+    f = float(data.get("fats") or 0)
+    assert cal > 250, f"coconut meat 100g calories {cal}"
+    assert f > 20.0, f"coconut meat 100g fats {f}"
+
+
+def test_coconut_milk_not_water(nutrition_svc: NutritionService) -> None:
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"coconut milk": {"grams": 100, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "coconut milk" in m or ("coconut" in m and "milk" in m)
+    assert "coconut water" not in m and "liquid from coconuts" not in m
+
+
+def test_normalize_alias_key_coca_zero_variants() -> None:
+    from app.infrastructure.nutrition.food_aliases import normalize_alias_key
+
+    keys = {
+        normalize_alias_key("Кока-Кола Зеро"),
+        normalize_alias_key("Кока-кола зеро"),
+        normalize_alias_key("кока кола зеро"),
+        normalize_alias_key("Кока—кола зеро"),
+    }
+    assert keys == {"кока кола зеро"}
+
+
 def test_borscht_not_fat_or_dry_mix(nutrition_svc: NutritionService) -> None:
     if not nutrition_svc.aliases.is_loaded:
         pytest.skip("food_aliases.json not loaded")
@@ -970,6 +1136,8 @@ def _run_nutrition_case(nutrition_svc: NutritionService, case: dict[str, Any]) -
         max_macros["fats"] = expected["fat_max"]
     if "carbohydrates_max" in expected:
         max_macros["carbohydrates"] = expected["carbohydrates_max"]
+    if "fiber_max" in expected:
+        max_macros["fiber_g"] = expected["fiber_max"]
     if max_macros:
         assert_max_aggregate_macros(full, max_macros, case_name=name)
     assert_min_scaled_proteins(
