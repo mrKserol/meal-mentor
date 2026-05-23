@@ -11,7 +11,7 @@ import { CompositionLabelModal } from "./CompositionLabelModal";
 
 export type AppShellActions = {
   openAddMeal: () => void;
-  /** Открыть «Добавить приём» с записью на выбранный календарный день (23:59). */
+  /** Открыть «Добавить приём» с записью на выбранный календарный день (дата + текущее время). */
   openAddMealForDate: (dateYmd: string) => void;
 };
 

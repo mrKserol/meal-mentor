@@ -96,6 +96,8 @@ export async function saveMyMealToDiary(
     user_text?: string | null;
     image_base64?: string | null;
     meal_local_date?: string | null;
+    /** Local wall time: YYYY-MM-DDTHH:mm */
+    meal_local_datetime?: string | null;
   },
 ): Promise<void> {
   await authClient.post("/users/me/meals/save", payload, {

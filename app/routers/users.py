@@ -35,7 +35,8 @@ from app.schemas.auth import (
     WebMealsDayResponse,
 )
 from app.schemas.diary import DiarySnapshotResponse
-from app.services.diary_snapshot import _resolve_tz, build_diary_snapshot, meal_datetime_for_local_date_end
+from app.services.diary_snapshot import _resolve_tz, build_diary_snapshot
+from app.services.user_timezone import meal_datetime_for_local_date_at_current_time, parse_meal_local_datetime_iso
 from app.schemas.additives import DayNutritionTotals
 from app.services.additive_totals import day_additive_totals_response, sum_additive_intakes_for_local_date
 from app.services.web_meals_day import build_web_meal_day_row
@@ -256,8 +257,13 @@ def save_my_meal(
         meal_photo_thumb=body.meal_photo_thumb,
     )
     meal_dt = datetime.utcnow()
-    if body.meal_local_date is not None:
-        meal_dt = meal_datetime_for_local_date_end(current_user, body.meal_local_date)
+    if body.meal_local_datetime:
+        try:
+            meal_dt = parse_meal_local_datetime_iso(current_user, body.meal_local_datetime)
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+    elif body.meal_local_date is not None:
+        meal_dt = meal_datetime_for_local_date_at_current_time(current_user, body.meal_local_date)
 
     pred_lang = body.prediction_language or current_user.language or "ru"
     create_meal(
