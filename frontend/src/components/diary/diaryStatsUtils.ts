@@ -83,7 +83,6 @@ export const ANALYSIS_GROUPS: {
       { key: "saturated_fat_g", label: "Насыщенные жиры", unit: "г" },
       { key: "monounsaturated_fatty_acids_g", label: "Мононенасыщенные", unit: "г" },
       { key: "polyunsaturated_fatty_acids_g", label: "Полиненасыщенные", unit: "г" },
-      { key: "fatty_acids_total_trans_mg", label: "Трансжиры", unit: "мг" },
       { key: "cholesterol_mg", label: "Холестерин", unit: "мг" },
     ],
   },
@@ -141,6 +140,10 @@ export function nutrientProfileValue(activeStats: PeriodStats, key: string): num
   if (key === "sugar_g") return activeStats.avg_sugar_g ?? 0;
   if (key === "saturated_fat_g") return activeStats.avg_saturated_fat_g ?? 0;
   return activeStats.detailed_avg?.[key] ?? 0;
+}
+
+export function nutrientProfileRowVisible(mealsVal: number, addVal: number): boolean {
+  return Math.abs(mealsVal) > 1e-6 || Math.abs(addVal) > 1e-6;
 }
 
 export function nutrientProfilePeriodTitle(period: "week" | "month"): string {

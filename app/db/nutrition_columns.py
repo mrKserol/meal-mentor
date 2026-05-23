@@ -84,6 +84,16 @@ INTEGER_NUTRITION_KEYS: frozenset[str] = frozenset(
     {"calories", "protein_g", "fat_g", "carbs_g", "sugar_g", "sodium_mg"},
 )
 
+# Macros with separate period averages; still included in detailed profile sums.
+DETAILED_SUM_EXCLUDE_KEYS: frozenset[str] = frozenset(
+    {"calories", "protein_g", "carbs_g", "fiber_g"},
+)
+
+
+def init_detailed_nutrient_sums() -> dict[str, float]:
+    """Sums for nutrient profile (includes fat_g, sugar_g, saturated_fat_g, etc.)."""
+    return {k: 0.0 for k in MEAL_ITEM_NUTRITION_KEYS if k not in DETAILED_SUM_EXCLUDE_KEYS}
+
 
 def nutrition_column(key: str) -> Column:
     """SQLAlchemy column for a meal-item nutrient field (Additive / AdditiveIntake)."""

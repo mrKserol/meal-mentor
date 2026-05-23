@@ -8,6 +8,7 @@ import {
   formatFixedRu,
   nutrientProfileFracDigits,
   nutrientProfilePeriodTitle,
+  nutrientProfileRowVisible,
   nutrientProfileValueAdditives,
   nutrientProfileValueMeals,
   type ChartDay,
@@ -128,7 +129,7 @@ export function DiaryStatsCard({ snapshot }: DiaryStatsCardProps) {
             </div>
             <div>
               <p className="text-xl font-bold text-rose-700">{formatFixedRu(activeStats?.avg_sugar_g ?? 0, 1)} г</p>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Сахар</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Сахара всего</p>
             </div>
             <div>
               <p className="text-xl font-bold text-cyan-700">{formatFixedRu(activeStats?.avg_salt_g ?? 0, 2)} г</p>
@@ -183,32 +184,40 @@ export function DiaryStatsCard({ snapshot }: DiaryStatsCardProps) {
               <span className="text-right">Добавки</span>
             </div>
             <div className="space-y-5">
-              {ANALYSIS_GROUPS.map((group) => (
-                <section key={group.title} className="rounded-xl border border-slate-200 p-4">
-                  <h3 className="mb-3 text-base font-semibold text-slate-900">{group.title}</h3>
-                  <div className="space-y-2">
-                    {group.items.map((item) => {
-                      const mealsVal = nutrientProfileValueMeals(activeStats, item.key);
-                      const addVal = nutrientProfileValueAdditives(activeStats, item.key);
-                      const frac = nutrientProfileFracDigits(item.key);
-                      return (
-                        <div
-                          key={item.key}
-                          className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-4 gap-y-0.5 text-sm text-slate-700"
-                        >
-                          <span className="font-medium text-slate-800">{item.label}</span>
-                          <span className="tabular-nums text-right text-slate-700">
-                            {formatFixedRu(mealsVal, frac)} {item.unit}
-                          </span>
-                          <span className="tabular-nums text-right text-violet-700">
-                            {formatFixedRu(addVal, frac)} {item.unit}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              ))}
+              {ANALYSIS_GROUPS.map((group) => {
+                const visibleItems = group.items
+                  .map((item) => {
+                    const mealsVal = nutrientProfileValueMeals(activeStats, item.key);
+                    const addVal = nutrientProfileValueAdditives(activeStats, item.key);
+                    return { item, mealsVal, addVal };
+                  })
+                  .filter(({ mealsVal, addVal }) => nutrientProfileRowVisible(mealsVal, addVal));
+                if (visibleItems.length === 0) return null;
+                return (
+                  <section key={group.title} className="rounded-xl border border-slate-200 p-4">
+                    <h3 className="mb-3 text-base font-semibold text-slate-900">{group.title}</h3>
+                    <div className="space-y-2">
+                      {visibleItems.map(({ item, mealsVal, addVal }) => {
+                        const frac = nutrientProfileFracDigits(item.key);
+                        return (
+                          <div
+                            key={item.key}
+                            className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-4 gap-y-0.5 text-sm text-slate-700"
+                          >
+                            <span className="font-medium text-slate-800">{item.label}</span>
+                            <span className="tabular-nums text-right text-slate-700">
+                              {formatFixedRu(mealsVal, frac)} {item.unit}
+                            </span>
+                            <span className="tabular-nums text-right text-violet-700">
+                              {formatFixedRu(addVal, frac)} {item.unit}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })}
             </div>
           </div>
         </div>

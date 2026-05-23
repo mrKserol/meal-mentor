@@ -16,7 +16,7 @@ from app.services.additive_totals import (
     list_additive_intakes_for_range,
     sum_additive_intakes_for_range,
 )
-from app.db.nutrition_columns import MEAL_ITEM_NUTRITION_KEYS
+from app.db.nutrition_columns import MEAL_ITEM_NUTRITION_KEYS, init_detailed_nutrient_sums
 from app.services.meal_serialization import meal_composition_line
 from app.services.user_timezone import (
     absolute_public_url,
@@ -50,7 +50,7 @@ _PRIMARY_DAILY_KEYS = frozenset({"calories", "protein_g", "fat_g", "carbs_g", "f
 
 
 def _init_detailed_sums() -> dict[str, float]:
-    return {k: 0.0 for k in MEAL_ITEM_NUTRITION_KEYS if k not in _PRIMARY_DAILY_KEYS}
+    return init_detailed_nutrient_sums()
 
 
 def _accumulate_detailed_meal_nutrients(meal: Meal, totals: dict[str, float]) -> None:
