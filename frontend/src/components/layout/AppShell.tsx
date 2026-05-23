@@ -68,7 +68,6 @@ export function AppShell({
       <div className="flex min-h-screen min-w-0">
         <AppSideNav
           activeItem={activeNav}
-          onLogout={onLogout}
           onNewMeal={openAddMeal}
           onCompositionClick={openComposition}
         />
