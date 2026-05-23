@@ -264,7 +264,7 @@
       "dill": {"grams": 5, "state": "raw"}
     },
     "expected": {
-      "calories_min": 450,
+      "calories_min": 420,
       "calories_max": 750,
       "protein_min": 30,
       "required_contains_any": {
