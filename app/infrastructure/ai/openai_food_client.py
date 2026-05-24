@@ -256,7 +256,7 @@ Important correction mode:
   "prediction_translated": "short natural dish name in the user's language",
   "prediction_language": "ru",
   "ingredients": {{
-    "ingredient_name": {{
+    "USDA-style ingredient key": {{
       "name_translated": "name in user language",
       "name_language": "ru",
       "grams": 100,
@@ -266,19 +266,21 @@ Important correction mode:
   "confidence": 0.0
 }}
 
-Never use translated ingredient names as JSON keys. Ingredient keys must stay in English.
+Ingredient keys must use USDA food database naming style — "FoodGroup, descriptor, preparation".
+Never use translated names as JSON keys. Never use simple informal English names as keys.
+The key goes directly to the nutrition lookup, so USDA format is critical.
 
 Example:
 Previous AI recognition:
 prediction: "Кус-кус с яйцами и сыром"
 previous_ingredients:
 {{
-  "couscous": 150,
-  "boiled egg": 100,
-  "cheese": 30,
-  "almonds": 20,
-  "dates": 40,
-  "chocolate truffle": 15
+  "Couscous, cooked": 150,
+  "Egg, whole, cooked, hard-boiled": 100,
+  "Cheese, cheddar": 30,
+  "Nuts, almonds": 20,
+  "Dates, deglet noor": 40,
+  "Candies, truffles, chocolate": 15
 }}
 
 User clarification:
@@ -290,12 +292,12 @@ Correct output:
   "prediction_translated": "Пшенная каша с яйцами, сыром, фундуком, финиками и шоколадным трюфелем",
   "prediction_language": "ru",
   "ingredients": {{
-    "millet porridge": {{"name_translated": "пшенная каша", "name_language": "ru", "grams": 150, "state": "cooked"}},
-    "boiled egg": {{"name_translated": "яйцо", "name_language": "ru", "grams": 100, "state": "boiled"}},
-    "cheese": {{"name_translated": "сыр", "name_language": "ru", "grams": 30, "state": "unknown"}},
-    "hazelnuts": {{"name_translated": "фундук", "name_language": "ru", "grams": 20, "state": "raw"}},
-    "dates": {{"name_translated": "финики", "name_language": "ru", "grams": 40, "state": "dry"}},
-    "chocolate truffle": {{"name_translated": "шоколадный трюфель", "name_language": "ru", "grams": 15, "state": "unknown"}}
+    "Cereals, millet, cooked": {{"name_translated": "пшенная каша", "name_language": "ru", "grams": 150, "state": "cooked"}},
+    "Egg, whole, cooked, hard-boiled": {{"name_translated": "яйцо", "name_language": "ru", "grams": 100, "state": "boiled"}},
+    "Cheese, cheddar": {{"name_translated": "сыр", "name_language": "ru", "grams": 30, "state": "unknown"}},
+    "Nuts, hazelnuts or filberts, raw": {{"name_translated": "фундук", "name_language": "ru", "grams": 20, "state": "raw"}},
+    "Dates, deglet noor": {{"name_translated": "финики", "name_language": "ru", "grams": 40, "state": "dry"}},
+    "Candies, truffles, chocolate": {{"name_translated": "шоколадный трюфель", "name_language": "ru", "grams": 15, "state": "unknown"}}
   }},
   "confidence": 0.82
 }}
