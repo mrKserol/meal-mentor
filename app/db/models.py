@@ -278,6 +278,7 @@ class MealItem(Base):
     quantity = Column(Integer, nullable=True)
     confidence = Column(Integer, nullable=True)
     raw_recognition_text = Column(Text, nullable=True)
+    nutrition_match_name = Column(String(512), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     meal = relationship("Meal", back_populates="items")

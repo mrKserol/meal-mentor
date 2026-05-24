@@ -136,6 +136,7 @@ def create_meal(
             quantity=spec.get("quantity"),
             confidence=spec.get("confidence"),
             raw_recognition_text=spec.get("raw_recognition_text"),
+            nutrition_match_name=spec.get("nutrition_match_name"),
         )
         db.add(item)
         db.flush()
@@ -282,6 +283,7 @@ def replace_meal_items_for_user(
             quantity=spec.get("quantity"),
             confidence=spec.get("confidence"),
             raw_recognition_text=spec.get("raw_recognition_text"),
+            nutrition_match_name=spec.get("nutrition_match_name"),
         )
         db.add(row)
         db.flush()
@@ -325,6 +327,7 @@ def append_meal_item_rows(
             quantity=spec.get("quantity"),
             confidence=spec.get("confidence"),
             raw_recognition_text=spec.get("raw_recognition_text"),
+            nutrition_match_name=spec.get("nutrition_match_name"),
         )
         db.add(row)
         db.flush()
