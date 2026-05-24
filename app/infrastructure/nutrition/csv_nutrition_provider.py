@@ -309,6 +309,31 @@ class NutritionService:
         q = (query or "").strip()
         if not q or not self._ingredients:
             return []
+
+        # USDA-format queries ("Food, descriptor, state") need two-phase search:
+        # Phase 1 — find candidates by main food category (text before first comma)
+        #            using broad WRatio to catch spelling variants.
+        # Phase 2 — re-rank those candidates by full-string fuzz.ratio so that
+        #            shared generic tokens like "cooked" / "raw" don't dominate.
+        if "," in q:
+            main_cat = q.split(",")[0].strip()
+            q_lower = q.lower()
+            if _HAS_RAPIDFUZZ:
+                pool = rf_process.extract(main_cat, self._ingredients, scorer=fuzz.WRatio, limit=100)
+                rescored: list[tuple[str, float]] = [
+                    (str(row[0]), float(fuzz.ratio(q_lower, str(row[0]))))
+                    for row in pool
+                ]
+                rescored.sort(key=lambda x: -x[1])
+                return rescored[:limit]
+            pool_names = get_close_matches(main_cat.lower(), self._ingredients, n=100, cutoff=0.25)
+            scored_pool: list[tuple[str, float]] = [
+                (m, SequenceMatcher(None, q_lower, m).ratio() * 100)
+                for m in pool_names
+            ]
+            scored_pool.sort(key=lambda x: -x[1])
+            return scored_pool[:limit]
+
         if _HAS_RAPIDFUZZ:
             extracted = rf_process.extract(q, self._ingredients, scorer=fuzz.WRatio, limit=limit)
             out: list[tuple[str, float]] = []
@@ -426,6 +451,22 @@ class NutritionService:
         include_candidates: bool,
         min_final_score: float = 18.0,
     ) -> dict[str, Any]:
+        # Fast path: exact lookup for USDA-format keys the AI returns verbatim
+        for lookup in (ni.input_name, ni.canonical_query):
+            key = (lookup or "").strip().lower()
+            if key and key in self._data:
+                nut = self._data[key]
+                scaled = self._scale_row(nut, ni.grams)
+                scaled["match"] = str(nut.get("csv_display_name") or key)
+                scaled["weight"] = ni.grams
+                scaled["state"] = ni.state
+                scaled["match_score"] = 100.0
+                if include_candidates:
+                    scaled["candidates"] = [
+                        {"name": scaled["match"], "score": 100.0, "reasons": ["exact_lookup"]}
+                    ]
+                return scaled
+
         raw = self._candidate_search(ni.canonical_query, limit=20)
         if not raw:
             raw = self._candidate_search(ni.input_name, limit=20)
