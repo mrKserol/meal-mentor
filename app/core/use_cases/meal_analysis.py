@@ -192,7 +192,6 @@ def _build_meal_items(ingredients: dict[str, Any], nutrition_svc: NutritionServi
                 "nutrition": nutrition,
                 "name_translated": name_translated,
                 "name_language": name_language,
-                "nutrition_match_name": row.get("match") or None,
             }
         )
     return items
