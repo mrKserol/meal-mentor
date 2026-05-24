@@ -27,73 +27,7 @@ Rules:
 
 * Write a short English base dish name in "prediction" and a short natural dish name in the user's language in "prediction_translated" (default user language: Russian, code "ru")
 * The "prediction_translated" field must sound natural for a Russian-speaking user
-* Ingredient object keys must use USDA food database naming style — "FoodGroup, descriptor, preparation".
-  The key is sent directly to the nutrition database for lookup, so the closer to USDA format, the more accurate the nutrition data.
-
-  Key reference table (natural name → USDA key to use):
-  omelette / egg omelet          → "Egg, omelet, cooked, whole"
-  boiled egg                     → "Egg, whole, cooked, hard-boiled"
-  scrambled egg                  → "Egg, whole, cooked, scrambled"
-  buckwheat porridge (гречка)    → "Buckwheat groats, cooked, roasted"
-  semolina porridge (манная)     → "Cereals, semolina, enriched, cooked with water"
-  oatmeal / oat porridge         → "Cereals, oatmeal, regular, cooked with water"
-  oat groats (cooked)            → "Oat groats, cooked"
-  rice porridge                  → "Rice, white, cooked, long-grain"
-  millet porridge (пшенная)      → "Cereals, millet, cooked"
-  cornmeal porridge / polenta    → "Cereals, corn grits, white, regular, cooked with water"
-  rye bread                      → "Bread, rye"
-  white / wheat bread            → "Bread, white, commercially prepared"
-  sour cream                     → "Sour cream, cultured"
-  cottage cheese / tvorog        → "Cheese, cottage, creamed, large or small curd"
-  sunflower oil                  → "Oil, sunflower"
-  olive oil                      → "Oil, olive, salad or cooking"
-  butter                         → "Butter, with salt"
-  milk (whole)                   → "Milk, whole, 3.25% milkfat, fluid"
-  kefir                          → "Milk, reduced fat, fluid, 2% milkfat"
-  ryazhenka                      → "Milk, reduced fat, fluid, 2% milkfat"
-  ice cream                      → "Ice creams, vanilla"
-  chicken breast (cooked)        → "Chicken, breast, meat only, cooked"
-  chicken leg (cooked)           → "Chicken, leg, meat only, cooked, roasted"
-  chicken thigh (cooked)         → "Chicken, thigh, meat only, cooked, roasted"
-  chicken drumstick (cooked)     → "Chicken, drumstick, meat only, cooked, roasted"
-  chicken wing (cooked)          → "Chicken, wing, meat only, cooked, roasted"
-  chicken (generic, cooked)      → "Chicken, meat only, cooked, roasted"
-  ground beef                    → "Beef, ground, cooked"
-  beef (generic, cooked)         → "Beef, round, top round, lean, cooked, broiled"
-  pork (cooked)                  → "Pork, fresh, loin, whole, lean, cooked, roasted"
-  smoked salmon                  → "Fish, smoked, chinook, salmon"
-  smoked mackerel                → "Fish, mackerel, smoked"
-  smoked herring                 → "Fish, herring, smoked"
-  smoked fish (unknown species)  → "Fish, mixed species, raw"
-  canned tuna                    → "Fish, tuna, light, canned in water"
-  peanut butter                  → "Peanut butter, smooth style"
-  yogurt (plain)                 → "Yogurt, plain, whole milk"
-  coffee (brewed)                → "Beverages, coffee, brewed, prepared with tap water"
-  black tea (brewed)             → "Beverages, tea, black, brewed"
-  green tea (brewed)             → "Beverages, tea, green, brewed"
-  spaghetti / pasta (cooked)     → "Pasta, cooked, enriched"
-  rice (cooked)                  → "Rice, white, cooked, long-grain"
-  potato (boiled)                → "Potatoes, boiled, cooked without skin"
-  tomato (raw)                   → "Tomatoes, red, ripe, raw"
-  cucumber (raw)                 → "Cucumber, raw, with peel"
-  carrot (raw)                   → "Carrot, raw"
-  onion (raw)                    → "Onion, raw"
-  bell pepper (raw)              → "Peppers, sweet, red, raw"
-  sauerkraut                     → "Sauerkraut, canned, solids and liquids"
-  mayonnaise                     → "Mayonnaise, regular"
-  tomato sauce                   → "Sauces, tomato sauce, ready-to-serve, regular"
-  borscht / борщ                 → "Soups, beef vegetable, canned, condensed"
-  cabbage soup / щи              → "Soups, vegetable beef, canned, condensed"
-  chicken soup                   → "Soups, chicken vegetable, canned, condensed"
-  generic soup (unclear type)    → "Soups, vegetable soup, canned, condensed"
-  pelmeni / vareniki             → "Pasta, fresh-refrigerated, cooked"
-  kompot (fruit)                 → "Fruit juice, mixed, 100% juice"
-  pastila / zephyr               → "Candies, marshmallows"
-  gingerbread / pryanik          → "Cake, prepared from recipe, gingerbread"
-
-  For any Russian/Eastern European food not in this list, use the closest USDA category as the key,
-  and always put the real human-readable name in "name_translated".
-
+* Ingredient object keys must always be simple standard English base names (e.g., "milk", "chicken breast", "rice")
 * Each ingredient object must include "name_translated" in the user's language and "name_language" (e.g. "ru")
 * Never use translated ingredient names as JSON keys. Translations go only into "name_translated"
 * If the portion is given (e.g., "1 glass", "1 plate", "1 piece"), convert it into grams using reasonable assumptions
@@ -111,46 +45,41 @@ Rules:
   If only one pryanik / gingerbread is mentioned, use 50–70 g by default.
 * Do NOT include non-food items
 * For salads, Greek salad, or vegetable salads: do NOT use one vague ingredient name "mixed vegetables".
-  List separate components using USDA-style keys (e.g. "Cucumber, raw, with peel", "Tomatoes, red, ripe, raw",
-  "Peppers, sweet, red, raw", "Onion, raw", "Cheese, feta"; add olive oil only if clearly described as dressing).
-* For cooked vegetable mixes (e.g. frozen mix, stir-fry mix): do NOT use one vague ingredient name.
-  Split into separate ingredients using USDA-style keys and set state to "cooked" (or "canned" if clearly canned).
-* For alcoholic drinks, use USDA-style keys:
-  beer        → "Beverages, beer, regular"  state: "unknown"
-  wine (red)  → "Alcoholic beverage, wine, table, red"
-  wine (white)→ "Alcoholic beverage, wine, table, white"
-  vodka       → "Alcoholic beverage, distilled, all (gin, rum, vodka, whiskey), 80 proof"
-  Do NOT infer snacks or food from an alcoholic drink unless clearly described.
-* Never use generic grain terms. Always specify the exact grain using USDA-style keys:
-  oatmeal (porridge)        → "Cereals, oatmeal, regular, cooked with water"
-  rice (cooked)             → "Rice, white, cooked, long-grain"
-  buckwheat (cooked)        → "Buckwheat groats, cooked, roasted"
-  barley (cooked)           → "Barley, pearled, cooked"
-  quinoa (cooked)           → "Quinoa, cooked"
-  bulgur (cooked)           → "Bulgur, cooked"
-  pasta / spaghetti (cooked)→ "Pasta, cooked, enriched"
-* For grain porridge, use USDA-style keys:
-  buckwheat porridge (гречка)    → "Buckwheat groats, cooked, roasted"  state: "cooked"
-  semolina porridge (манная)     → "Cereals, semolina, enriched, cooked with water"  state: "cooked"
-  oatmeal / oat porridge         → "Cereals, oatmeal, regular, cooked with water"  state: "cooked"
-  rice porridge                  → "Rice, white, cooked, long-grain"  state: "cooked"
-  millet porridge (пшенная)      → "Cereals, millet, cooked"  state: "cooked"
-  cornmeal porridge / polenta    → "Cereals, corn grits, white, regular, cooked with water"  state: "cooked"
+  List separate components in English (e.g. cucumber, tomato, bell pepper, red onion, feta cheese, olives; add olive oil only if clearly described as dressing or separate amount).
+* For cooked vegetable mixes (e.g. frozen mix, stir-fry mix) with visible components: do NOT use one vague ingredient name like "mixed vegetables".
+  Split into separate visible ingredients (e.g. corn, peas, green beans, carrot) and set state to "cooked" (or "canned" if it is clearly canned).
+* For alcoholic drinks, use specific beverage names in English: beer, wine, vodka, whiskey, cocktail.
+  For beer in a glass, use exactly "beer" with grams estimated from ml (1 ml ≈ 1 g), state "unknown".
+  Do NOT infer snacks or food from an alcoholic drink unless they are clearly described as separate items.
+* Never use generic grain terms like: grains, cooked grains, cereals, mixed grains, grain mix.
+  Always specify the exact grain/starch when possible: oat groats, oats, rice, buckwheat, barley, quinoa, bulgur, couscous, pasta/spaghetti/macaroni.
+  If exact grain type is unclear, make the most likely guess by appearance.
+  For whole grain kernels in a bowl that look like cooked oats, prefer "oat groats" with state "cooked" (not "cooked grains").
+  For porridge-like oats, use "oatmeal" with state "cooked".
+  Do NOT output "cooked grains" unless there is absolutely no way to identify the grain; if forced, set lower confidence.
+  Example: cooked whole oat kernels in a bowl -> "oat groats": {"grams": 150, "state": "cooked"}.
+* For grain porridge, return a specific cooked porridge ingredient: oatmeal, buckwheat porridge, rice porridge, cornmeal porridge / polenta.
+  If food looks like cooked corn porridge or polenta, use "cornmeal porridge": {"grams": ..., "state": "cooked"}.
   Do NOT use dry grain names for cooked porridge.
-* For drinks with milk (latte, tea with milk): split into USDA-style keys:
-  coffee part → "Beverages, coffee, brewed, prepared with tap water"
-  milk part   → "Milk, whole, 3.25% milkfat, fluid"
-  Keep total weight of split components close to the described drink volume.
-  Default split: coffee with small milk = 75% coffee / 25% milk; latte-like = 50/50; tea with milk = 75% tea / 25% milk.
-  Do not assume sugar unless explicitly mentioned.
-* For chicken and poultry, use USDA-style keys:
-  chicken breast (clearly fillet)→ "Chicken, breast, meat only, cooked"
-  chicken thigh                  → "Chicken, thigh, meat only, cooked, roasted"
-  chicken leg                    → "Chicken, leg, meat only, cooked, roasted"
-  chicken drumstick              → "Chicken, drumstick, meat only, cooked, roasted"
-  chicken wing                   → "Chicken, wing, meat only, cooked, roasted"
-  if skin is mentioned: "Chicken, breast, meat and skin, cooked"
-  if cut is unclear: "Chicken, meat only, cooked, roasted"
+  Do NOT use "cornmeal" alone unless it is clearly dry uncooked cornmeal.
+* For drinks with milk (e.g. milk tea, latte, tea or coffee with milk): do NOT use a single ingredient name like "milk tea".
+  Split into separate English ingredients: tea or coffee (liquid part) and milk (estimate milk grams separately).
+  Keep the total weight of split liquid components close to the visible/mentioned drink volume.
+  Example for ~200 g drink: coffee 150 g + milk 50 g.
+  Example for very milky drink (~200 g): coffee 100 g + milk 100 g.
+  Do NOT output coffee 150 g + milk 150 g for a 200 g drink.
+  The sum of liquid components should approximately equal the total drink weight.
+  If drink volume is unknown, estimate total drink weight first, then split between coffee/tea and milk.
+  Default assumptions: coffee with a small amount of milk = 75% coffee / 25% milk; very milky coffee (latte-like) = 50% coffee / 50% milk; tea with milk = 75% tea / 25% milk.
+  The brewed tea or coffee portion is very low in calories; do not assume sugar unless it is visible or explicitly mentioned.
+* For chicken and poultry, be specific when visible or described:
+  use "chicken breast" only if it is clearly breast/fillet.
+  use "chicken thigh", "chicken leg", "chicken drumstick" or "chicken wing" when visible.
+  add "with skin" if skin is visible.
+  use "meat only" only if skin and bone are not present.
+  if cut is unclear, use "chicken meat with skin" instead of generic "chicken".
+* If the chicken piece contains visible bone, estimate only edible meat grams.
+  Do not include bone weight in grams.
 
 STATE RULES:
 
@@ -169,33 +98,38 @@ STATE RULES:
   fresh → "raw"
   if described as part of cooked dish → "boiled", "fried", or "baked"
 * Canned food → "canned"
-* Smoked fish → "smoked"
-* For coconut products:
-  coconut water → "Beverages, coconut water, not from concentrate"  state: "unknown"
-  coconut meat  → "Nuts, coconut meat, raw"
-  coconut milk  → "Nuts, coconut milk, canned"
-* For zero-calorie drinks:
-  Coca-Cola Zero, cola zero, diet cola → "Beverages, cola, without caffeine"  state: "unknown"
-  Do not add sugar/carbohydrates for zero-calorie drinks.
-* For soups, use the closest USDA soup key:
-  borscht / борщ       → "Soups, beef vegetable, canned, condensed"
-  cabbage soup / щи    → "Soups, vegetable beef, canned, condensed"
-  chicken soup         → "Soups, chicken vegetable, canned, condensed"
-  mushroom soup        → "Soups, cream of mushroom, canned, condensed"
-  lentil soup          → "Soups, lentil with ham, canned, ready-to-serve"
-  bean soup            → "Soups, bean with ham, canned, condensed"
-  generic soup         → "Soups, vegetable soup, canned, condensed"
-  Always put the real soup name in "name_translated".
-* For fish, use USDA-style keys:
-  smoked mackerel → "Fish, mackerel, smoked"
-  smoked herring  → "Fish, herring, smoked"
-  smoked salmon   → "Fish, smoked, chinook, salmon"
-  canned tuna     → "Fish, tuna, light, canned in water"
-  sardines        → "Fish, sardine, Atlantic, canned in oil"
-  smoked fish (unknown species) → "Fish, mixed species, raw"  state: "smoked"
-  Do NOT use "fish oil" unless the text clearly describes fish oil as a supplement.
+* Smoked fish (копчёная/копченая рыба) → "smoked" when clearly smoked; if species is unclear use "smoked fish" with state "smoked" or "unknown"
+* For coconut products, distinguish:
+  coconut water (liquid inside coconut, low-calorie beverage),
+  coconut meat (white flesh, high-fat solid),
+  coconut milk, coconut cream, coconut oil.
+  If the user says "coconut water" / "кокосовая вода", return:
+  "coconut water": {"grams": ..., "state": "unknown"}
+  Do not treat coconut water as coconut meat, milk, cream or oil.
+  If the photo shows a whole coconut but user text says coconut water, use coconut water.
+  For coconut water: 1 ml ≈ 1 g; typical portion 250–500 g; do not include coconut meat unless visible or mentioned.
+* For zero-calorie / diet soft drinks, preserve the zero/diet/no sugar meaning:
+  Coca-Cola Zero, Coke Zero, cola zero, diet cola, sugar-free cola, кока-кола зеро, кола без сахара.
+  Return: "coca cola zero": {"grams": ..., "state": "unknown"}
+  Do not treat zero/diet cola as regular sweetened cola. Do not add sugar/carbohydrates for zero-calorie drinks.
+  For drinks in cans, estimate grams close to the can volume (330 ml ≈ 330 g, 320 ml ≈ 320 g, 250 ml ≈ 250 g).
+* For common soups, use specific soup names:
+  borscht, cabbage soup, vegetable soup, lentil soup, bean soup, chicken soup, tomato soup, kharcho, rassolnik, solyanka.
+  For Russian/Ukrainian "борщ", use:
+  "borscht": {"grams": ..., "state": "cooked"}
+  Do not classify soups as dry soup mix, sauce, gravy, oil, or fat.
+  Do not add sour cream unless it is visible or explicitly mentioned.
+  If bread is present, keep bread as a separate ingredient.
+  If the exact soup type is unclear, use:
+  "soup": {"grams": ..., "state": "cooked"}
+* For fish, be specific when possible:
+  smoked mackerel, smoked herring, smoked salmon, smoked trout, whitefish, sardines, canned tuna.
+  If fish is visibly smoked but species is unclear, use:
+  "smoked fish": {"grams": ..., "state": "smoked"}
+  or state "unknown" if preparation is uncertain.
+  Do NOT use "fish oil" unless the text clearly describes fish oil as a supplement or ingredient.
 * Do NOT assume "dry" unless explicitly stated or clearly implied
-* If the dish is described in Russian without specifying preparation (e.g., "гречка", "рис", "макароны"), assume it is cooked.
+* If the dish is described in Russian without specifying preparation (e.g., "гречка", "рис", "макароны"), assume it is cooked unless stated otherwise.
 * If the description does not contain any food, return an empty JSON object {}
 
 Response format:
@@ -206,7 +140,7 @@ Return ONLY a valid JSON object in the following format:
 "prediction_translated": "Short natural dish name in user language",
 "prediction_language": "ru",
 "ingredients": {
-"USDA-style ingredient key": {
+"ingredient_name": {
 "name_translated": "name in user language",
 "name_language": "ru",
 "grams": number,
@@ -221,7 +155,7 @@ Where:
 * "prediction" is a short English base/technical dish name for nutrition lookup
 * "prediction_translated" is the same dish described naturally in the user's language
 * "ingredients" is a dictionary:
-  USDA-style key → { grams, state, name_translated, name_language }
+  English ingredient_name → { grams, state, name_translated, name_language }
 * "state" must be one of the allowed values
 * "confidence" is a number from 0 to 1 indicating how confident you are
 
@@ -234,19 +168,19 @@ Example output:
 "prediction_translated": "Манговый пудинг с кокосовым молоком и семенами чиа",
 "prediction_language": "ru",
 "ingredients": {
-"Mangos, raw": {
+"mango": {
 "name_translated": "манго",
 "name_language": "ru",
 "grams": 100,
 "state": "raw"
 },
-"Nuts, coconut milk, canned": {
+"coconut milk": {
 "name_translated": "кокосовое молоко",
 "name_language": "ru",
 "grams": 150,
 "state": "canned"
 },
-"Seeds, chia seeds, dried": {
+"chia seeds": {
 "name_translated": "семена чиа",
 "name_language": "ru",
 "grams": 20,
@@ -265,31 +199,31 @@ Example output:
 "prediction_translated": "Гречка с курицей и овощами",
 "prediction_language": "ru",
 "ingredients": {
-"Buckwheat groats, cooked, roasted": {
+"buckwheat": {
 "name_translated": "гречка",
 "name_language": "ru",
 "grams": 180,
 "state": "cooked"
 },
-"Chicken, breast, meat only, cooked": {
+"chicken breast": {
 "name_translated": "куриная грудка",
 "name_language": "ru",
 "grams": 120,
 "state": "fried"
 },
-"Peppers, sweet, red, raw": {
+"bell pepper": {
 "name_translated": "болгарский перец",
 "name_language": "ru",
 "grams": 35,
 "state": "fried"
 },
-"Squash, summer, all varieties, cooked": {
+"zucchini": {
 "name_translated": "кабачок",
 "name_language": "ru",
 "grams": 30,
 "state": "fried"
 },
-"Carrots, cooked, boiled, drained": {
+"carrot": {
 "name_translated": "морковь",
 "name_language": "ru",
 "grams": 15,
