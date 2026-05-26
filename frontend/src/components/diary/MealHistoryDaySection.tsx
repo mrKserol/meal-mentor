@@ -332,13 +332,14 @@ function sodiumMgToSaltG(sodiumMg: number): number {
   return Number((sodiumMg / 1000).toFixed(2));
 }
 
-function formatMealTimeHeader(dateLocal: string | undefined, timeLocal: string): string {
-  if (!dateLocal) return `Приём пищи в ${timeLocal}`;
+function formatMealDateLine(dateLocal: string | undefined, timeLocal: string): string {
+  if (!dateLocal) return `в ${timeLocal}`;
   const [y, m, d] = dateLocal.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
   const weekday = new Intl.DateTimeFormat("ru-RU", { weekday: "long" }).format(dt);
   const dayMonth = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long" }).format(dt);
-  return `Приём пищи ${weekday}, ${dayMonth} в ${timeLocal}`;
+  const weekdayCap = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+  return `${weekdayCap}, ${dayMonth} в ${timeLocal}`;
 }
 
 function itemLineMacros(it: WebMealDayItemLine): { p: number; f: number; c: number; fiber: number } {
@@ -372,6 +373,7 @@ function MealDayDetailModal({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [shiftConfirm, setShiftConfirm] = useState<1 | -1 | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const large = meal.meal_photo_large_url || meal.meal_photo_thumb_url;
   const pred = predictionHeading(meal);
   const totM = mealTotalsMacros(meal);
@@ -407,7 +409,14 @@ function MealDayDetailModal({
         </div>
         {large ? (
           <div className="bg-slate-900">
-            <img src={large} alt="" className="mx-auto max-h-[min(55vh,480px)] w-full object-contain" />
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(true)}
+              className="block w-full cursor-zoom-in"
+              aria-label="Увеличить фото"
+            >
+              <img src={large} alt="" className="mx-auto max-h-[min(55vh,480px)] w-full object-contain" />
+            </button>
           </div>
         ) : (
           <div className="flex h-48 items-center justify-center bg-slate-100 text-slate-400">Нет фото</div>
@@ -416,7 +425,7 @@ function MealDayDetailModal({
           <h2 id="meal-detail-title" className="text-xl font-semibold leading-snug text-slate-900">
             {pred}
           </h2>
-          <p className="text-sm text-slate-600">{formatMealTimeHeader(meal.date_local, meal.time_local)}</p>
+          <p className="text-sm font-medium text-slate-500">{formatMealDateLine(meal.date_local, meal.time_local)}</p>
           <p className="text-sm leading-relaxed text-slate-800">
             <span className="font-medium text-slate-900">Состав:</span> {meal.composition}
           </p>
@@ -574,6 +583,33 @@ function MealDayDetailModal({
           ) : null}
         </div>
       </div>
+
+      {lightboxOpen && large ? (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Просмотр фото"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setLightboxOpen(false);
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(false)}
+            className="absolute right-3 top-3 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/25"
+            aria-label="Закрыть"
+          >
+            <X className="h-6 w-6" />
+          </button>
+          <img
+            src={large}
+            alt=""
+            className="max-h-screen max-w-full cursor-zoom-out object-contain p-2"
+            onClick={() => setLightboxOpen(false)}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -597,7 +633,7 @@ function MealDayRowContent({ meal }: { meal: WebMealDayRow }) {
       )}
       <div className="min-w-0 flex-1">
         <h3 className="text-base font-semibold leading-snug text-slate-900">{pred}</h3>
-        <p className="mt-1 text-sm text-slate-600">{formatMealTimeHeader(meal.date_local, meal.time_local)}</p>
+        <p className="mt-1 text-sm text-slate-600">Приём пищи в {meal.time_local}</p>
         <p className="mt-2 hidden text-sm leading-relaxed text-slate-700 md:block">
           <span className="font-medium text-slate-800">Состав:</span> {meal.composition}
         </p>
