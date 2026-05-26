@@ -55,6 +55,7 @@ def build_web_meal_day_row(meal: Meal, user: User) -> WebMealDayRow:
         display_prediction=display_prediction,
         user_text=meal.user_text,
         time_local=local.strftime("%H:%M"),
+        date_local=local.strftime("%Y-%m-%d"),
         meal_type=meal.meal_type,
         meal_type_label=_meal_type_label(meal.meal_type),
         composition=meal_composition_line(meal),
