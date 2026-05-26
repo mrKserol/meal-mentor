@@ -47,6 +47,7 @@ class NutritionCategory(str, Enum):
     COCONUT_MILK = "coconut_milk"
     COCONUT_CREAM = "coconut_cream"
     OIL = "oil"
+    AVOCADO = "avocado"
     UNKNOWN = "unknown"
 
 
@@ -253,6 +254,17 @@ def detect_ingredient_categories(
         mark(NutritionCategory.TEA, NutritionCategory.BEVERAGE, reason="tea_like")
     if "coffee" in blob or "кофе" in blob:
         mark(NutritionCategory.COFFEE, NutritionCategory.BEVERAGE, reason="coffee_like")
+
+    # Avocado oil must be checked BEFORE plain avocado
+    if ac == "oil" and ("avocado" in blob or "авокадо" in blob):
+        mark(NutritionCategory.OIL, reason="avocado_oil_alias")
+    elif any(x in blob for x in ("avocado oil", "масло авокадо", "авокадовое масло")):
+        mark(NutritionCategory.OIL, reason="avocado_oil_like")
+    elif ac == "avocado" or (
+        ("avocado" in blob or "авокадо" in blob)
+        and not any(x in blob for x in ("oil", "масло"))
+    ):
+        mark(NutritionCategory.AVOCADO, NutritionCategory.FRUIT, reason="avocado_like")
 
     if ac == "coconut_water" or _is_coconut_water_blob(blob):
         mark(
@@ -488,6 +500,7 @@ def detect_ingredient_categories(
         "coconut_milk": (NutritionCategory.COCONUT_MILK, NutritionCategory.BEVERAGE),
         "coconut_cream": (NutritionCategory.COCONUT_CREAM, NutritionCategory.DAIRY),
         "oil": (NutritionCategory.OIL,),
+        "avocado": (NutritionCategory.AVOCADO, NutritionCategory.FRUIT),
     }
     if ac in alias_map:
         vals = alias_map[ac]
@@ -532,6 +545,7 @@ def detect_ingredient_categories(
             NutritionCategory.COCONUT_MILK,
             NutritionCategory.COCONUT_CREAM,
             NutritionCategory.COCONUT_MEAT,
+            NutritionCategory.AVOCADO,
             NutritionCategory.OIL,
             NutritionCategory.ZERO_SOFT_DRINK,
             NutritionCategory.SOFT_DRINK,

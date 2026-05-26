@@ -1238,6 +1238,78 @@ def _egg_whole_boiled_adjustment(n: str, ing: str) -> tuple[float, list[str]]:
     return score, reasons
 
 
+def _avocado_candidate_adjustment(
+    n: str,
+    query_lower: str,
+    *,
+    avocado_like_q: bool = False,
+    oil_like_q: bool = False,
+    candidate_calories_per100: float = 0.0,
+    candidate_fat_per100: float = 0.0,
+    candidate_protein_per100: float = 0.0,
+) -> tuple[float, list[str]]:
+    """Prefer raw avocado rows for avocado queries; aggressively penalize oil/fat-only profiles."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    ql = query_lower.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if avocado_like_q:
+        # Bonuses for raw avocado rows
+        if "avocados" in nl:
+            add(120, "avocado_avocados_plural")
+        if "avocado" in nl and "raw" in nl:
+            add(100, "avocado_avocado_raw")
+        if re.search(r"\braw\b", nl):
+            add(80, "avocado_raw")
+        if "all commercial varieties" in nl:
+            add(50, "avocado_all_commercial_varieties")
+        if "fruit" in nl and "avocado" in nl:
+            add(30, "avocado_fruit")
+
+        # Penalties for non-avocado or processed rows
+        if "oil" in nl:
+            add(-350, "avocado_oil_row")
+        if "dressing" in nl:
+            add(-250, "avocado_dressing")
+        if "sauce" in nl:
+            add(-220, "avocado_sauce")
+        if "spread" in nl and "spread" not in ql and "намазка" not in ql:
+            add(-220, "avocado_spread")
+        if "babyfood" in nl:
+            add(-200, "avocado_babyfood")
+        if "dip" in nl and "dip" not in ql and "guacamole" not in ql and "гуакамоле" not in ql:
+            add(-180, "avocado_dip")
+        if "guacamole" in nl and "guacamole" not in ql and "гуакамоле" not in ql:
+            add(-180, "avocado_guacamole_mismatch")
+        if "powder" in nl:
+            add(-150, "avocado_powder")
+        if "freeze-dried" in nl or "freeze dried" in nl:
+            add(-150, "avocado_freeze_dried")
+
+        # Macro sanity checks
+        if candidate_fat_per100 > 40:
+            add(-300, "avocado_too_high_fat")
+        if candidate_calories_per100 > 350:
+            add(-300, "avocado_too_high_calories")
+        if candidate_fat_per100 > 80:
+            add(-500, "avocado_oil_profile")
+        if candidate_protein_per100 == 0 and candidate_fat_per100 > 70:
+            add(-500, "avocado_fat_only_profile")
+
+    elif not oil_like_q:
+        # Not an avocado or oil query: penalize oil rows that slip through
+        if "oil" in nl and "avocado" in nl:
+            add(-200, "avocado_oil_non_oil_query")
+
+    return max(score, -700.0), reasons
+
+
 def _grain_cooked_extra(n: str) -> tuple[float, list[str]]:
     reasons: list[str] = []
     score = 0.0
@@ -1501,6 +1573,8 @@ def state_score(
     cottage_cheese_q: bool = False,
     banana_fruit_q: bool = False,
     seed_kernel_q: bool = False,
+    avocado_like_q: bool = False,
+    oil_like_q: bool = False,
 ) -> tuple[float, list[str]]:
     """
     Returns (score_adjustment, reason strings).
@@ -1828,5 +1902,18 @@ def state_score(
         sk, skr = _seed_kernel_adjustment(n, query_lower)
         score += sk
         reasons.extend(skr)
+
+    if avocado_like_q or oil_like_q:
+        av, avr = _avocado_candidate_adjustment(
+            n,
+            query_lower,
+            avocado_like_q=avocado_like_q,
+            oil_like_q=oil_like_q,
+            candidate_calories_per100=candidate_calories_per100,
+            candidate_fat_per100=candidate_fat_per100,
+            candidate_protein_per100=candidate_protein_per100,
+        )
+        score += av
+        reasons.extend(avr)
 
     return score, reasons

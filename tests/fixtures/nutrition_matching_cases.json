@@ -3,12 +3,30 @@
     "name": "golden breakfast",
     "description": "Гречка с варёными яйцами, орехами, финиками и кофе с молоком",
     "ingredients": {
-      "buckwheat": {"grams": 150, "state": "cooked"},
-      "boiled eggs": {"grams": 120, "state": "boiled"},
-      "walnuts": {"grams": 30, "state": "raw"},
-      "dates": {"grams": 20, "state": "dry"},
-      "coffee": {"grams": 200, "state": "unknown"},
-      "milk": {"grams": 50, "state": "unknown"}
+      "buckwheat": {
+        "grams": 150,
+        "state": "cooked"
+      },
+      "boiled eggs": {
+        "grams": 120,
+        "state": "boiled"
+      },
+      "walnuts": {
+        "grams": 30,
+        "state": "raw"
+      },
+      "dates": {
+        "grams": 20,
+        "state": "dry"
+      },
+      "coffee": {
+        "grams": 200,
+        "state": "unknown"
+      },
+      "milk": {
+        "grams": 50,
+        "state": "unknown"
+      }
     },
     "expected": {
       "calories_min": 560,
@@ -18,7 +36,12 @@
         "boiled eggs": "Egg, hard-boiled, cooked, whole"
       },
       "forbidden_match_contains": {
-        "coffee": ["powder", "dry mix", "milkshake mix", "protein powder"]
+        "coffee": [
+          "powder",
+          "dry mix",
+          "milkshake mix",
+          "protein powder"
+        ]
       }
     }
   },
@@ -26,17 +49,39 @@
     "name": "boiled potato with canned tuna",
     "description": "Boiled potato, canned tuna, raw onion (regression: macros + match rows)",
     "ingredients": {
-      "canned tuna": {"grams": 100, "state": "canned"},
-      "potato": {"grams": 150, "state": "boiled"},
-      "onion": {"grams": 30, "state": "raw"}
+      "canned tuna": {
+        "grams": 100,
+        "state": "canned"
+      },
+      "potato": {
+        "grams": 150,
+        "state": "boiled"
+      },
+      "onion": {
+        "grams": 30,
+        "state": "raw"
+      }
     },
     "expected": {
       "calories_min": 190,
       "calories_max": 300,
       "protein_min": 18,
       "forbidden_match_contains": {
-        "potato": ["chips", "sticks", "flour", "dry mix", "french fried"],
-        "canned tuna": ["babyfood", "salad", "soup", "sauce", "spread", "fish oil"]
+        "potato": [
+          "chips",
+          "sticks",
+          "flour",
+          "dry mix",
+          "french fried"
+        ],
+        "canned tuna": [
+          "babyfood",
+          "salad",
+          "soup",
+          "sauce",
+          "spread",
+          "fish oil"
+        ]
       }
     }
   },
@@ -44,9 +89,18 @@
     "name": "fried eggs with white beans and cheese",
     "description": "Fried eggs, cooked white beans, generic cheese",
     "ingredients": {
-      "fried eggs": {"grams": 100, "state": "fried"},
-      "white beans": {"grams": 80, "state": "cooked"},
-      "cheese": {"grams": 30, "state": "unknown"}
+      "fried eggs": {
+        "grams": 100,
+        "state": "fried"
+      },
+      "white beans": {
+        "grams": 80,
+        "state": "cooked"
+      },
+      "cheese": {
+        "grams": 30,
+        "state": "unknown"
+      }
     },
     "expected": {
       "calories_min": 300,
@@ -55,10 +109,18 @@
         "fried eggs": "Egg, fried, cooked, whole"
       },
       "forbidden_match_contains": {
-        "white beans": ["raw", "dry", "uncooked"]
+        "white beans": [
+          "raw",
+          "dry",
+          "uncooked"
+        ]
       },
       "required_contains_any": {
-        "white beans": ["boiled", "cooked", "canned"]
+        "white beans": [
+          "boiled",
+          "cooked",
+          "canned"
+        ]
       }
     }
   },
@@ -66,14 +128,38 @@
     "name": "buckwheat chicken greek salad",
     "description": "Buckwheat, fried chicken breast, salad vegetables, feta, olives",
     "ingredients": {
-      "buckwheat": {"grams": 150, "state": "cooked"},
-      "chicken breast": {"grams": 100, "state": "fried"},
-      "cucumber": {"grams": 40, "state": "raw"},
-      "tomato": {"grams": 40, "state": "raw"},
-      "bell pepper": {"grams": 20, "state": "raw"},
-      "red onion": {"grams": 10, "state": "raw"},
-      "feta cheese": {"grams": 50, "state": "raw"},
-      "olives": {"grams": 30, "state": "canned"}
+      "buckwheat": {
+        "grams": 150,
+        "state": "cooked"
+      },
+      "chicken breast": {
+        "grams": 100,
+        "state": "fried"
+      },
+      "cucumber": {
+        "grams": 40,
+        "state": "raw"
+      },
+      "tomato": {
+        "grams": 40,
+        "state": "raw"
+      },
+      "bell pepper": {
+        "grams": 20,
+        "state": "raw"
+      },
+      "red onion": {
+        "grams": 10,
+        "state": "raw"
+      },
+      "feta cheese": {
+        "grams": 50,
+        "state": "raw"
+      },
+      "olives": {
+        "grams": 30,
+        "state": "canned"
+      }
     },
     "expected": {
       "calories_min": 470,
@@ -83,7 +169,9 @@
         "feta cheese": "Cheese, feta"
       },
       "required_contains_any": {
-        "chicken breast": ["breast"]
+        "chicken breast": [
+          "breast"
+        ]
       },
       "forbidden_match_contains": {
         "chicken breast": [
@@ -96,7 +184,10 @@
           "dark meat",
           "patty"
         ],
-        "olives": ["oil, olive", "olive oil"]
+        "olives": [
+          "oil, olive",
+          "olive oil"
+        ]
       }
     }
   },
@@ -104,7 +195,10 @@
     "name": "milk tea safe beverage",
     "description": "Single-ingredient milk tea must stay low-calorie, not powder mix",
     "ingredients": {
-      "milk tea": {"grams": 200, "state": "unknown"}
+      "milk tea": {
+        "grams": 200,
+        "state": "unknown"
+      }
     },
     "expected": {
       "calories_min": 0,
@@ -126,14 +220,25 @@
     "name": "coffee with milk",
     "description": "Brewed coffee and fluid milk",
     "ingredients": {
-      "coffee": {"grams": 200, "state": "unknown"},
-      "milk": {"grams": 50, "state": "unknown"}
+      "coffee": {
+        "grams": 200,
+        "state": "unknown"
+      },
+      "milk": {
+        "grams": 50,
+        "state": "unknown"
+      }
     },
     "expected": {
       "calories_min": 10,
       "calories_max": 60,
       "forbidden_match_contains": {
-        "coffee": ["powder", "dry mix", "milkshake mix", "protein powder"]
+        "coffee": [
+          "powder",
+          "dry mix",
+          "milkshake mix",
+          "protein powder"
+        ]
       }
     }
   },
@@ -141,7 +246,10 @@
     "name": "cooked buckwheat only",
     "description": "Cooked buckwheat must not match dry flour or pancake rows",
     "ingredients": {
-      "buckwheat": {"grams": 150, "state": "cooked"}
+      "buckwheat": {
+        "grams": 150,
+        "state": "cooked"
+      }
     },
     "expected": {
       "calories_min": 120,
@@ -150,7 +258,12 @@
         "buckwheat": "Buckwheat groats, cooked, roasted"
       },
       "forbidden_match_contains": {
-        "buckwheat": ["dry", "flour", "pancakes", "dry mix"]
+        "buckwheat": [
+          "dry",
+          "flour",
+          "pancakes",
+          "dry mix"
+        ]
       }
     }
   },
@@ -158,16 +271,23 @@
     "name": "dry buckwheat only",
     "description": "Dry buckwheat groats",
     "ingredients": {
-      "buckwheat": {"grams": 100, "state": "dry"}
+      "buckwheat": {
+        "grams": 100,
+        "state": "dry"
+      }
     },
     "expected": {
       "calories_min": 300,
       "calories_max": 380,
       "allowed_matches": {
-        "buckwheat": ["Buckwheat groats, dry, roasted"]
+        "buckwheat": [
+          "Buckwheat groats, dry, roasted"
+        ]
       },
       "forbidden_match_contains": {
-        "buckwheat": ["cooked"]
+        "buckwheat": [
+          "cooked"
+        ]
       }
     }
   },
@@ -175,7 +295,10 @@
     "name": "boiled eggs only",
     "description": "Whole hard-boiled egg nutrition",
     "ingredients": {
-      "boiled egg": {"grams": 120, "state": "boiled"}
+      "boiled egg": {
+        "grams": 120,
+        "state": "boiled"
+      }
     },
     "expected": {
       "calories_min": 150,
@@ -199,13 +322,19 @@
     "name": "dates only",
     "description": "Dates with LLM raw state coerced to dry medjool",
     "ingredients": {
-      "dates": {"grams": 20, "state": "raw"}
+      "dates": {
+        "grams": 20,
+        "state": "raw"
+      }
     },
     "expected": {
       "calories_min": 45,
       "calories_max": 80,
       "required_contains_any": {
-        "dates": ["medjool", "deglet"]
+        "dates": [
+          "medjool",
+          "deglet"
+        ]
       },
       "expected_states": {
         "dates": "dry"
@@ -216,38 +345,114 @@
     "name": "toast cottage cheese banana seeds tea",
     "description": "Breakfast-style LLM split: tea, bread, peanut butter, cottage cheese, banana, seeds",
     "ingredients": {
-      "tea": {"grams": 200, "state": "unknown"},
-      "bread": {"grams": 50, "state": "unknown"},
-      "peanut butter": {"grams": 20, "state": "unknown"},
-      "cottage cheese": {"grams": 100, "state": "unknown"},
-      "banana": {"grams": 80, "state": "raw"},
-      "pumpkin seeds": {"grams": 10, "state": "dry"},
-      "chia seeds": {"grams": 5, "state": "dry"}
+      "tea": {
+        "grams": 200,
+        "state": "unknown"
+      },
+      "bread": {
+        "grams": 50,
+        "state": "unknown"
+      },
+      "peanut butter": {
+        "grams": 20,
+        "state": "unknown"
+      },
+      "cottage cheese": {
+        "grams": 100,
+        "state": "unknown"
+      },
+      "banana": {
+        "grams": 80,
+        "state": "raw"
+      },
+      "pumpkin seeds": {
+        "grams": 10,
+        "state": "dry"
+      },
+      "chia seeds": {
+        "grams": 5,
+        "state": "dry"
+      }
     },
     "expected": {
       "calories_min": 480,
       "calories_max": 900,
       "protein_min": 20,
       "aggregate_macros": {
-        "proteins": [20, 50],
-        "fats": [18, 58],
-        "carbohydrates": [50, 120]
+        "proteins": [
+          20,
+          50
+        ],
+        "fats": [
+          18,
+          58
+        ],
+        "carbohydrates": [
+          50,
+          120
+        ]
       },
       "forbidden_match_contains": {
-        "tea": ["powder", "dry mix", "instant", "milkshake mix", "cereal", "dessert", "teaseed"],
-        "cottage cheese": ["cheddar", "cream cheese", "cheesecake", "dessert", "processed", "cottage-cut"],
-        "banana": ["babyfood", "juice", "beverage", "dessert", "pepper, raw, banana"],
-        "pumpkin seeds": ["oil,", "babyfood", "flour", "meal", "soup", "beverage"],
-        "chia seeds": ["babyfood", "beverage", "soup"]
+        "tea": [
+          "powder",
+          "dry mix",
+          "instant",
+          "milkshake mix",
+          "cereal",
+          "dessert",
+          "teaseed"
+        ],
+        "cottage cheese": [
+          "cheddar",
+          "cream cheese",
+          "cheesecake",
+          "dessert",
+          "processed",
+          "cottage-cut"
+        ],
+        "banana": [
+          "babyfood",
+          "juice",
+          "beverage",
+          "dessert",
+          "pepper, raw, banana"
+        ],
+        "pumpkin seeds": [
+          "oil,",
+          "babyfood",
+          "flour",
+          "meal",
+          "soup",
+          "beverage"
+        ],
+        "chia seeds": [
+          "babyfood",
+          "beverage",
+          "soup"
+        ]
       },
       "match_all_substrings": {
-        "cottage cheese": ["cottage"],
-        "banana": ["banana"],
-        "pumpkin seeds": ["pumpkin"],
-        "chia seeds": ["chia"]
+        "cottage cheese": [
+          "cottage"
+        ],
+        "banana": [
+          "banana"
+        ],
+        "pumpkin seeds": [
+          "pumpkin"
+        ],
+        "chia seeds": [
+          "chia"
+        ]
       },
       "match_any_substrings": {
-        "tea": ["brewed", "prepared with tap water", "prepared with distilled water", "green, tea", "herb, tea"]
+        "tea": [
+          "brewed",
+          "prepared with tap water",
+          "prepared with distilled water",
+          "green, tea",
+          "herb, tea"
+        ]
       }
     }
   },
@@ -255,25 +460,61 @@
     "name": "spaghetti with chicken and salad",
     "description": "Cooked spaghetti with boiled chicken leg with skin and fresh salad vegetables",
     "ingredients": {
-      "spaghetti": {"grams": 100, "state": "cooked"},
-      "chicken leg with skin": {"grams": 150, "state": "boiled"},
-      "cucumber": {"grams": 50, "state": "raw"},
-      "tomato": {"grams": 50, "state": "raw"},
-      "red onion": {"grams": 20, "state": "raw"},
-      "lettuce": {"grams": 30, "state": "raw"},
-      "dill": {"grams": 5, "state": "raw"}
+      "spaghetti": {
+        "grams": 100,
+        "state": "cooked"
+      },
+      "chicken leg with skin": {
+        "grams": 150,
+        "state": "boiled"
+      },
+      "cucumber": {
+        "grams": 50,
+        "state": "raw"
+      },
+      "tomato": {
+        "grams": 50,
+        "state": "raw"
+      },
+      "red onion": {
+        "grams": 20,
+        "state": "raw"
+      },
+      "lettuce": {
+        "grams": 30,
+        "state": "raw"
+      },
+      "dill": {
+        "grams": 5,
+        "state": "raw"
+      }
     },
     "expected": {
       "calories_min": 420,
       "calories_max": 750,
       "protein_min": 30,
       "required_contains_any": {
-        "spaghetti": ["spaghetti", "pasta", "cooked"],
-        "chicken leg with skin": ["chicken", "skin"]
+        "spaghetti": [
+          "spaghetti",
+          "pasta",
+          "cooked"
+        ],
+        "chicken leg with skin": [
+          "chicken",
+          "skin"
+        ]
       },
       "forbidden_match_contains": {
-        "spaghetti": ["dry", "uncooked"],
-        "chicken leg with skin": ["nuggets", "fast food", "breaded", "canned"]
+        "spaghetti": [
+          "dry",
+          "uncooked"
+        ],
+        "chicken leg with skin": [
+          "nuggets",
+          "fast food",
+          "breaded",
+          "canned"
+        ]
       }
     }
   },
@@ -281,19 +522,38 @@
     "name": "shrimp with cooked vegetable mix",
     "description": "Shrimp with cooked vegetable mix (corn/peas/green beans/carrot) regression",
     "ingredients": {
-      "shrimp": {"grams": 100, "state": "cooked"},
-      "corn": {"grams": 30, "state": "cooked"},
-      "peas": {"grams": 30, "state": "cooked"},
-      "green beans": {"grams": 50, "state": "cooked"},
-      "carrot": {"grams": 50, "state": "cooked"}
+      "shrimp": {
+        "grams": 100,
+        "state": "cooked"
+      },
+      "corn": {
+        "grams": 30,
+        "state": "cooked"
+      },
+      "peas": {
+        "grams": 30,
+        "state": "cooked"
+      },
+      "green beans": {
+        "grams": 50,
+        "state": "cooked"
+      },
+      "carrot": {
+        "grams": 50,
+        "state": "cooked"
+      }
     },
     "expected": {
       "calories_min": 160,
       "calories_max": 320,
       "protein_min": 18,
       "required_contains_any": {
-        "shrimp": ["shrimp"],
-        "corn": ["corn"]
+        "shrimp": [
+          "shrimp"
+        ],
+        "corn": [
+          "corn"
+        ]
       },
       "forbidden_match_contains": {
         "shrimp": [
@@ -331,7 +591,10 @@
     "name": "regular beer glass",
     "description": "Пиво в бокале 500 мл",
     "ingredients": {
-      "beer": {"grams": 500, "state": "unknown"}
+      "beer": {
+        "grams": 500,
+        "state": "unknown"
+      }
     },
     "expected": {
       "calories_min": 150,
@@ -340,7 +603,9 @@
       "fat_max": 2,
       "carbohydrates_max": 30,
       "required_contains_any": {
-        "beer": ["beer"]
+        "beer": [
+          "beer"
+        ]
       },
       "forbidden_match_contains": {
         "beer": [
@@ -365,7 +630,10 @@
     "name": "oat groats breakfast grains fallback",
     "description": "Generic cooked grains from LLM should safely map to cooked oats/oat groats, not high-protein/high-fat mix",
     "ingredients": {
-      "cooked grains": {"grams": 150, "state": "cooked"}
+      "cooked grains": {
+        "grams": 150,
+        "state": "cooked"
+      }
     },
     "expected": {
       "calories_min": 100,
@@ -374,7 +642,11 @@
       "fat_max": 6,
       "carbohydrates_min": 15,
       "required_contains_any": {
-        "cooked grains": ["oat", "oats", "oatmeal"]
+        "cooked grains": [
+          "oat",
+          "oats",
+          "oatmeal"
+        ]
       },
       "forbidden_match_contains": {
         "cooked grains": [
@@ -398,13 +670,34 @@
     "name": "breakfast eggs nuts dates oat groats tea",
     "description": "Breakfast with oat groats should map to cooked oats and keep tea beverage rows",
     "ingredients": {
-      "boiled egg": {"grams": 100, "state": "boiled"},
-      "almonds": {"grams": 30, "state": "raw"},
-      "dates": {"grams": 40, "state": "dry"},
-      "chocolate truffle": {"grams": 20, "state": "unknown"},
-      "oat groats": {"grams": 150, "state": "cooked"},
-      "tea": {"grams": 200, "state": "unknown"},
-      "milk": {"grams": 50, "state": "unknown"}
+      "boiled egg": {
+        "grams": 100,
+        "state": "boiled"
+      },
+      "almonds": {
+        "grams": 30,
+        "state": "raw"
+      },
+      "dates": {
+        "grams": 40,
+        "state": "dry"
+      },
+      "chocolate truffle": {
+        "grams": 20,
+        "state": "unknown"
+      },
+      "oat groats": {
+        "grams": 150,
+        "state": "cooked"
+      },
+      "tea": {
+        "grams": 200,
+        "state": "unknown"
+      },
+      "milk": {
+        "grams": 50,
+        "state": "unknown"
+      }
     },
     "expected": {
       "calories_min": 500,
@@ -416,10 +709,20 @@
       "carbohydrates_min": 60,
       "carbohydrates_max": 110,
       "required_contains_any": {
-        "oat groats": ["oat", "oats", "oatmeal"]
+        "oat groats": [
+          "oat",
+          "oats",
+          "oatmeal"
+        ]
       },
       "forbidden_match_contains": {
-        "tea": ["powder", "dry mix", "instant", "milkshake mix", "protein powder"]
+        "tea": [
+          "powder",
+          "dry mix",
+          "instant",
+          "milkshake mix",
+          "protein powder"
+        ]
       }
     }
   },
@@ -427,13 +730,34 @@
     "name": "beef rice beans salad",
     "description": "Cooked beef with rice, kidney beans and vegetable salad",
     "ingredients": {
-      "beef": {"grams": 150, "state": "cooked"},
-      "rice": {"grams": 100, "state": "cooked"},
-      "kidney beans": {"grams": 80, "state": "cooked"},
-      "tomato": {"grams": 30, "state": "raw"},
-      "cucumber": {"grams": 30, "state": "raw"},
-      "parsley": {"grams": 10, "state": "raw"},
-      "dill": {"grams": 5, "state": "raw"}
+      "beef": {
+        "grams": 150,
+        "state": "cooked"
+      },
+      "rice": {
+        "grams": 100,
+        "state": "cooked"
+      },
+      "kidney beans": {
+        "grams": 80,
+        "state": "cooked"
+      },
+      "tomato": {
+        "grams": 30,
+        "state": "raw"
+      },
+      "cucumber": {
+        "grams": 30,
+        "state": "raw"
+      },
+      "parsley": {
+        "grams": 10,
+        "state": "raw"
+      },
+      "dill": {
+        "grams": 5,
+        "state": "raw"
+      }
     },
     "expected": {
       "calories_min": 500,
@@ -444,14 +768,41 @@
       "carbohydrates_min": 35,
       "carbohydrates_max": 80,
       "required_contains_any": {
-        "beef": ["beef"],
-        "rice": ["rice"],
-        "kidney beans": ["bean"]
+        "beef": [
+          "beef"
+        ],
+        "rice": [
+          "rice"
+        ],
+        "kidney beans": [
+          "bean"
+        ]
       },
       "forbidden_match_contains": {
-        "beef": ["dish", "soup", "mixture", "processed", "canned", "burger", "babyfood", "sauce", "potato", "rice", "pasta"],
-        "rice": ["dry", "uncooked", "flour", "crackers"],
-        "kidney beans": ["raw", "dry", "uncooked"]
+        "beef": [
+          "dish",
+          "soup",
+          "mixture",
+          "processed",
+          "canned",
+          "burger",
+          "babyfood",
+          "sauce",
+          "potato",
+          "rice",
+          "pasta"
+        ],
+        "rice": [
+          "dry",
+          "uncooked",
+          "flour",
+          "crackers"
+        ],
+        "kidney beans": [
+          "raw",
+          "dry",
+          "uncooked"
+        ]
       }
     }
   },
@@ -459,7 +810,10 @@
     "name": "cornmeal porridge breakfast",
     "description": "Cooked cornmeal porridge should not match dry cornmeal/flour",
     "ingredients": {
-      "cornmeal porridge": {"grams": 150, "state": "cooked"}
+      "cornmeal porridge": {
+        "grams": 150,
+        "state": "cooked"
+      }
     },
     "expected": {
       "calories_min": 80,
@@ -469,7 +823,12 @@
       "carbohydrates_min": 15,
       "carbohydrates_max": 45,
       "required_contains_any": {
-        "cornmeal porridge": ["corn", "grits", "polenta", "cereal"]
+        "cornmeal porridge": [
+          "corn",
+          "grits",
+          "polenta",
+          "cereal"
+        ]
       },
       "forbidden_match_contains": {
         "cornmeal porridge": [
@@ -492,13 +851,34 @@
     "name": "breakfast eggs strawberries almonds cornmeal porridge milk tea",
     "description": "Breakfast with cooked cornmeal porridge and separated tea+milk ingredients",
     "ingredients": {
-      "boiled eggs": {"grams": 120, "state": "boiled"},
-      "strawberries": {"grams": 100, "state": "raw"},
-      "almonds": {"grams": 30, "state": "raw"},
-      "chocolate truffle": {"grams": 15, "state": "unknown"},
-      "cornmeal porridge": {"grams": 150, "state": "cooked"},
-      "tea": {"grams": 150, "state": "unknown"},
-      "milk": {"grams": 50, "state": "unknown"}
+      "boiled eggs": {
+        "grams": 120,
+        "state": "boiled"
+      },
+      "strawberries": {
+        "grams": 100,
+        "state": "raw"
+      },
+      "almonds": {
+        "grams": 30,
+        "state": "raw"
+      },
+      "chocolate truffle": {
+        "grams": 15,
+        "state": "unknown"
+      },
+      "cornmeal porridge": {
+        "grams": 150,
+        "state": "cooked"
+      },
+      "tea": {
+        "grams": 150,
+        "state": "unknown"
+      },
+      "milk": {
+        "grams": 50,
+        "state": "unknown"
+      }
     },
     "expected": {
       "calories_min": 500,
@@ -508,11 +888,28 @@
       "carbohydrates_min": 45,
       "carbohydrates_max": 95,
       "required_contains_any": {
-        "cornmeal porridge": ["corn", "grits", "polenta", "cereal"]
+        "cornmeal porridge": [
+          "corn",
+          "grits",
+          "polenta",
+          "cereal"
+        ]
       },
       "forbidden_match_contains": {
-        "cornmeal porridge": ["dry", "flour", "starch", "unprepared", "uncooked"],
-        "tea": ["powder", "dry mix", "instant", "milkshake mix", "protein powder"]
+        "cornmeal porridge": [
+          "dry",
+          "flour",
+          "starch",
+          "unprepared",
+          "uncooked"
+        ],
+        "tea": [
+          "powder",
+          "dry mix",
+          "instant",
+          "milkshake mix",
+          "protein powder"
+        ]
       }
     }
   },
@@ -520,14 +917,38 @@
     "name": "double cheeseburger decomposed",
     "description": "Double cheeseburger ingredients should not match beef patty to beef fat",
     "ingredients": {
-      "beef patty": {"grams": 150, "state": "cooked"},
-      "sauce": {"grams": 20, "state": "unknown"},
-      "pickles": {"grams": 10, "state": "canned"},
-      "onion": {"grams": 10, "state": "raw"},
-      "tomato": {"grams": 20, "state": "raw"},
-      "lettuce": {"grams": 15, "state": "raw"},
-      "bun": {"grams": 70, "state": "unknown"},
-      "cheese": {"grams": 40, "state": "unknown"}
+      "beef patty": {
+        "grams": 150,
+        "state": "cooked"
+      },
+      "sauce": {
+        "grams": 20,
+        "state": "unknown"
+      },
+      "pickles": {
+        "grams": 10,
+        "state": "canned"
+      },
+      "onion": {
+        "grams": 10,
+        "state": "raw"
+      },
+      "tomato": {
+        "grams": 20,
+        "state": "raw"
+      },
+      "lettuce": {
+        "grams": 15,
+        "state": "raw"
+      },
+      "bun": {
+        "grams": 70,
+        "state": "unknown"
+      },
+      "cheese": {
+        "grams": 40,
+        "state": "unknown"
+      }
     },
     "expected": {
       "calories_min": 650,
@@ -538,10 +959,23 @@
       "carbohydrates_min": 25,
       "carbohydrates_max": 70,
       "forbidden_match_contains": {
-        "beef patty": ["fat", "tallow", "suet", "separable fat", "fat only", "babyfood", "sausage", "canned"]
+        "beef patty": [
+          "fat",
+          "tallow",
+          "suet",
+          "separable fat",
+          "fat only",
+          "babyfood",
+          "sausage",
+          "canned"
+        ]
       },
       "required_contains_any": {
-        "beef patty": ["beef", "ground", "patty"]
+        "beef patty": [
+          "beef",
+          "ground",
+          "patty"
+        ]
       }
     }
   },
@@ -549,9 +983,18 @@
     "name": "smoked fish potato sauerkraut",
     "description": "Smoked fish should not match fish oil / fat-only rows",
     "ingredients": {
-      "smoked fish": {"grams": 100, "state": "unknown"},
-      "potato": {"grams": 50, "state": "boiled"},
-      "sauerkraut": {"grams": 40, "state": "canned"}
+      "smoked fish": {
+        "grams": 100,
+        "state": "unknown"
+      },
+      "potato": {
+        "grams": 50,
+        "state": "boiled"
+      },
+      "sauerkraut": {
+        "grams": 40,
+        "state": "canned"
+      }
     },
     "expected": {
       "calories_min": 180,
@@ -562,10 +1005,30 @@
       "carbohydrates_min": 8,
       "carbohydrates_max": 25,
       "forbidden_match_contains": {
-        "smoked fish": ["oil", "fish oil", "cod liver oil", "sauce", "soup", "spread", "babyfood", "roe"]
+        "smoked fish": [
+          "oil",
+          "fish oil",
+          "cod liver oil",
+          "sauce",
+          "soup",
+          "spread",
+          "babyfood",
+          "roe"
+        ]
       },
       "required_contains_any": {
-        "smoked fish": ["fish", "mackerel", "herring", "salmon", "whitefish", "trout", "sablefish", "cisco", "haddock", "kippered"]
+        "smoked fish": [
+          "fish",
+          "mackerel",
+          "herring",
+          "salmon",
+          "whitefish",
+          "trout",
+          "sablefish",
+          "cisco",
+          "haddock",
+          "kippered"
+        ]
       }
     }
   },
@@ -573,8 +1036,14 @@
     "name": "borscht with bread",
     "description": "Borscht should match cooked soup, not dry mix/fat/sauce",
     "ingredients": {
-      "borscht": {"grams": 300, "state": "cooked"},
-      "bread": {"grams": 50, "state": "unknown"}
+      "borscht": {
+        "grams": 300,
+        "state": "cooked"
+      },
+      "bread": {
+        "grams": 50,
+        "state": "unknown"
+      }
     },
     "expected": {
       "calories_min": 220,
@@ -586,7 +1055,13 @@
       "carbohydrates_min": 30,
       "carbohydrates_max": 75,
       "required_contains_any": {
-        "borscht": ["soup", "borscht", "borsch", "beet", "vegetable"]
+        "borscht": [
+          "soup",
+          "borscht",
+          "borsch",
+          "beet",
+          "vegetable"
+        ]
       },
       "forbidden_match_contains": {
         "borscht": [
@@ -606,8 +1081,14 @@
   {
     "name": "generic soup with bread",
     "ingredients": {
-      "soup": {"grams": 300, "state": "cooked"},
-      "bread": {"grams": 50, "state": "unknown"}
+      "soup": {
+        "grams": 300,
+        "state": "cooked"
+      },
+      "bread": {
+        "grams": 50,
+        "state": "unknown"
+      }
     },
     "expected": {
       "calories_min": 180,
@@ -615,14 +1096,26 @@
       "fat_max": 20,
       "carbohydrates_min": 25,
       "forbidden_match_contains": {
-        "soup": ["dry mix", "dehydrated", "powder", "sauce", "gravy", "oil", "fat", "shortening"]
+        "soup": [
+          "dry mix",
+          "dehydrated",
+          "powder",
+          "sauce",
+          "gravy",
+          "oil",
+          "fat",
+          "shortening"
+        ]
       }
     }
   },
   {
     "name": "lentil soup",
     "ingredients": {
-      "lentil soup": {"grams": 300, "state": "cooked"}
+      "lentil soup": {
+        "grams": 300,
+        "state": "cooked"
+      }
     },
     "expected": {
       "calories_min": 120,
@@ -630,31 +1123,54 @@
       "protein_min": 6,
       "fat_max": 18,
       "forbidden_match_contains": {
-        "lentil soup": ["dry mix", "dehydrated", "powder", "sauce", "gravy", "oil", "fat"]
+        "lentil soup": [
+          "dry mix",
+          "dehydrated",
+          "powder",
+          "sauce",
+          "gravy",
+          "oil",
+          "fat"
+        ]
       }
     }
   },
   {
     "name": "tomato soup",
     "ingredients": {
-      "tomato soup": {"grams": 300, "state": "cooked"}
+      "tomato soup": {
+        "grams": 300,
+        "state": "cooked"
+      }
     },
     "expected": {
       "calories_min": 60,
       "calories_max": 300,
       "fat_max": 15,
       "required_contains_any": {
-        "tomato soup": ["soup", "tomato"]
+        "tomato soup": [
+          "soup",
+          "tomato"
+        ]
       },
       "forbidden_match_contains": {
-        "tomato soup": ["dry mix", "powder", "gravy", "oil", "fat"]
+        "tomato soup": [
+          "dry mix",
+          "powder",
+          "gravy",
+          "oil",
+          "fat"
+        ]
       }
     }
   },
   {
     "name": "coca cola zero ru can",
     "ingredients": {
-      "Кока-Кола Зеро": {"grams": 320, "state": "unknown"}
+      "Кока-Кола Зеро": {
+        "grams": 320,
+        "state": "unknown"
+      }
     },
     "expected": {
       "calories_min": 0,
@@ -663,7 +1179,12 @@
       "fat_max": 1,
       "carbohydrates_max": 2,
       "required_contains_any": {
-        "Кока-Кола Зеро": ["cola", "carbonated", "diet", "low calorie"]
+        "Кока-Кола Зеро": [
+          "cola",
+          "carbonated",
+          "diet",
+          "low calorie"
+        ]
       },
       "forbidden_match_contains": {
         "Кока-Кола Зеро": [
@@ -682,7 +1203,10 @@
   {
     "name": "regular cola can",
     "ingredients": {
-      "Coca-Cola": {"grams": 320, "state": "unknown"}
+      "Coca-Cola": {
+        "grams": 320,
+        "state": "unknown"
+      }
     },
     "expected": {
       "calories_min": 100,
@@ -691,7 +1215,15 @@
       "carbohydrates_min": 25,
       "carbohydrates_max": 50,
       "forbidden_match_contains": {
-        "Coca-Cola": ["oil", "fat", "butter", "dessert", "sauce", "powder", "dry mix"]
+        "Coca-Cola": [
+          "oil",
+          "fat",
+          "butter",
+          "dessert",
+          "sauce",
+          "powder",
+          "dry mix"
+        ]
       }
     }
   },
@@ -699,7 +1231,10 @@
     "name": "coconut water from whole coconut",
     "description": "User text says coconut water; should not match coconut meat/oil/cream",
     "ingredients": {
-      "кокосовая вода": {"grams": 400, "state": "unknown"}
+      "кокосовая вода": {
+        "grams": 400,
+        "state": "unknown"
+      }
     },
     "expected": {
       "calories_min": 40,
@@ -710,7 +1245,11 @@
       "carbohydrates_max": 30,
       "fiber_max": 2,
       "required_contains_any": {
-        "кокосовая вода": ["coconut water", "liquid from coconuts", "beverage"]
+        "кокосовая вода": [
+          "coconut water",
+          "liquid from coconuts",
+          "beverage"
+        ]
       },
       "forbidden_match_contains": {
         "кокосовая вода": [
@@ -732,7 +1271,10 @@
     "name": "single pryanik",
     "description": "One small pryanik should not be estimated as 200g in prompt examples; matching should stay within realistic kcal per 100g",
     "ingredients": {
-      "pryanik": {"grams": 60, "state": "unknown"}
+      "pryanik": {
+        "grams": 60,
+        "state": "unknown"
+      }
     },
     "expected": {
       "calories_min": 150,
@@ -741,10 +1283,65 @@
       "carbohydrates_max": 55,
       "fat_max": 15,
       "required_contains_any": {
-        "pryanik": ["gingerbread", "cookie", "cake", "sweet"]
+        "pryanik": [
+          "gingerbread",
+          "cookie",
+          "cake",
+          "sweet"
+        ]
       },
       "forbidden_match_contains": {
-        "pryanik": ["oil", "fat", "butter", "syrup", "sugar, granulated"]
+        "pryanik": [
+          "oil",
+          "fat",
+          "butter",
+          "syrup",
+          "sugar, granulated"
+        ]
+      }
+    }
+  },
+  {
+    "name": "smoothie avocado banana yogurt",
+    "description": "Avocado in smoothie should match raw avocado, not avocado oil",
+    "ingredients": {
+      "banana": {
+        "grams": 75,
+        "state": "raw"
+      },
+      "yogurt": {
+        "grams": 75,
+        "state": "unknown"
+      },
+      "avocado": {
+        "grams": 75,
+        "state": "raw"
+      }
+    },
+    "expected": {
+      "calories_min": 220,
+      "calories_max": 360,
+      "protein_min": 3,
+      "protein_max": 12,
+      "fat_min": 8,
+      "fat_max": 22,
+      "carbohydrates_min": 25,
+      "carbohydrates_max": 55,
+      "fiber_min": 4,
+      "forbidden_match_contains": {
+        "avocado": [
+          "oil",
+          "dressing",
+          "sauce",
+          "babyfood",
+          "powder"
+        ]
+      },
+      "required_contains_any": {
+        "avocado": [
+          "avocado",
+          "avocados"
+        ]
       }
     }
   }

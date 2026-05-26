@@ -1,9 +1,10 @@
 import axios from "axios";
 import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Camera, Droplets, FileUp, Loader2, PenLine, Pill, X } from "lucide-react";
+import { Camera, FileUp, Loader2, PenLine, Pill, X } from "lucide-react";
 
 import { recordWaterIntake } from "../../api/additivesApi";
+import { WaterButton } from "../common/WaterButton";
 import { TakeAdditiveModal } from "../additives/TakeAdditiveModal";
 
 import {
@@ -490,10 +491,10 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
                 <Pill className="h-5 w-5 shrink-0" aria-hidden />
                 Принять добавку
               </button>
-              <button
-                type="button"
-                disabled={waterSaving}
-                onClick={() => void (async () => {
+              <WaterButton
+                saving={waterSaving}
+                className="w-full"
+                onRecord={(amountMl) => void (async () => {
                   const sessionOk = await validateSession();
                   const token = getAccessToken();
                   if (!sessionOk || !token) {
@@ -502,9 +503,12 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
                   }
                   setWaterSaving(true);
                   try {
+                    const now = new Date();
+                    const timeLocal = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
                     await recordWaterIntake(token, {
-                      amount_ml: 100,
+                      amount_ml: amountMl,
                       intake_local_date: mealLocalDate ?? undefined,
+                      intake_local_time: timeLocal,
                     });
                     onMealSaved?.();
                     onClose();
@@ -517,11 +521,7 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
                     setWaterSaving(false);
                   }
                 })()}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-900 transition hover:bg-sky-100 disabled:opacity-50"
-              >
-                <Droplets className="h-5 w-5 shrink-0" aria-hidden />
-                {waterSaving ? "Сохранение…" : "Выпить воды"}
-              </button>
+              />
               <input
                 ref={cameraRef}
                 type="file"

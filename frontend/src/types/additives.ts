@@ -68,9 +68,11 @@ export type AdditiveIntakeCreatePayload = {
   additive_id: number;
   servings_count: number;
   intake_local_date?: string;
+  intake_local_time?: string;
 };
 
 export type WaterIntakeCreatePayload = {
   amount_ml?: number;
   intake_local_date?: string;
+  intake_local_time?: string;
 };

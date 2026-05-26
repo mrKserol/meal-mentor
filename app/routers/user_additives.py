@@ -246,6 +246,7 @@ def create_additive_intake(
             body.additive_id,
             body.servings_count,
             intake_local_date=body.intake_local_date,
+            intake_local_time=body.intake_local_time,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
@@ -293,6 +294,7 @@ def create_water_intake(
             current_user,
             amount_ml=body.amount_ml,
             intake_local_date=body.intake_local_date,
+            intake_local_time=body.intake_local_time,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e

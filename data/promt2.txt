@@ -128,6 +128,14 @@ STATE RULES:
   "smoked fish": {"grams": ..., "state": "smoked"}
   or state "unknown" if preparation is uncertain.
   Do NOT use "fish oil" unless the text clearly describes fish oil as a supplement or ingredient.
+* For avocado products, distinguish:
+  avocado: raw avocado flesh/fruit,
+  avocado oil: pure oil/fat,
+  guacamole: avocado dip/spread.
+  If the user says "avocado" / "авокадо", return:
+  "avocado": {"grams": ..., "state": "raw"}
+  Do not treat avocado as avocado oil unless the user explicitly says oil / масло.
+  For smoothies with avocado, use raw avocado flesh, not avocado oil.
 * Do NOT assume "dry" unless explicitly stated or clearly implied
 * If the dish is described in Russian without specifying preparation (e.g., "гречка", "рис", "макароны"), assume it is cooked unless stated otherwise.
 * If the description does not contain any food, return an empty JSON object {}

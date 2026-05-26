@@ -129,6 +129,14 @@ Rules:
   "smoked fish": {"grams": ..., "state": "smoked"}
   or state "unknown" if preparation is uncertain.
   Do NOT use "fish oil" unless the image/text clearly shows fish oil as a supplement or ingredient.
+* For avocado products, distinguish:
+  avocado: raw avocado flesh/fruit (green creamy flesh),
+  avocado oil: pure oil extracted from avocado (very high fat),
+  guacamole: avocado dip/spread with other ingredients.
+  If the user says "avocado" / "авокадо", return:
+  "avocado": {"grams": ..., "state": "raw"}
+  Do not treat avocado as avocado oil unless the user explicitly says oil / масло.
+  For smoothies with avocado, use raw avocado flesh, not avocado oil.
 
 STATE RULES:
 

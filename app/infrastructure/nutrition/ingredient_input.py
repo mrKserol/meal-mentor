@@ -773,6 +773,33 @@ def is_porridge_like_grain(ni: NormalizedIngredient) -> bool:
     return any(k in blob for k in keys)
 
 
+def is_avocado_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True for raw avocado flesh queries (not avocado oil)."""
+    if NutritionCategory.AVOCADO.value in ni.categories:
+        return True
+    if ni.alias_category == "avocado":
+        return True
+    blob = _ingredient_blob(ni)
+    # Must contain avocado but NOT oil/масло
+    if "avocado" not in blob and "авокадо" not in blob:
+        return False
+    if "oil" in blob or "масло" in blob:
+        return False
+    return True
+
+
+def is_oil_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True for oil-type queries (avocado oil, масло авокадо, etc.)."""
+    if NutritionCategory.OIL.value in ni.categories:
+        blob = _ingredient_blob(ni)
+        if "oil" in blob or "масло" in blob:
+            return True
+    if ni.alias_category == "oil":
+        return True
+    blob = _ingredient_blob(ni)
+    return "avocado oil" in blob or "масло авокадо" in blob or "авокадовое масло" in blob
+
+
 def is_poultry_breast_query(ni: NormalizedIngredient) -> bool:
     blob = f"{ni.input_name} {ni.canonical_query}".lower()
     if "wing" in blob or "thigh" in blob or "drumstick" in blob:

@@ -1153,6 +1153,65 @@ def test_nutrition_matching_golden_cases(
     _run_nutrition_case(nutrition_svc, case)
 
 
+def test_avocado_not_avocado_oil(nutrition_svc: NutritionService) -> None:
+    """Avocado should match raw avocado flesh, not Oil, avocado."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"avocado": {"grams": 75, "state": "raw"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    # Must contain avocado and either raw or avocados
+    assert "avocado" in m, f"avocado match must contain 'avocado', got {m!r}"
+    assert "raw" in m or "avocados" in m, f"avocado match must contain 'raw' or 'avocados', got {m!r}"
+    # Must not be oil or processed forms
+    for bad in ("oil", "dressing", "sauce", "babyfood", "powder"):
+        assert bad not in m, f"avocado match must not contain {bad!r}, got {m!r}"
+    cal = int(data.get("calories") or 0)
+    fat = float(data.get("fats") or 0)
+    carbs = float(data.get("carbohydrates") or 0)
+    fiber = float(data.get("fiber_g") or 0)
+    assert 90 <= cal <= 160, f"avocado 75g calories {cal} expected 90–160"
+    assert 8 <= fat <= 18, f"avocado 75g fat {fat} expected 8–18"
+    assert 3 <= carbs <= 10, f"avocado 75g carbs {carbs} expected 3–10"
+    assert fiber >= 3, f"avocado 75g fiber {fiber} expected >= 3"
+
+
+def test_avocado_ru_not_oil(nutrition_svc: NutritionService) -> None:
+    """Russian 'авокадо' must not match avocado oil."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"авокадо": {"grams": 75, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "avocado" in m, f"авокадо match must contain 'avocado', got {m!r}"
+    assert "raw" in m or "avocados" in m, f"авокадо match must contain 'raw' or 'avocados', got {m!r}"
+    for bad in ("oil", "dressing", "sauce", "babyfood", "powder"):
+        assert bad not in m, f"авокадо match must not contain {bad!r}, got {m!r}"
+    cal = int(data.get("calories") or 0)
+    fat = float(data.get("fats") or 0)
+    assert 90 <= cal <= 160, f"авокадо 75g calories {cal} expected 90–160"
+    assert 8 <= fat <= 18, f"авокадо 75g fat {fat} expected 8–18"
+
+
+def test_avocado_oil_still_oil(nutrition_svc: NutritionService) -> None:
+    """'avocado oil' must match the oil row, not raw avocado."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"avocado oil": {"grams": 10, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "oil" in m, f"avocado oil match must contain 'oil', got {m!r}"
+    cal = int(data.get("calories") or 0)
+    fat = float(data.get("fats") or 0)
+    carbs = float(data.get("carbohydrates") or 0)
+    assert 80 <= cal <= 100, f"avocado oil 10g calories {cal} expected 80–100"
+    assert fat >= 9, f"avocado oil 10g fat {fat} expected >= 9"
+    assert carbs <= 1, f"avocado oil 10g carbs {carbs} expected <= 1"
+
+
 def test_golden_breakfast_regression_case(nutrition_svc: NutritionService) -> None:
     """Primary breakfast-style regression: multi-ingredient totals and critical rows."""
     if not nutrition_svc.aliases.is_loaded:
