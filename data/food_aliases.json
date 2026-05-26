@@ -8580,6 +8580,156 @@
       "canonical": "Egg, hard-boiled, cooked, whole",
       "default_state": "boiled",
       "category": "egg"
+    },
+    "beef steak": {
+      "canonical": "Beef, broiled, cooked, all grades, trimmed to 1/8\" fat, separable lean and fat, steak, top sirloin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "steak": {
+      "canonical": "Beef, broiled, cooked, all grades, trimmed to 1/8\" fat, separable lean and fat, steak, top sirloin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "grilled beef steak": {
+      "canonical": "Beef, broiled, cooked, all grades, trimmed to 1/8\" fat, separable lean and fat, steak, top sirloin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "grilled steak": {
+      "canonical": "Beef, broiled, cooked, all grades, trimmed to 1/8\" fat, separable lean and fat, steak, top sirloin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "broiled steak": {
+      "canonical": "Beef, broiled, cooked, all grades, trimmed to 1/8\" fat, separable lean and fat, steak, top sirloin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "cooked steak": {
+      "canonical": "Beef, broiled, cooked, all grades, trimmed to 1/8\" fat, separable lean and fat, steak, top sirloin",
+      "default_state": "cooked",
+      "category": "beef_steak"
+    },
+    "говяжий стейк": {
+      "canonical": "Beef, broiled, cooked, all grades, trimmed to 1/8\" fat, separable lean and fat, steak, top sirloin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "стейк говяжий": {
+      "canonical": "Beef, broiled, cooked, all grades, trimmed to 1/8\" fat, separable lean and fat, steak, top sirloin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "стейк из говядины": {
+      "canonical": "Beef, broiled, cooked, all grades, trimmed to 1/8\" fat, separable lean and fat, steak, top sirloin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "жареный стейк": {
+      "canonical": "Beef, broiled, cooked, all grades, trimmed to 1/8\" fat, separable lean and fat, steak, top sirloin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "стейк на гриле": {
+      "canonical": "Beef, broiled, cooked, all grades, trimmed to 1/8\" fat, separable lean and fat, steak, top sirloin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "стейк": {
+      "canonical": "Beef, broiled, cooked, all grades, trimmed to 1/8\" fat, separable lean and fat, steak, top sirloin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "sirloin steak": {
+      "canonical": "Beef, broiled, cooked, all grades, trimmed to 0\" fat, separable lean only, steak, top sirloin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "стейк сирлойн": {
+      "canonical": "Beef, broiled, cooked, all grades, trimmed to 0\" fat, separable lean only, steak, top sirloin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "ribeye steak": {
+      "canonical": "Beef, grilled, cooked, all grades, trimmed to 0\" fat, separable lean only, boneless, ribeye filet",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "рибай": {
+      "canonical": "Beef, grilled, cooked, all grades, trimmed to 0\" fat, separable lean only, boneless, ribeye filet",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "стейк рибай": {
+      "canonical": "Beef, grilled, cooked, all grades, trimmed to 0\" fat, separable lean only, boneless, ribeye filet",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "ribeye": {
+      "canonical": "Beef, grilled, cooked, all grades, trimmed to 0\" fat, separable lean only, boneless, ribeye filet",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "tenderloin steak": {
+      "canonical": "Beef, broiled, cooked, all grades, trimmed to 1/8\" fat, separable lean only, steak, tenderloin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "вырезка говяжья": {
+      "canonical": "Beef, broiled, cooked, all grades, trimmed to 1/8\" fat, separable lean only, steak, tenderloin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "t-bone steak": {
+      "canonical": "Beef, broiled, cooked, select, trimmed to 0\" fat, separable lean only, t-bone steak, short loin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "ти-бон": {
+      "canonical": "Beef, broiled, cooked, select, trimmed to 0\" fat, separable lean only, t-bone steak, short loin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "стейк ти-бон": {
+      "canonical": "Beef, broiled, cooked, select, trimmed to 0\" fat, separable lean only, t-bone steak, short loin",
+      "default_state": "grilled",
+      "category": "beef_steak"
+    },
+    "beef tallow": {
+      "canonical": "Fat, beef tallow",
+      "default_state": "unknown",
+      "category": "fat"
+    },
+    "tallow": {
+      "canonical": "Fat, beef tallow",
+      "default_state": "unknown",
+      "category": "fat"
+    },
+    "говяжий жир": {
+      "canonical": "Fat, beef tallow",
+      "default_state": "unknown",
+      "category": "fat"
+    },
+    "топленый говяжий жир": {
+      "canonical": "Fat, beef tallow",
+      "default_state": "unknown",
+      "category": "fat"
+    },
+    "топлёный говяжий жир": {
+      "canonical": "Fat, beef tallow",
+      "default_state": "unknown",
+      "category": "fat"
+    },
+    "топлёный жир": {
+      "canonical": "Fat, beef tallow",
+      "default_state": "unknown",
+      "category": "fat"
+    },
+    "топленый жир": {
+      "canonical": "Fat, beef tallow",
+      "default_state": "unknown",
+      "category": "fat"
     }
   }
 }

@@ -1816,6 +1816,92 @@ def _category_common_adjustment(
     return score, reasons
 
 
+def _beef_steak_candidate_adjustment(
+    n: str,
+    query_lower: str,
+    requested_state: str,
+    *,
+    beef_steak_like_q: bool = False,
+    fat_tallow_like_q: bool = False,
+    candidate_calories_per100: float = 0.0,
+    candidate_protein_per100: float = 0.0,
+    candidate_fat_per100: float = 0.0,
+    candidate_carbs_per100: float = 0.0,
+) -> tuple[float, list[str]]:
+    """Steer beef steak queries to cooked/grilled steak rows; penalize tallow/fat-only rows."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    rs = (requested_state or "unknown").lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if not beef_steak_like_q:
+        return 0.0, reasons
+
+    # Bonuses for matching steak rows
+    if "steak" in nl:
+        add(120, "steak_word")
+    if "beef" in nl:
+        add(100, "steak_beef_word")
+    if "grilled" in nl and rs == "grilled":
+        add(70, "steak_grilled_aligned")
+    if "broiled" in nl and rs in ("grilled", "cooked", "unknown"):
+        add(65, "steak_broiled_aligned")
+    if "cooked" in nl:
+        add(55, "steak_cooked_word")
+    if any(x in nl for x in ("sirloin", "ribeye", "rib eye", "tenderloin", "loin", "round")):
+        add(40, "steak_cut_word")
+    if any(x in nl for x in ("lean and fat", "lean only")):
+        add(35, "steak_lean_fat_desc")
+    if "separable lean" in nl:
+        add(25, "steak_separable_lean")
+
+    # Penalties for fat/tallow rows
+    if "tallow" in nl:
+        add(-400, "steak_tallow_penalty")
+    if "fat, beef tallow" in nl:
+        add(-400, "steak_fat_beef_tallow")
+    if any(x in nl for x in ("beef fat", "separable fat", "fat only")):
+        add(-350, "steak_beef_fat_penalty")
+    if "suet" in nl:
+        add(-300, "steak_suet_penalty")
+    if "lard" in nl:
+        add(-250, "steak_lard_penalty")
+    if "oil" in nl and "oil" not in query_lower:
+        add(-220, "steak_oil_penalty")
+    if "sausage" in nl:
+        add(-180, "steak_sausage_penalty")
+    if "burger" in nl and "burger" not in query_lower:
+        add(-180, "steak_burger_penalty")
+    if "patty" in nl and "patty" not in query_lower:
+        add(-180, "steak_patty_penalty")
+    if "meat loaf" in nl:
+        add(-160, "steak_meatloaf_penalty")
+    if any(x in nl for x in ("canned", "babyfood", "sauce")):
+        if not any(x in query_lower for x in ("canned", "babyfood", "sauce")):
+            add(-150, "steak_canned_babyfood_sauce")
+    if any(x in nl for x in ("dish", "mixture")):
+        if not any(x in query_lower for x in ("dish", "mixture")):
+            add(-150, "steak_dish_mixture")
+
+    # Macro sanity checks (skip if user explicitly wants fat/tallow)
+    if not fat_tallow_like_q and not any(x in query_lower for x in ("fat", "tallow", "жир", "oil", "масло")):
+        if candidate_fat_per100 > 50:
+            add(-300, "steak_too_high_fat")
+        if candidate_calories_per100 > 500:
+            add(-300, "steak_too_high_calories")
+        if candidate_protein_per100 < 10 and candidate_fat_per100 > 50:
+            add(-500, "steak_fat_only_profile")
+        if candidate_carbs_per100 > 5:
+            add(-120, "steak_unexpected_carbs")
+
+    return max(score, -900.0), reasons
+
+
 def state_score(
     requested_state: str,
     candidate_name: str,
@@ -1863,6 +1949,8 @@ def state_score(
     candidate_sugar_per100: float = 0.0,
     egg_like_q: bool = False,
     plain_whole_egg_q: bool = False,
+    beef_steak_like_q: bool = False,
+    fat_tallow_like_q: bool = False,
 ) -> tuple[float, list[str]]:
     """
     Returns (score_adjustment, reason strings).
@@ -2141,6 +2229,21 @@ def state_score(
         bp, bpr = _beef_patty_candidate_adjustment(n, query_lower)
         score += bp
         reasons.extend(bpr)
+
+    if beef_steak_like_q or fat_tallow_like_q:
+        bs, bsr = _beef_steak_candidate_adjustment(
+            n,
+            query_lower,
+            rs,
+            beef_steak_like_q=beef_steak_like_q,
+            fat_tallow_like_q=fat_tallow_like_q,
+            candidate_calories_per100=candidate_calories_per100,
+            candidate_protein_per100=candidate_protein_per100,
+            candidate_fat_per100=candidate_fat_per100,
+            candidate_carbs_per100=candidate_carbs_per100,
+        )
+        score += bs
+        reasons.extend(bsr)
 
     if fish_like_q:
         ff, ffr = _fish_candidate_adjustment(

@@ -18,6 +18,8 @@ from app.infrastructure.nutrition.ingredient_input import (
     is_beer_like_ingredient,
     is_beef_like_ingredient,
     is_beef_patty_like_ingredient,
+    is_beef_steak_like_ingredient,
+    is_fat_or_tallow_like_ingredient,
     is_borscht_like_ingredient,
     is_soup_like_ingredient,
     is_soft_drink_like_ingredient,
@@ -354,6 +356,8 @@ class NutritionService:
         corn_like = is_corn_like_ingredient(ni)
         beer_q = is_beer_like_ingredient(ni)
         generic_grain_q = is_generic_grain_query(ni)
+        beef_steak_q = is_beef_steak_like_ingredient(ni)
+        fat_tallow_q = is_fat_or_tallow_like_ingredient(ni)
         beef_q = is_beef_like_ingredient(ni)
         beef_patty_q = is_beef_patty_like_ingredient(ni)
         soup_q = is_soup_like_ingredient(ni)
@@ -430,6 +434,8 @@ class NutritionService:
                 sesame_seed_like_q=sesame_q,
                 egg_like_q=egg_q,
                 plain_whole_egg_q=plain_egg_q,
+                beef_steak_like_q=beef_steak_q,
+                fat_tallow_like_q=fat_tallow_q,
             )
             exact_bonus, exact_reasons = self._exact_row_bonus(ni.canonical_query, display)
             final = float(text_score) + float(st) + exact_bonus

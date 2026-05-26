@@ -10,6 +10,7 @@ from enum import Enum
 class NutritionCategory(str, Enum):
     MEAT = "meat"
     BEEF = "beef"
+    BEEF_STEAK = "beef_steak"
     BEEF_PATTY = "beef_patty"
     GROUND_BEEF = "ground_beef"
     BURGER = "burger"
@@ -455,6 +456,40 @@ def detect_ingredient_categories(
         ):
             cats.add(NutritionCategory.VEGETABLE)
 
+    # Beef steak — must come before generic beef check, but NOT match tallow/fat
+    _BEEF_STEAK_TERMS = (
+        "beef steak",
+        "grilled beef steak",
+        "grilled steak",
+        "broiled steak",
+        "cooked steak",
+        "говяжий стейк",
+        "стейк говяжий",
+        "стейк из говядины",
+        "жареный стейк",
+        "стейк на гриле",
+        "sirloin steak",
+        "ribeye steak",
+        "ribeye",
+        "rib eye",
+        "tenderloin steak",
+        "t-bone steak",
+        "strip steak",
+        "новый йорк",
+    )
+    _is_steak_blob = (
+        ac == "beef_steak"
+        or any(t in blob for t in _BEEF_STEAK_TERMS)
+        or (re.search(r"\bsteak\b", blob) and not any(x in blob for x in ("tallow", "beef fat", "separable fat", "fat only", "suet", "lard", "oil")))
+    )
+    if _is_steak_blob and not any(x in blob for x in ("tallow", "beef fat", "separable fat", "fat only", "suet", "lard")):
+        mark(
+            NutritionCategory.BEEF_STEAK,
+            NutritionCategory.BEEF,
+            NutritionCategory.MEAT,
+            reason="beef_steak_like",
+        )
+
     if (
         "beef patty" in blob
         or "hamburger patty" in blob
@@ -506,6 +541,7 @@ def detect_ingredient_categories(
     alias_map = {
         "meat": (NutritionCategory.MEAT,),
         "beef": (NutritionCategory.BEEF, NutritionCategory.MEAT),
+        "beef_steak": (NutritionCategory.BEEF_STEAK, NutritionCategory.BEEF, NutritionCategory.MEAT),
         "beef_patty": (
             NutritionCategory.BEEF_PATTY,
             NutritionCategory.BEEF,
@@ -632,6 +668,7 @@ def detect_ingredient_categories(
             NutritionCategory.SWEET,
             NutritionCategory.FISH,
             NutritionCategory.SEAFOOD,
+            NutritionCategory.BEEF_STEAK,
             NutritionCategory.MEAT,
             NutritionCategory.UNKNOWN,
         ):

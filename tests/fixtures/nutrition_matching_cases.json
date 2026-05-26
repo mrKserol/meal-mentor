@@ -1455,10 +1455,70 @@
       "fat_max": 22,
       "carbohydrates_max": 5,
       "required_contains_any": {
-        "egg": ["egg", "hard-boiled", "boiled", "whole"]
+        "egg": [
+          "egg",
+          "hard-boiled",
+          "boiled",
+          "whole"
+        ]
       },
       "forbidden_match_contains": {
-        "egg": ["potato salad", "salad", "sandwich", "burrito", "fast food", "babyfood", "mayonnaise", "sauce"]
+        "egg": [
+          "potato salad",
+          "salad",
+          "sandwich",
+          "burrito",
+          "fast food",
+          "babyfood",
+          "mayonnaise",
+          "sauce"
+        ]
+      }
+    }
+  },
+  {
+    "name": "grilled beef steak",
+    "description": "Beef steak should not match beef tallow/fat-only rows",
+    "ingredients": {
+      "beef steak": {
+        "grams": 100,
+        "state": "grilled"
+      }
+    },
+    "expected": {
+      "calories_min": 170,
+      "calories_max": 350,
+      "protein_min": 20,
+      "fat_min": 5,
+      "fat_max": 30,
+      "carbohydrates_max": 2,
+      "required_contains_any": {
+        "beef steak": [
+          "beef",
+          "steak",
+          "sirloin",
+          "ribeye",
+          "tenderloin",
+          "loin",
+          "round"
+        ]
+      },
+      "forbidden_match_contains": {
+        "beef steak": [
+          "tallow",
+          "beef fat",
+          "separable fat",
+          "fat only",
+          "suet",
+          "lard",
+          "sausage",
+          "burger",
+          "patty",
+          "canned",
+          "babyfood",
+          "sauce",
+          "oil,"
+        ]
       }
     }
   }

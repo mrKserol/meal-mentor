@@ -922,6 +922,60 @@ def is_sesame_seed_like_ingredient(ni: NormalizedIngredient) -> bool:
     return False
 
 
+def is_beef_steak_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True if the query is for beef steak (grilled/broiled/cooked steak), not tallow/fat."""
+    if NutritionCategory.BEEF_STEAK.value in ni.categories:
+        return True
+    if ni.alias_category == "beef_steak":
+        return True
+    blob = _ingredient_blob(ni)
+    # Must not be a fat/tallow query
+    if any(x in blob for x in ("tallow", "beef fat", "separable fat", "fat only", "suet", "lard")):
+        return False
+    _steak_terms = (
+        "beef steak",
+        "grilled beef steak",
+        "grilled steak",
+        "broiled steak",
+        "cooked steak",
+        "говяжий стейк",
+        "стейк говяжий",
+        "стейк из говядины",
+        "жареный стейк",
+        "стейк на гриле",
+        "ribeye",
+        "rib eye",
+        "sirloin steak",
+        "tenderloin steak",
+        "t-bone steak",
+        "strip steak",
+    )
+    if any(t in blob for t in _steak_terms):
+        return True
+    # plain "steak" without oil/fat keywords
+    if re.search(r"\bsteak\b", blob) and not any(x in blob for x in ("oil", "масло", "fat", "жир", "tallow", "sauce", "соус")):
+        return True
+    return False
+
+
+def is_fat_or_tallow_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True only if query explicitly describes beef fat/tallow (not steak)."""
+    blob = _ingredient_blob(ni)
+    return any(
+        x in blob
+        for x in (
+            "tallow",
+            "beef fat",
+            "beef tallow",
+            "говяжий жир",
+            "топленый жир",
+            "топлёный жир",
+            "топленый говяжий жир",
+            "топлёный говяжий жир",
+        )
+    )
+
+
 def is_poultry_breast_query(ni: NormalizedIngredient) -> bool:
     blob = f"{ni.input_name} {ni.canonical_query}".lower()
     if "wing" in blob or "thigh" in blob or "drumstick" in blob:

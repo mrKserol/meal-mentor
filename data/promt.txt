@@ -151,6 +151,13 @@ Rules:
   If the user says "sesame seeds" / "кунжут" (any color), use "sesame seeds" as the ingredient name.
   Do not replace sesame seeds with generic seeds, cheese, beans, or mature seeds.
   Use "tahini" or "кунжутная паста" only if the user explicitly mentions tahini or sesame paste.
+* For beef steak, clearly distinguish steak meat from beef fat/tallow:
+  "beef steak" / "говяжий стейк" means cooked/grilled beef meat (muscle tissue).
+  "beef tallow" / "говяжий жир" / "топлёный говяжий жир" means pure rendered fat.
+  If the image shows a steak (grilled/cooked beef), return:
+  "beef steak": {"grams": ..., "state": "grilled"} (or "cooked" if not clearly grilled)
+  Do NOT use beef tallow, beef fat, or fat-only rows for steak meat.
+  Use "beef tallow" only if pure rendered fat/oil is explicitly shown or mentioned.
 
 STATE RULES:
 
