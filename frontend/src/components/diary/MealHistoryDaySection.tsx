@@ -3,7 +3,7 @@ import { Apple, Beef, ChevronLeft, ChevronRight, Coffee, EggFried, Flame, Leaf, 
 
 import { getMyNutritionTarget } from "../../api/authApi";
 import type { MyNutritionTargetEnvelope } from "../../types/auth";
-import { deleteMyMeal, getMyMealsForDay } from "../../api/diaryApi";
+import { deleteMyMeal, getMyMealsForDay, shiftMyMealDate } from "../../api/diaryApi";
 import { EditMealModal } from "../layout/EditMealModal";
 import { MealMacroInline, MealMacroLines } from "../meals/MealMacroLines";
 import type { NutritionTarget } from "../../types/auth";
@@ -332,6 +332,15 @@ function sodiumMgToSaltG(sodiumMg: number): number {
   return Number((sodiumMg / 1000).toFixed(2));
 }
 
+function formatMealTimeHeader(dateLocal: string | undefined, timeLocal: string): string {
+  if (!dateLocal) return `Приём пищи в ${timeLocal}`;
+  const [y, m, d] = dateLocal.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  const weekday = new Intl.DateTimeFormat("ru-RU", { weekday: "long" }).format(dt);
+  const dayMonth = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long" }).format(dt);
+  return `Приём пищи ${weekday}, ${dayMonth} в ${timeLocal}`;
+}
+
 function itemLineMacros(it: WebMealDayItemLine): { p: number; f: number; c: number; fiber: number } {
   return {
     p: it.protein_g ?? 0,
@@ -345,14 +354,24 @@ function MealDayDetailModal({
   meal,
   onClose,
   onEdit,
+  onShiftDate,
+  onDelete,
   readonly = false,
+  shiftingDate = false,
+  deleting = false,
 }: {
   meal: WebMealDayRow;
   onClose: () => void;
   onEdit: () => void;
+  onShiftDate?: (delta: 1 | -1) => void;
+  onDelete?: () => void;
   readonly?: boolean;
+  shiftingDate?: boolean;
+  deleting?: boolean;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [shiftConfirm, setShiftConfirm] = useState<1 | -1 | null>(null);
   const large = meal.meal_photo_large_url || meal.meal_photo_thumb_url;
   const pred = predictionHeading(meal);
   const totM = mealTotalsMacros(meal);
@@ -397,7 +416,7 @@ function MealDayDetailModal({
           <h2 id="meal-detail-title" className="text-xl font-semibold leading-snug text-slate-900">
             {pred}
           </h2>
-          <p className="text-sm text-slate-600">Приём пищи в {meal.time_local}</p>
+          <p className="text-sm text-slate-600">{formatMealTimeHeader(meal.date_local, meal.time_local)}</p>
           <p className="text-sm leading-relaxed text-slate-800">
             <span className="font-medium text-slate-900">Состав:</span> {meal.composition}
           </p>
@@ -456,13 +475,102 @@ function MealDayDetailModal({
             </div>
 
           {!readonly ? (
-            <button
-              type="button"
-              onClick={onEdit}
-              className="w-full rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700"
-            >
-              Редактировать
-            </button>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={onEdit}
+                className="w-full rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700"
+              >
+                Редактировать
+              </button>
+
+              {onShiftDate ? (
+                shiftConfirm !== null ? (
+                  <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
+                    <span className="flex-1 text-sm font-medium text-slate-700">
+                      {shiftConfirm === -1
+                        ? "Переместить приём пищи на день назад?"
+                        : "Переместить приём пищи на день вперёд?"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const delta = shiftConfirm;
+                        setShiftConfirm(null);
+                        onShiftDate(delta);
+                      }}
+                      disabled={shiftingDate}
+                      className="rounded-lg bg-green-600 px-3 py-1 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
+                    >
+                      Да
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShiftConfirm(null)}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Нет
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShiftConfirm(-1)}
+                      disabled={shiftingDate}
+                      className="flex flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-green-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label="Переместить на день назад"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShiftConfirm(1)}
+                      disabled={shiftingDate}
+                      className="flex flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-green-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label="Переместить на день вперёд"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </div>
+                )
+              ) : null}
+
+              {onDelete ? (
+                deleteConfirm ? (
+                  <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5">
+                    <span className="flex-1 text-sm font-medium text-red-700">Удалить приём пищи?</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteConfirm(false);
+                        onDelete();
+                      }}
+                      disabled={deleting}
+                      className="rounded-lg bg-red-600 px-3 py-1 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+                    >
+                      Да
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirm(false)}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Нет
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setDeleteConfirm(true)}
+                    disabled={deleting}
+                    className="w-full rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+                  >
+                    Удалить
+                  </button>
+                )
+              ) : null}
+            </div>
           ) : null}
         </div>
       </div>
@@ -489,7 +597,7 @@ function MealDayRowContent({ meal }: { meal: WebMealDayRow }) {
       )}
       <div className="min-w-0 flex-1">
         <h3 className="text-base font-semibold leading-snug text-slate-900">{pred}</h3>
-        <p className="mt-1 text-sm text-slate-600">Приём пищи в {meal.time_local}</p>
+        <p className="mt-1 text-sm text-slate-600">{formatMealTimeHeader(meal.date_local, meal.time_local)}</p>
         <p className="mt-2 hidden text-sm leading-relaxed text-slate-700 md:block">
           <span className="font-medium text-slate-800">Состав:</span> {meal.composition}
         </p>
@@ -528,6 +636,7 @@ export function MealHistoryDaySection({
   const [detail, setDetail] = useState<WebMealDayRow | null>(null);
   const [editingMeal, setEditingMeal] = useState<WebMealDayRow | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [shiftingMealId, setShiftingMealId] = useState<number | null>(null);
   const [additiveTotals, setAdditiveTotals] = useState<DayNutritionTotals>(zeroDayNutritionTotals);
   const [additiveModalOpen, setAdditiveModalOpen] = useState(false);
 
@@ -579,6 +688,19 @@ export function MealHistoryDaySection({
       onMealsChanged?.();
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleShiftDate = async (id: number, delta: 1 | -1) => {
+    if (shiftingMealId != null) return;
+    setShiftingMealId(id);
+    try {
+      await shiftMyMealDate(accessToken, id, delta);
+      setDetail(null);
+      await load();
+      onMealsChanged?.();
+    } finally {
+      setShiftingMealId(null);
     }
   };
 
@@ -722,6 +844,10 @@ export function MealHistoryDaySection({
             setEditingMeal(detail);
             setDetail(null);
           }}
+          onShiftDate={!readonly ? (delta) => void handleShiftDate(detail.id, delta) : undefined}
+          onDelete={!readonly ? () => void handleDelete(detail.id) : undefined}
+          shiftingDate={shiftingMealId === detail.id}
+          deleting={deletingId === detail.id}
         />
       ) : null}
 

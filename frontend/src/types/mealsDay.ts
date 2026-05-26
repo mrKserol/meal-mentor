@@ -21,6 +21,7 @@ export interface WebMealDayRow {
   display_prediction?: string | null;
   user_text: string | null;
   time_local: string;
+  date_local?: string;
   meal_type: string | null;
   meal_type_label: string;
   composition: string;

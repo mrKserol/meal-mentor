@@ -195,10 +195,11 @@ class WebMealSaveResponse(BaseModel):
 class WebMealUpdateRequest(BaseModel):
     """Обновление состава существующего приёма (JWT)."""
 
-    ingredients: dict[str, Any]
+    ingredients: dict[str, Any] | None = None
     prediction: str | None = None
     prediction_translated: str | None = None
     prediction_language: str | None = None
+    shift_days: int | None = None
 
 
 class FoodNameResolveRequest(BaseModel):
@@ -247,6 +248,7 @@ class WebMealDayRow(BaseModel):
     display_prediction: str | None = None
     user_text: str | None = None
     time_local: str
+    date_local: str = ""
     meal_type: str | None = None
     meal_type_label: str
     composition: str

@@ -30,6 +30,14 @@ export async function deleteMyMeal(accessToken: string, mealId: number): Promise
   });
 }
 
+export async function shiftMyMealDate(accessToken: string, mealId: number, days: 1 | -1): Promise<void> {
+  await authClient.patch(
+    `/users/me/meals/${mealId}`,
+    { shift_days: days },
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+}
+
 export async function updateMyMeal(
   accessToken: string,
   mealId: number,

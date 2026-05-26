@@ -11,7 +11,7 @@ from app.auth.dependencies import get_current_user
 from app.auth.security import hash_password
 from app.auth.user_me_payload import serialize_user_me
 from app.db.models import Allergen, User
-from app.db.repository import create_meal, delete_meal_for_user, list_meals_for_user_local_date, list_user_measurements
+from app.db.repository import create_meal, delete_meal_for_user, list_meals_for_user_local_date, list_user_measurements, shift_meal_date_for_user
 from app.db.session import get_db
 from app.core.config import FOOD_ALIASES_PATH
 from app.infrastructure.nutrition.food_aliases import FoodAliasIndex
@@ -321,7 +321,16 @@ def patch_my_meal(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Обновить состав и название существующего приёма."""
+    """Обновить состав/название приёма и/или сдвинуть его дату."""
+    # Сдвиг даты (операция сдвига на N дней вперёд/назад)
+    if body.shift_days is not None:
+        if body.shift_days not in (-1, 1):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="shift_days must be 1 or -1")
+        if not shift_meal_date_for_user(db, meal_id, current_user.id, body.shift_days):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Приём не найден")
+        return WebMealUpdateResponse(status="success")
+
+    # Обновление состава
     pred_lang = body.prediction_language or current_user.language or "ru"
     out = update_meal_composition(
         db,

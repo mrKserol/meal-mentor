@@ -8,10 +8,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 COPY requirements.txt /app/requirements.txt
-# Slow / flaky CI: bump timeouts; sentence_transformers pulls torch — CPU wheel avoids multi‑GB NVIDIA/CUDA stacks from PyPI.
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
-    && pip install --no-cache-dir --retries 10 torch --index-url https://download.pytorch.org/whl/cpu \
-    && pip install --no-cache-dir --retries 10 -r /app/requirements.txt
+# sentence_transformers / torch are optional (NUTRITION_ENABLE_SEMANTIC=false by default)
+# and are NOT installed here — they bloat the image by ~1 GB and cause flaky network
+# failures on Railway builders. Install them manually if semantic search is needed.
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY . /app
 
