@@ -1437,5 +1437,29 @@
         ]
       }
     }
+  },
+  {
+    "name": "boiled egg plain",
+    "description": "Plain boiled egg should not match potato salad with egg",
+    "ingredients": {
+      "egg": {
+        "grams": 150,
+        "state": "boiled"
+      }
+    },
+    "expected": {
+      "calories_min": 190,
+      "calories_max": 270,
+      "protein_min": 15,
+      "fat_min": 10,
+      "fat_max": 22,
+      "carbohydrates_max": 5,
+      "required_contains_any": {
+        "egg": ["egg", "hard-boiled", "boiled", "whole"]
+      },
+      "forbidden_match_contains": {
+        "egg": ["potato salad", "salad", "sandwich", "burrito", "fast food", "babyfood", "mayonnaise", "sauce"]
+      }
+    }
   }
 ]
