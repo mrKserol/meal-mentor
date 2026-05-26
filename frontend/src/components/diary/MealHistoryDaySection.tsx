@@ -371,6 +371,7 @@ function MealDayDetailModal({
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [shiftConfirm, setShiftConfirm] = useState<1 | -1 | null>(null);
   const large = meal.meal_photo_large_url || meal.meal_photo_thumb_url;
   const pred = predictionHeading(meal);
   const totM = mealTotalsMacros(meal);
@@ -484,26 +485,55 @@ function MealDayDetailModal({
               </button>
 
               {onShiftDate ? (
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => onShiftDate(-1)}
-                    disabled={shiftingDate}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-green-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    aria-label="Переместить на день назад"
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onShiftDate(1)}
-                    disabled={shiftingDate}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-green-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    aria-label="Переместить на день вперёд"
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </button>
-                </div>
+                shiftConfirm !== null ? (
+                  <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
+                    <span className="flex-1 text-sm font-medium text-slate-700">
+                      {shiftConfirm === -1
+                        ? "Переместить приём пищи на день назад?"
+                        : "Переместить приём пищи на день вперёд?"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const delta = shiftConfirm;
+                        setShiftConfirm(null);
+                        onShiftDate(delta);
+                      }}
+                      disabled={shiftingDate}
+                      className="rounded-lg bg-green-600 px-3 py-1 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
+                    >
+                      Да
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShiftConfirm(null)}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Нет
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShiftConfirm(-1)}
+                      disabled={shiftingDate}
+                      className="flex flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-green-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label="Переместить на день назад"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShiftConfirm(1)}
+                      disabled={shiftingDate}
+                      className="flex flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-green-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label="Переместить на день вперёд"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </div>
+                )
               ) : null}
 
               {onDelete ? (
