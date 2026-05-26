@@ -1389,6 +1389,65 @@ def test_boiled_egg_ru_not_potato_salad(nutrition_svc: NutritionService) -> None
     assert carb <= 5.0, f"яйцо 150g boiled carbs {carb} expected <= 5"
 
 
+def _check_beef_steak_match(data: dict[str, Any], *, label: str) -> None:
+    """Assert that a beef steak match is a cooked/grilled steak row, not tallow/fat."""
+    import re as _re
+    m = (data.get("match") or "").lower()
+    # Must contain beef and steak-like cut
+    assert "beef" in m, f"{label}: match must contain 'beef', got {m!r}"
+    assert any(x in m for x in ("steak", "sirloin", "ribeye", "rib eye", "tenderloin", "loin", "round")), (
+        f"{label}: match must contain a steak-related word, got {m!r}"
+    )
+    # Must not be fat/tallow/bad rows (use word-boundary checks for ambiguous words)
+    for bad in ("tallow", "beef fat", "separable fat", "fat only", "suet", "lard", "sausage", "burger", "patty", "canned", "babyfood"):
+        assert bad not in m, f"{label}: match must not contain {bad!r}, got {m!r}"
+    # "oil" check: must not contain " oil" as standalone word (not in "broiled")
+    assert not _re.search(r"\boil\b", m), f"{label}: match must not contain 'oil' as word, got {m!r}"
+    cal = int(data.get("calories") or 0)
+    p = float(data.get("proteins") or 0)
+    fat = float(data.get("fats") or 0)
+    cb = float(data.get("carbohydrates") or 0)
+    assert 170 <= cal <= 350, f"{label}: 100g calories {cal} expected 170–350"
+    assert p >= 20.0, f"{label}: 100g protein {p} expected >= 20"
+    assert 5.0 <= fat <= 30.0, f"{label}: 100g fat {fat} expected 5–30"
+    assert cb <= 2.0, f"{label}: 100g carbs {cb} expected <= 2"
+
+
+def test_beef_steak_grilled_not_tallow(nutrition_svc: NutritionService) -> None:
+    """Grilled beef steak must not match beef tallow or fat-only rows."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"beef steak": {"grams": 100, "state": "grilled"}})
+    data = list(rows[0].values())[0]
+    assert data
+    _check_beef_steak_match(data, label="beef steak 100g grilled")
+
+
+def test_beef_steak_ru_grilled_not_tallow(nutrition_svc: NutritionService) -> None:
+    """Russian говяжий стейк must not match beef tallow or fat-only rows."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"говяжий стейк": {"grams": 100, "state": "grilled"}})
+    data = list(rows[0].values())[0]
+    assert data
+    _check_beef_steak_match(data, label="говяжий стейк 100g grilled")
+
+
+def test_beef_tallow_still_allowed_when_explicit(nutrition_svc: NutritionService) -> None:
+    """Explicit 'beef tallow' should still match the tallow row."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"beef tallow": {"grams": 10, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert any(x in m for x in ("tallow", "fat")), f"beef tallow must match tallow/fat row, got {m!r}"
+    cal = int(data.get("calories") or 0)
+    f = float(data.get("fats") or 0)
+    assert 80 <= cal <= 100, f"beef tallow 10g calories {cal} expected 80–100"
+    assert f >= 9.0, f"beef tallow 10g fat {f} expected >= 9"
+
+
 def test_egg_salad_can_match_non_plain_when_explicit(nutrition_svc: NutritionService) -> None:
     """Explicit 'egg salad' query should not be forced to match plain hard-boiled egg."""
     if not nutrition_svc.aliases.is_loaded:
