@@ -14,6 +14,7 @@ from app.core.config import (
 )
 from app.infrastructure.nutrition.food_aliases import FoodAliasIndex
 from app.infrastructure.nutrition.ingredient_input import (
+    is_avocado_like_ingredient,
     is_beer_like_ingredient,
     is_beef_like_ingredient,
     is_beef_patty_like_ingredient,
@@ -26,6 +27,7 @@ from app.infrastructure.nutrition.ingredient_input import (
     is_coconut_milk_like_ingredient,
     is_coconut_oil_like_ingredient,
     is_fish_like_ingredient,
+    is_oil_like_ingredient,
     is_smoked_fish_like_ingredient,
     is_porridge_like_grain,
     is_generic_grain_query,
@@ -362,6 +364,8 @@ class NutritionService:
         cottage = is_cottage_cheese_like(ni)
         banana_f = is_banana_fruit_like(ni)
         seed_q = is_seed_kernel_query(ni)
+        avocado_q = is_avocado_like_ingredient(ni)
+        oil_q = is_oil_like_ingredient(ni)
         out: list[NutritionCandidate] = []
         for name_key, text_score in raw_candidates:
             row = self._data.get(name_key) or {}
@@ -402,6 +406,8 @@ class NutritionService:
                 cottage_cheese_q=cottage,
                 banana_fruit_q=banana_f,
                 seed_kernel_q=seed_q,
+                avocado_like_q=avocado_q,
+                oil_like_q=oil_q,
             )
             exact_bonus, exact_reasons = self._exact_row_bonus(ni.canonical_query, display)
             final = float(text_score) + float(st) + exact_bonus

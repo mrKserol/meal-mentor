@@ -3336,8 +3336,9 @@
       "default_state": "unknown"
     },
     "oats": {
-      "canonical": "Oats",
-      "default_state": "unknown"
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "default_state": "cooked",
+      "category": "grain"
     },
     "octopus (alaska native)": {
       "canonical": "Octopus (Alaska Native)",
@@ -3357,7 +3358,8 @@
     },
     "oil, avocado": {
       "canonical": "Oil, avocado",
-      "default_state": "unknown"
+      "default_state": "unknown",
+      "category": "oil"
     },
     "oil, babassu": {
       "canonical": "Oil, babassu",
@@ -5397,7 +5399,7 @@
     "авокадо": {
       "canonical": "Avocados, all commercial varieties, raw",
       "default_state": "raw",
-      "category": "fruit"
+      "category": "avocado"
     },
     "ананас": {
       "canonical": "Pineapple, all varieties, raw",
@@ -5511,7 +5513,7 @@
     },
     "вареное яйцо": {
       "canonical": "Egg, hard-boiled, cooked, whole",
-      "default_state": "cooked",
+      "default_state": "boiled",
       "category": "egg"
     },
     "вермишель": {
@@ -5540,9 +5542,9 @@
       "category": "grain"
     },
     "говядина": {
-      "canonical": "Beef, cooked, unspecified fat content, ground",
+      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
       "default_state": "cooked",
-      "category": "meat"
+      "category": "beef"
     },
     "говядина готовая": {
       "canonical": "Beef, cooked, unspecified fat content, ground",
@@ -5550,9 +5552,9 @@
       "category": "meat"
     },
     "говяжий фарш": {
-      "canonical": "Beef, raw, 85% lean meat / 15% fat, ground",
+      "canonical": "USDA Commodity, raw, frozen, bulk/coarse ground, ground, beef",
       "default_state": "raw",
-      "category": "meat"
+      "category": "ground_beef"
     },
     "горох": {
       "canonical": "Peas, raw, green",
@@ -5700,7 +5702,7 @@
       "category": "grain"
     },
     "каша овсяная": {
-      "canonical": "Cereals, with salt, cooked with water, QUAKER MultiGrain Oatmeal, QUAKER",
+      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
       "default_state": "cooked",
       "category": "grain"
     },
@@ -5752,7 +5754,7 @@
     "кокосовое масло": {
       "canonical": "Oil, coconut",
       "default_state": "unknown",
-      "category": "fat"
+      "category": "oil"
     },
     "колбаса": {
       "canonical": "Bologna, beef and pork",
@@ -5994,11 +5996,6 @@
       "default_state": "cooked",
       "category": "grain"
     },
-    "oats": {
-      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
-      "default_state": "cooked",
-      "category": "grain"
-    },
     "cooked oats": {
       "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
       "default_state": "cooked",
@@ -6015,8 +6012,8 @@
       "category": "grain"
     },
     "овес": {
-      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
-      "default_state": "cooked",
+      "canonical": "Oats",
+      "default_state": "dry",
       "category": "grain"
     },
     "овёс": {
@@ -6075,17 +6072,12 @@
       "category": "grain"
     },
     "овсянка": {
-      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "canonical": "Cereals, with salt, cooked with water, QUAKER MultiGrain Oatmeal, QUAKER",
       "default_state": "cooked",
       "category": "grain"
     },
     "овсяная каша": {
-      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
-      "default_state": "cooked",
-      "category": "grain"
-    },
-    "каша овсяная": {
-      "canonical": "Cereals, without salt, cooked with water (includes boiling and microwaving), unenriched, regular and quick, oats",
+      "canonical": "Cereals, with salt, cooked with water, QUAKER MultiGrain Oatmeal, QUAKER",
       "default_state": "cooked",
       "category": "grain"
     },
@@ -6184,11 +6176,6 @@
       "default_state": "cooked",
       "category": "beef"
     },
-    "говядина": {
-      "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
-      "default_state": "cooked",
-      "category": "beef"
-    },
     "вареная говядина": {
       "canonical": "Beef, braised, cooked, separable lean only, flat, imported, New Zealand",
       "default_state": "cooked",
@@ -6279,15 +6266,10 @@
       "default_state": "cooked",
       "category": "ground_beef"
     },
-    "говяжий фарш": {
-      "canonical": "USDA Commodity, raw, frozen, bulk/coarse ground, ground, beef",
-      "default_state": "raw",
-      "category": "ground_beef"
-    },
     "фарш говяжий": {
-      "canonical": "USDA Commodity, raw, frozen, bulk/coarse ground, ground, beef",
+      "canonical": "Beef, raw, 85% lean meat / 15% fat, ground",
       "default_state": "raw",
-      "category": "ground_beef"
+      "category": "meat"
     },
     "bun": {
       "canonical": "Rolls, plain, hamburger or hotdog",
@@ -6634,27 +6616,7 @@
       "default_state": "cooked",
       "category": "legume"
     },
-    "овес": {
-      "canonical": "Oats",
-      "default_state": "dry",
-      "category": "grain"
-    },
-    "овсяная каша": {
-      "canonical": "Cereals, with salt, cooked with water, QUAKER MultiGrain Oatmeal, QUAKER",
-      "default_state": "cooked",
-      "category": "grain"
-    },
-    "овсянка": {
-      "canonical": "Cereals, with salt, cooked with water, QUAKER MultiGrain Oatmeal, QUAKER",
-      "default_state": "cooked",
-      "category": "grain"
-    },
     "овсянка сухая": {
-      "canonical": "Oats",
-      "default_state": "dry",
-      "category": "grain"
-    },
-    "овсяные хлопья": {
       "canonical": "Oats",
       "default_state": "dry",
       "category": "grain"
@@ -6774,19 +6736,9 @@
       "default_state": "raw",
       "category": "vegetable"
     },
-    "пшенная каша": {
-      "canonical": "Millet, cooked",
-      "default_state": "cooked",
-      "category": "grain"
-    },
     "пшенная крупа": {
       "canonical": "Millet, raw",
       "default_state": "dry",
-      "category": "grain"
-    },
-    "пшено": {
-      "canonical": "Millet, cooked",
-      "default_state": "cooked",
       "category": "grain"
     },
     "пшено сухое": {
@@ -7017,12 +6969,7 @@
     "тыквенные семечки": {
       "canonical": "Seeds, dried, pumpkin and squash seed kernels",
       "default_state": "dry",
-      "category": "seeds"
-    },
-    "фарш говяжий": {
-      "canonical": "Beef, raw, 85% lean meat / 15% fat, ground",
-      "default_state": "raw",
-      "category": "meat"
+      "category": "seed"
     },
     "фарш индейки": {
       "canonical": "Ground turkey, cooked",
@@ -7156,7 +7103,7 @@
     },
     "яйца вареные": {
       "canonical": "Egg, hard-boiled, cooked, whole",
-      "default_state": "cooked",
+      "default_state": "boiled",
       "category": "egg"
     },
     "яйцо": {
@@ -7166,7 +7113,7 @@
     },
     "яйцо вареное": {
       "canonical": "Egg, hard-boiled, cooked, whole",
-      "default_state": "cooked",
+      "default_state": "boiled",
       "category": "egg"
     },
     "яйцо вкрутую": {
@@ -7444,11 +7391,6 @@
       "default_state": "unknown",
       "category": "dairy"
     },
-    "молоко": {
-      "canonical": "Milk, with added vitamin D, 3.25% milkfat, whole",
-      "default_state": "unknown",
-      "category": "dairy"
-    },
     "walnuts": {
       "canonical": "Nuts, english, walnuts",
       "default_state": "raw",
@@ -7470,11 +7412,6 @@
       "category": "fish"
     },
     "tuna": {
-      "canonical": "Fish, drained solids, canned in water, light, tuna",
-      "default_state": "canned",
-      "category": "fish"
-    },
-    "тунец": {
       "canonical": "Fish, drained solids, canned in water, light, tuna",
       "default_state": "canned",
       "category": "fish"
@@ -7664,11 +7601,6 @@
       "default_state": "dry",
       "category": "seed"
     },
-    "тыквенные семечки": {
-      "canonical": "Seeds, dried, pumpkin and squash seed kernels",
-      "default_state": "dry",
-      "category": "seed"
-    },
     "семечки тыквы": {
       "canonical": "Seeds, dried, pumpkin and squash seed kernels",
       "default_state": "dry",
@@ -7734,27 +7666,12 @@
       "default_state": "boiled",
       "category": "egg"
     },
-    "яйцо вареное": {
-      "canonical": "Egg, hard-boiled, cooked, whole",
-      "default_state": "boiled",
-      "category": "egg"
-    },
     "яйцо варёное": {
       "canonical": "Egg, hard-boiled, cooked, whole",
       "default_state": "boiled",
       "category": "egg"
     },
-    "вареное яйцо": {
-      "canonical": "Egg, hard-boiled, cooked, whole",
-      "default_state": "boiled",
-      "category": "egg"
-    },
     "варёное яйцо": {
-      "canonical": "Egg, hard-boiled, cooked, whole",
-      "default_state": "boiled",
-      "category": "egg"
-    },
-    "яйца вареные": {
       "canonical": "Egg, hard-boiled, cooked, whole",
       "default_state": "boiled",
       "category": "egg"
@@ -8344,8 +8261,63 @@
       "default_state": "unknown",
       "category": "oil"
     },
-    "кокосовое масло": {
-      "canonical": "Oil, coconut",
+    "avocado": {
+      "canonical": "Avocados, all commercial varieties, raw",
+      "default_state": "raw",
+      "category": "avocado"
+    },
+    "avocados": {
+      "canonical": "Avocados, all commercial varieties, raw",
+      "default_state": "raw",
+      "category": "avocado"
+    },
+    "raw avocado": {
+      "canonical": "Avocados, all commercial varieties, raw",
+      "default_state": "raw",
+      "category": "avocado"
+    },
+    "avocado flesh": {
+      "canonical": "Avocados, all commercial varieties, raw",
+      "default_state": "raw",
+      "category": "avocado"
+    },
+    "avocado fruit": {
+      "canonical": "Avocados, all commercial varieties, raw",
+      "default_state": "raw",
+      "category": "avocado"
+    },
+    "мякоть авокадо": {
+      "canonical": "Avocados, all commercial varieties, raw",
+      "default_state": "raw",
+      "category": "avocado"
+    },
+    "авокадо свежее": {
+      "canonical": "Avocados, all commercial varieties, raw",
+      "default_state": "raw",
+      "category": "avocado"
+    },
+    "свежий авокадо": {
+      "canonical": "Avocados, all commercial varieties, raw",
+      "default_state": "raw",
+      "category": "avocado"
+    },
+    "avocado oil": {
+      "canonical": "Oil, avocado",
+      "default_state": "unknown",
+      "category": "oil"
+    },
+    "oil avocado": {
+      "canonical": "Oil, avocado",
+      "default_state": "unknown",
+      "category": "oil"
+    },
+    "масло авокадо": {
+      "canonical": "Oil, avocado",
+      "default_state": "unknown",
+      "category": "oil"
+    },
+    "авокадовое масло": {
+      "canonical": "Oil, avocado",
       "default_state": "unknown",
       "category": "oil"
     }
