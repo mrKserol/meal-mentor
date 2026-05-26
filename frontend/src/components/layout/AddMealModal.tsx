@@ -503,9 +503,12 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
                   }
                   setWaterSaving(true);
                   try {
+                    const now = new Date();
+                    const timeLocal = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
                     await recordWaterIntake(token, {
                       amount_ml: amountMl,
                       intake_local_date: mealLocalDate ?? undefined,
+                      intake_local_time: timeLocal,
                     });
                     onMealSaved?.();
                     onClose();

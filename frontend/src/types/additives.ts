@@ -73,4 +73,5 @@ export type AdditiveIntakeCreatePayload = {
 export type WaterIntakeCreatePayload = {
   amount_ml?: number;
   intake_local_date?: string;
+  intake_local_time?: string;
 };

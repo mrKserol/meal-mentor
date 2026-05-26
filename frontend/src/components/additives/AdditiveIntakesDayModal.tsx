@@ -75,7 +75,13 @@ export function AdditiveIntakesDayModal({ open, dateYmd, accessToken, onClose, o
   const handleWater = async (amountMl: number) => {
     setWaterSaving(true);
     try {
-      await recordWaterIntake(accessToken, { amount_ml: amountMl, intake_local_date: dateYmd });
+      const now = new Date();
+      const timeLocal = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      await recordWaterIntake(accessToken, {
+        amount_ml: amountMl,
+        intake_local_date: dateYmd,
+        intake_local_time: timeLocal,
+      });
       await load();
       onChanged();
     } catch (err) {
