@@ -10,7 +10,12 @@ from sqlalchemy.orm import Session
 
 from app.db.models import Additive, AdditiveIntake, User
 from app.db.nutrition_columns import INTEGER_NUTRITION_KEYS, MEAL_ITEM_NUTRITION_KEYS
-from app.services.user_timezone import meal_datetime_for_local_date_end, resolve_tz
+from app.services.user_timezone import (
+    meal_datetime_for_local_date_end,
+    meal_datetime_for_local_date_at_current_time,
+    resolve_tz,
+    local_datetime_to_utc_naive,
+)
 
 
 def nutrient_payload_from_dict(data: dict[str, Any]) -> dict[str, Any]:
