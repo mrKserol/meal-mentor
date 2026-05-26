@@ -182,6 +182,17 @@ def delete_meal_for_user(db: Session, meal_id: int, user_id: int) -> bool:
     return True
 
 
+def shift_meal_date_for_user(db: Session, meal_id: int, user_id: int, days: int) -> bool:
+    """Сдвинуть дату/время приёма на N дней (положительное — вперёд, отрицательное — назад)."""
+    meal = db.query(Meal).filter(Meal.id == meal_id, Meal.user_id == user_id).first()
+    if not meal:
+        return False
+    if meal.meal_datetime:
+        meal.meal_datetime = meal.meal_datetime + timedelta(days=days)
+    db.commit()
+    return True
+
+
 def list_meals_for_user_local_date(
     db: Session,
     user_id: int,
