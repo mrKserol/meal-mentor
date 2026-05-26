@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Droplets, Loader2, Pill, X } from "lucide-react";
+import { Loader2, Pill, X } from "lucide-react";
 
 import {
   deleteAdditiveIntake,
@@ -8,6 +8,7 @@ import {
 } from "../../api/additivesApi";
 import type { AdditiveIntakeItem } from "../../types/additives";
 import { SwipeDeleteRow } from "../common/SwipeDeleteRow";
+import { WaterButton } from "../common/WaterButton";
 import { TakeAdditiveModal } from "./TakeAdditiveModal";
 
 type Props = {
@@ -71,10 +72,10 @@ export function AdditiveIntakesDayModal({ open, dateYmd, accessToken, onClose, o
     }
   };
 
-  const handleWater = async () => {
+  const handleWater = async (amountMl: number) => {
     setWaterSaving(true);
     try {
-      await recordWaterIntake(accessToken, { amount_ml: 100, intake_local_date: dateYmd });
+      await recordWaterIntake(accessToken, { amount_ml: amountMl, intake_local_date: dateYmd });
       await load();
       onChanged();
     } catch (err) {
@@ -154,15 +155,12 @@ export function AdditiveIntakesDayModal({ open, dateYmd, accessToken, onClose, o
               <Pill className="h-4 w-4" aria-hidden />
               Принять добавку
             </button>
-            <button
-              type="button"
-              disabled={waterSaving}
-              onClick={() => void handleWater()}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 py-2.5 text-sm font-semibold text-sky-800 disabled:opacity-50"
-            >
-              <Droplets className="h-4 w-4" aria-hidden />
-              Выпить воды 100 мл
-            </button>
+            <WaterButton
+              saving={waterSaving}
+              onRecord={(ml) => void handleWater(ml)}
+              className="flex-1"
+              size="sm"
+            />
           </div>
         </div>
       </div>
