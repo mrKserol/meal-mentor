@@ -52,10 +52,13 @@ export function TakeAdditiveModal({ open, accessToken, dateYmd, onClose, onSaved
     setSaving(true);
     setError(null);
     try {
+      const now = new Date();
+      const timeLocal = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
       await recordAdditiveIntake(accessToken, {
         additive_id: selectedId,
         servings_count: servingsNum,
         intake_local_date: dateYmd ?? undefined,
+        intake_local_time: timeLocal,
       });
       onSaved();
       onClose();

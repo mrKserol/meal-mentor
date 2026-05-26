@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "FastAPI backend",
+      "runtimeExecutable": "uvicorn",
+      "runtimeArgs": ["service:app", "--reload", "--port", "8000"],
+      "port": 8000
+    },
+    {
+      "name": "Frontend (Vite)",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd /Users/macpro/Documents/GitHub/meal-mentor/frontend && npx vite --host --port 5173"],
+      "port": 5173
+    },
+    {
+      "name": "Streamlit UI",
+      "runtimeExecutable": "streamlit",
+      "runtimeArgs": ["run", "ui.py", "--server.port", "8501"],
+      "port": 8501
+    },
+    {
+      "name": "Telegram bot",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "app.bot.telegram_bot"],
+      "port": null
+    }
+  ]
+}

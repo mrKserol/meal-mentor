@@ -164,6 +164,7 @@ def record_additive_intake(
     additive_id: int,
     servings_count: float,
     intake_local_date: date | None = None,
+    intake_local_time: str | None = None,
 ) -> AdditiveIntake:
     if servings_count <= 0:
         raise ValueError("servings_count must be positive")
@@ -173,7 +174,10 @@ def record_additive_intake(
         raise ValueError("additive not found")
 
     if intake_local_date is not None:
-        intake_dt = meal_datetime_for_local_date_end(user, intake_local_date)
+        if intake_local_time:
+            intake_dt = local_datetime_to_utc_naive(user, intake_local_date, intake_local_time)
+        else:
+            intake_dt = meal_datetime_for_local_date_at_current_time(user, intake_local_date)
     else:
         intake_dt = datetime.utcnow()
 
@@ -198,12 +202,16 @@ def record_water_intake(
     user: User,
     amount_ml: float = 100,
     intake_local_date: date | None = None,
+    intake_local_time: str | None = None,
 ) -> AdditiveIntake:
     if amount_ml <= 0:
         raise ValueError("amount_ml must be positive")
 
     if intake_local_date is not None:
-        intake_dt = meal_datetime_for_local_date_end(user, intake_local_date)
+        if intake_local_time:
+            intake_dt = local_datetime_to_utc_naive(user, intake_local_date, intake_local_time)
+        else:
+            intake_dt = meal_datetime_for_local_date_at_current_time(user, intake_local_date)
     else:
         intake_dt = datetime.utcnow()
 

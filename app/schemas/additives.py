@@ -91,11 +91,13 @@ class AdditiveIntakeCreateRequest(BaseModel):
     additive_id: int
     servings_count: float
     intake_local_date: date | None = None
+    intake_local_time: str | None = None
 
 
 class WaterIntakeCreateRequest(BaseModel):
     amount_ml: float = 100
     intake_local_date: date | None = None
+    intake_local_time: str | None = None
 
 
 class AdditiveIntakeResponse(BaseModel):
