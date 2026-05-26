@@ -255,6 +255,45 @@ def is_egg_like_name(name: str) -> bool:
     return False
 
 
+def is_egg_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True if query is for an egg-type ingredient."""
+    if NutritionCategory.EGG.value in ni.categories:
+        return True
+    if ni.alias_category == "egg":
+        return True
+    blob = _ingredient_blob(ni)
+    return "egg" in blob or "яйц" in blob
+
+
+def is_plain_whole_egg_query(ni: NormalizedIngredient) -> bool:
+    """True if query is for a plain whole egg (not salad, not white-only, not yolk-only, etc.)."""
+    if not is_egg_like_ingredient(ni):
+        return False
+    blob = _ingredient_blob(ni)
+    # Exclude compound dishes and specific egg parts
+    excluders = (
+        "salad", "салат",
+        "sandwich", "сэндвич",
+        "sauce", "соус",
+        "mayonnaise", "майонез",
+        "potato", "картофель",
+        "burrito",
+        "omelet", "omelette", "омлет",
+        "egg white", "белок",
+        "egg yolk", "желток",
+        "fast food",
+        "mcmuffin", "muffin",
+        "biscuit",
+        "roll",
+        "noodle",
+        "custard",
+        "powder",
+        "substitute",
+        "яичница",
+    )
+    return not any(x in blob for x in excluders)
+
+
 def is_tea_drink_query(ni: NormalizedIngredient) -> bool:
     """Plain tea / чай (not powder); excludes milk tea phrasing handled separately."""
     if query_implies_beverage_powder_or_dry_mix(ni.input_name):

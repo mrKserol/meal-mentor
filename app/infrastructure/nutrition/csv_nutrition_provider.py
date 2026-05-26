@@ -48,6 +48,8 @@ from app.infrastructure.nutrition.ingredient_input import (
     is_plain_yogurt_like_ingredient,
     is_soy_yogurt_like_ingredient,
     is_sesame_seed_like_ingredient,
+    is_egg_like_ingredient,
+    is_plain_whole_egg_query,
 )
 from app.infrastructure.nutrition.state_match import state_score
 
@@ -376,6 +378,8 @@ class NutritionService:
         plain_yogurt_q = is_plain_yogurt_like_ingredient(ni)
         soy_yogurt_q = is_soy_yogurt_like_ingredient(ni)
         sesame_q = is_sesame_seed_like_ingredient(ni)
+        egg_q = is_egg_like_ingredient(ni)
+        plain_egg_q = is_plain_whole_egg_query(ni)
         out: list[NutritionCandidate] = []
         for name_key, text_score in raw_candidates:
             row = self._data.get(name_key) or {}
@@ -424,6 +428,8 @@ class NutritionService:
                 plain_yogurt_like_q=plain_yogurt_q,
                 soy_yogurt_like_q=soy_yogurt_q,
                 sesame_seed_like_q=sesame_q,
+                egg_like_q=egg_q,
+                plain_whole_egg_q=plain_egg_q,
             )
             exact_bonus, exact_reasons = self._exact_row_bonus(ni.canonical_query, display)
             final = float(text_score) + float(st) + exact_bonus

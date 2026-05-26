@@ -1238,6 +1238,98 @@ def _egg_whole_boiled_adjustment(n: str, ing: str) -> tuple[float, list[str]]:
     return score, reasons
 
 
+def _egg_candidate_adjustment(
+    n: str,
+    query_lower: str,
+    requested_state: str,
+    *,
+    egg_like_q: bool = False,
+    plain_whole_egg_q: bool = False,
+    candidate_calories_per100: float = 0.0,
+    candidate_protein_per100: float = 0.0,
+    candidate_fat_per100: float = 0.0,
+    candidate_carbs_per100: float = 0.0,
+) -> tuple[float, list[str]]:
+    """
+    Aggressive re-ranking for plain egg queries: boost real egg rows,
+    penalize potato salad, fast-food, dried/powder, white-only, yolk-only, etc.
+    """
+    if not egg_like_q:
+        return 0.0, []
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    ql = query_lower.lower()
+    rs = (requested_state or "unknown").lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    wants_white = "white" in ql or "белок" in ql
+    wants_yolk = "yolk" in ql or "желток" in ql
+
+    # Bonuses for matching egg rows
+    if "egg" in nl:
+        add(120, "egg_word")
+    if ("hard-boiled" in nl or "hard boiled" in nl) and rs in ("boiled", "cooked", "unknown"):
+        add(100, "egg_hard_boiled_state")
+    if "boiled" in nl and rs in ("boiled", "cooked", "unknown"):
+        add(90, "egg_boiled_state")
+    if "cooked" in nl and rs in ("boiled", "cooked", "unknown"):
+        add(80, "egg_cooked_state")
+    if "whole" in nl and not wants_white and not wants_yolk:
+        add(70, "egg_whole")
+    if "fried" in nl and rs == "fried":
+        add(50, "egg_fried_state")
+    if re.search(r"\braw\b", nl) and rs == "raw":
+        add(40, "egg_raw_state")
+
+    if not plain_whole_egg_q:
+        # For non-plain egg queries (e.g. egg salad), skip heavy penalties below
+        return max(score, -600.0), reasons
+
+    # Penalties for compound / mismatched items (only for plain whole egg queries)
+    if "potato salad" in nl:
+        add(-250, "egg_potato_salad")
+    elif "salad" in nl and "salad" not in ql and "салат" not in ql:
+        add(-220, "egg_salad_mismatch")
+    if "sandwich" in nl and "sandwich" not in ql:
+        add(-220, "egg_sandwich")
+    if "burrito" in nl and "burrito" not in ql:
+        add(-200, "egg_burrito")
+    if "fast food" in nl and "fast food" not in ql:
+        add(-200, "egg_fast_food")
+    if "babyfood" in nl and "baby" not in ql and "babyfood" not in ql:
+        add(-180, "egg_babyfood")
+    if "mayonnaise" in nl and "mayonnaise" not in ql:
+        add(-180, "egg_mayonnaise")
+    if "sauce" in nl and "sauce" not in ql:
+        add(-160, "egg_sauce")
+    if "substitute" in nl and "substitute" not in ql:
+        add(-150, "egg_substitute")
+    if "dried" in nl and "dried" not in ql:
+        add(-150, "egg_dried")
+    if "powder" in nl and "powder" not in ql:
+        add(-150, "egg_powder")
+
+    if ("white" in nl or re.search(r"egg,?\s+white", nl)) and not wants_white:
+        add(-120, "egg_white_mismatch")
+    if ("yolk" in nl or re.search(r"egg,?\s+yolk", nl)) and not wants_yolk:
+        add(-120, "egg_yolk_mismatch")
+
+    # Macro sanity checks for plain whole egg
+    if candidate_carbs_per100 > 5:
+        add(-120, "egg_too_many_carbs")
+    if candidate_calories_per100 > 250:
+        add(-160, "egg_too_high_calories")
+    if candidate_fat_per100 > 20:
+        add(-120, "egg_too_high_fat")
+
+    return max(score, -600.0), reasons
+
+
 def _water_candidate_adjustment(
     candidate_name: str,
     query_lower: str,
@@ -1769,6 +1861,8 @@ def state_score(
     soy_yogurt_like_q: bool = False,
     sesame_seed_like_q: bool = False,
     candidate_sugar_per100: float = 0.0,
+    egg_like_q: bool = False,
+    plain_whole_egg_q: bool = False,
 ) -> tuple[float, list[str]]:
     """
     Returns (score_adjustment, reason strings).
@@ -2145,5 +2239,20 @@ def state_score(
         )
         score += se
         reasons.extend(ser)
+
+    if egg_like_q:
+        eg, egr = _egg_candidate_adjustment(
+            n,
+            query_lower,
+            rs,
+            egg_like_q=egg_like_q,
+            plain_whole_egg_q=plain_whole_egg_q,
+            candidate_calories_per100=candidate_calories_per100,
+            candidate_protein_per100=candidate_protein_per100,
+            candidate_fat_per100=candidate_fat_per100,
+            candidate_carbs_per100=candidate_carbs_per100,
+        )
+        score += eg
+        reasons.extend(egr)
 
     return score, reasons

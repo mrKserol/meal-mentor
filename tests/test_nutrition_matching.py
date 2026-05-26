@@ -1334,3 +1334,71 @@ def test_golden_breakfast_regression_case(nutrition_svc: NutritionService) -> No
         assert bad not in coffee_match, f"coffee match must not suggest {bad!r}"
     dates_cal = int(flat["dates"].get("calories") or 0)
     assert dates_cal >= 40, f"dates scaled calories too low: {dates_cal}"
+
+
+# --- Egg matching tests ---
+
+def test_boiled_egg_not_potato_salad(nutrition_svc: NutritionService) -> None:
+    """Plain 'egg' boiled should not match potato salad with egg or other compound dishes."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"egg": {"grams": 150, "state": "boiled"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    # Must contain egg and one of: hard-boiled, boiled, cooked, whole
+    assert "egg" in m, f"egg match must contain 'egg', got {m!r}"
+    assert any(x in m for x in ("hard-boiled", "boiled", "cooked", "whole")), (
+        f"egg match must contain hard-boiled/boiled/cooked/whole, got {m!r}"
+    )
+    # Must not be compound dish
+    for bad in ("potato salad", "salad", "sandwich", "burrito", "fast food", "babyfood", "mayonnaise", "sauce"):
+        assert bad not in m, f"egg must not match {bad!r}, got {m!r}"
+    # Macro checks (for 150g)
+    cal = int(data.get("calories") or 0)
+    prot = float(data.get("proteins") or 0)
+    fat = float(data.get("fats") or 0)
+    carb = float(data.get("carbohydrates") or 0)
+    assert 190 <= cal <= 270, f"egg 150g boiled calories {cal} expected 190–270"
+    assert prot >= 15.0, f"egg 150g boiled protein {prot} expected >= 15"
+    assert 10.0 <= fat <= 22.0, f"egg 150g boiled fat {fat} expected 10–22"
+    assert carb <= 5.0, f"egg 150g boiled carbs {carb} expected <= 5"
+
+
+def test_boiled_egg_ru_not_potato_salad(nutrition_svc: NutritionService) -> None:
+    """Russian 'яйцо' boiled should not match potato salad or other compound dishes."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"яйцо": {"grams": 150, "state": "boiled"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "egg" in m, f"яйцо match must contain 'egg', got {m!r}"
+    assert any(x in m for x in ("hard-boiled", "boiled", "cooked", "whole")), (
+        f"яйцо match must contain hard-boiled/boiled/cooked/whole, got {m!r}"
+    )
+    for bad in ("potato salad", "salad", "sandwich", "burrito", "fast food", "babyfood", "mayonnaise", "sauce"):
+        assert bad not in m, f"яйцо must not match {bad!r}, got {m!r}"
+    cal = int(data.get("calories") or 0)
+    prot = float(data.get("proteins") or 0)
+    fat = float(data.get("fats") or 0)
+    carb = float(data.get("carbohydrates") or 0)
+    assert 190 <= cal <= 270, f"яйцо 150g boiled calories {cal} expected 190–270"
+    assert prot >= 15.0, f"яйцо 150g boiled protein {prot} expected >= 15"
+    assert 10.0 <= fat <= 22.0, f"яйцо 150g boiled fat {fat} expected 10–22"
+    assert carb <= 5.0, f"яйцо 150g boiled carbs {carb} expected <= 5"
+
+
+def test_egg_salad_can_match_non_plain_when_explicit(nutrition_svc: NutritionService) -> None:
+    """Explicit 'egg salad' query should not be forced to match plain hard-boiled egg."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"egg salad": {"grams": 150, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    # Should contain egg — but allowed to match various egg preparations
+    assert "egg" in m, f"egg salad match must contain 'egg', got {m!r}"
+    # Must not match obviously unrelated items
+    for bad in ("eggnog", "eggplant", "babyfood"):
+        assert bad not in m, f"egg salad must not match {bad!r}, got {m!r}"

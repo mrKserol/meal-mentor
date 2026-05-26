@@ -8510,6 +8510,76 @@
       "canonical": "Seeds, from roasted and toasted kernels (most common type), tahini, sesame butter",
       "default_state": "unknown",
       "category": "sesame_paste"
+    },
+    "egg": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "boiled",
+      "category": "egg"
+    },
+    "eggs": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "boiled",
+      "category": "egg"
+    },
+    "cooked egg": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "cooked",
+      "category": "egg"
+    },
+    "cooked eggs": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "cooked",
+      "category": "egg"
+    },
+    "raw egg": {
+      "canonical": "Egg, fresh, raw, whole",
+      "default_state": "raw",
+      "category": "egg"
+    },
+    "raw eggs": {
+      "canonical": "Egg, fresh, raw, whole",
+      "default_state": "raw",
+      "category": "egg"
+    },
+    "egg white": {
+      "canonical": "Egg, fresh, raw, white",
+      "default_state": "raw",
+      "category": "egg"
+    },
+    "egg whites": {
+      "canonical": "Egg, fresh, raw, white",
+      "default_state": "raw",
+      "category": "egg"
+    },
+    "egg yolk": {
+      "canonical": "Egg, fresh, raw, yolk",
+      "default_state": "raw",
+      "category": "egg"
+    },
+    "egg yolks": {
+      "canonical": "Egg, fresh, raw, yolk",
+      "default_state": "raw",
+      "category": "egg"
+    },
+    "отварное яйцо": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "boiled",
+      "category": "egg"
+    },
+    "отварные яйца": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "boiled",
+      "category": "egg"
+    },
+    "варёные яйца": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "boiled",
+      "category": "egg"
+    },
+    "яйца": {
+      "canonical": "Egg, hard-boiled, cooked, whole",
+      "default_state": "boiled",
+      "category": "egg"
     }
   }
 }
