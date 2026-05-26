@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
 
 import zoneinfo
@@ -180,7 +180,7 @@ def record_additive_intake(
 
     if intake_local_date is not None:
         if intake_local_time:
-            intake_dt = local_datetime_to_utc_naive(user, intake_local_date, intake_local_time)
+            intake_dt = local_datetime_to_utc_naive(user, intake_local_date, time.fromisoformat(intake_local_time))
         else:
             intake_dt = meal_datetime_for_local_date_at_current_time(user, intake_local_date)
     else:
@@ -214,7 +214,7 @@ def record_water_intake(
 
     if intake_local_date is not None:
         if intake_local_time:
-            intake_dt = local_datetime_to_utc_naive(user, intake_local_date, intake_local_time)
+            intake_dt = local_datetime_to_utc_naive(user, intake_local_date, time.fromisoformat(intake_local_time))
         else:
             intake_dt = meal_datetime_for_local_date_at_current_time(user, intake_local_date)
     else:
