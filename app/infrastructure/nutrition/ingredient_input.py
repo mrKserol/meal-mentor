@@ -800,6 +800,89 @@ def is_oil_like_ingredient(ni: NormalizedIngredient) -> bool:
     return "avocado oil" in blob or "масло авокадо" in blob or "авокадовое масло" in blob
 
 
+def is_water_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True for plain water queries (not watermelon, not coconut water)."""
+    if NutritionCategory.WATER.value in ni.categories:
+        return True
+    if ni.alias_category == "water":
+        return True
+    blob = _ingredient_blob(ni)
+    # Must contain water or вода
+    if "water" not in blob and "вода" not in blob:
+        return False
+    # Exclude watermelon and related
+    if any(x in blob for x in ("watermelon", "арбуз")):
+        return False
+    # Exclude coconut water
+    if any(x in blob for x in ("coconut water", "coconut juice", "кокосовая вода", "вода кокоса", "вода из кокоса")):
+        return False
+    # Exclude water buffalo, water chestnut
+    if any(x in blob for x in ("water buffalo", "water chestnut", "waterchestnut")):
+        return False
+    # Exclude recipes with water as ingredient
+    if any(x in blob for x in ("with water", "cooked with water", "prepared with water", "tonic water", "soda water")):
+        return False
+    # Only match if explicitly alias category or known water product names
+    if ni.alias_category == "water":
+        return True
+    return False
+
+
+def is_yogurt_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True if query is for yogurt (any type)."""
+    if NutritionCategory.YOGURT.value in ni.categories:
+        return True
+    if NutritionCategory.SOY_YOGURT.value in ni.categories:
+        return True
+    if ni.alias_category in ("yogurt", "soy_yogurt"):
+        return True
+    blob = _ingredient_blob(ni)
+    return any(x in blob for x in ("yogurt", "yoghurt", "йогурт", "йогур"))
+
+
+def is_plain_yogurt_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True if yogurt but not soy/flavored."""
+    if not is_yogurt_like_ingredient(ni):
+        return False
+    if is_soy_yogurt_like_ingredient(ni):
+        return False
+    blob = _ingredient_blob(ni)
+    # Not soy
+    if any(x in blob for x in ("soy", "soya", "соев")):
+        return False
+    # Not flavored
+    if any(x in blob for x in ("peach", "персик", "strawberry", "клубник", "flavored", "fruit", "vanilla", "chocolate", "raspberry", "blueberry", "cherry", "lime", "banana")):
+        return False
+    return True
+
+
+def is_soy_yogurt_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True if query is specifically for soy yogurt."""
+    if NutritionCategory.SOY_YOGURT.value in ni.categories:
+        return True
+    if ni.alias_category == "soy_yogurt":
+        return True
+    blob = _ingredient_blob(ni)
+    return any(x in blob for x in ("soy yogurt", "soya yogurt", "соевый йогурт"))
+
+
+def is_sesame_seed_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True for sesame seed queries (not tahini/paste/oil)."""
+    if NutritionCategory.SESAME_SEED.value in ni.categories:
+        return True
+    if ni.alias_category == "sesame_seed":
+        return True
+    blob = _ingredient_blob(ni)
+    if any(x in blob for x in ("sesame seed", "sesame seeds", "кунжут", "семена кунжута")):
+        # Exclude tahini/paste/oil if not in query
+        if any(x in blob for x in ("tahini", "тахини", "кунжутная паста", "sesame butter", "sesame paste")):
+            return False
+        if "sesame oil" in blob and "sesame seed" not in blob:
+            return False
+        return True
+    return False
+
+
 def is_poultry_breast_query(ni: NormalizedIngredient) -> bool:
     blob = f"{ni.input_name} {ni.canonical_query}".lower()
     if "wing" in blob or "thigh" in blob or "drumstick" in blob:

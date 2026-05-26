@@ -5579,7 +5579,7 @@
     "греческий йогурт": {
       "canonical": "Yogurt, whole milk, plain, Greek",
       "default_state": "unknown",
-      "category": "dairy"
+      "category": "yogurt"
     },
     "гречка": {
       "canonical": "Buckwheat groats, cooked, roasted",
@@ -5654,7 +5654,7 @@
     "йогурт": {
       "canonical": "Yogurt, whole milk, plain, Greek",
       "default_state": "unknown",
-      "category": "dairy"
+      "category": "yogurt"
     },
     "кабачок": {
       "canonical": "Squash, raw, includes skin, zucchini, summer",
@@ -6419,7 +6419,7 @@
     "кунжут": {
       "canonical": "Seeds, dried, whole, sesame seeds",
       "default_state": "dry",
-      "category": "seeds"
+      "category": "sesame_seed"
     },
     "куриная грудка": {
       "canonical": "Chicken, roasted, cooked, meat only, broilers or fryers",
@@ -8320,6 +8320,196 @@
       "canonical": "Oil, avocado",
       "default_state": "unknown",
       "category": "oil"
+    },
+    "yogurt": {
+      "canonical": "Yogurt, whole milk, plain, Greek",
+      "default_state": "unknown",
+      "category": "yogurt"
+    },
+    "yoghurt": {
+      "canonical": "Yogurt, whole milk, plain, Greek",
+      "default_state": "unknown",
+      "category": "yogurt"
+    },
+    "plain yogurt": {
+      "canonical": "Yogurt, whole milk, plain, Greek",
+      "default_state": "unknown",
+      "category": "yogurt"
+    },
+    "natural yogurt": {
+      "canonical": "Yogurt, whole milk, plain, Greek",
+      "default_state": "unknown",
+      "category": "yogurt"
+    },
+    "plain yoghurt": {
+      "canonical": "Yogurt, whole milk, plain, Greek",
+      "default_state": "unknown",
+      "category": "yogurt"
+    },
+    "обычный йогурт": {
+      "canonical": "Yogurt, whole milk, plain, Greek",
+      "default_state": "unknown",
+      "category": "yogurt"
+    },
+    "натуральный йогурт": {
+      "canonical": "Yogurt, whole milk, plain, Greek",
+      "default_state": "unknown",
+      "category": "yogurt"
+    },
+    "йогурт без сахара": {
+      "canonical": "Yogurt, whole milk, plain, Greek",
+      "default_state": "unknown",
+      "category": "yogurt"
+    },
+    "йогурт без добавок": {
+      "canonical": "Yogurt, whole milk, plain, Greek",
+      "default_state": "unknown",
+      "category": "yogurt"
+    },
+    "greek yogurt": {
+      "canonical": "Yogurt, whole milk, plain, Greek",
+      "default_state": "unknown",
+      "category": "yogurt"
+    },
+    "soy yogurt": {
+      "canonical": "SILK Plain soy yogurt",
+      "default_state": "unknown",
+      "category": "soy_yogurt"
+    },
+    "soya yogurt": {
+      "canonical": "SILK Plain soy yogurt",
+      "default_state": "unknown",
+      "category": "soy_yogurt"
+    },
+    "соевый йогурт": {
+      "canonical": "SILK Plain soy yogurt",
+      "default_state": "unknown",
+      "category": "soy_yogurt"
+    },
+    "water": {
+      "canonical": "Water, generic, bottled",
+      "default_state": "unknown",
+      "category": "water"
+    },
+    "plain water": {
+      "canonical": "Water, generic, bottled",
+      "default_state": "unknown",
+      "category": "water"
+    },
+    "drinking water": {
+      "canonical": "Water, generic, bottled",
+      "default_state": "unknown",
+      "category": "water"
+    },
+    "tap water": {
+      "canonical": "Beverages, drinking, tap, water",
+      "default_state": "unknown",
+      "category": "water"
+    },
+    "bottled water": {
+      "canonical": "Water, generic, bottled",
+      "default_state": "unknown",
+      "category": "water"
+    },
+    "вода": {
+      "canonical": "Water, generic, bottled",
+      "default_state": "unknown",
+      "category": "water"
+    },
+    "питьевая вода": {
+      "canonical": "Water, generic, bottled",
+      "default_state": "unknown",
+      "category": "water"
+    },
+    "обычная вода": {
+      "canonical": "Water, generic, bottled",
+      "default_state": "unknown",
+      "category": "water"
+    },
+    "вода питьевая": {
+      "canonical": "Water, generic, bottled",
+      "default_state": "unknown",
+      "category": "water"
+    },
+    "бутилированная вода": {
+      "canonical": "Water, generic, bottled",
+      "default_state": "unknown",
+      "category": "water"
+    },
+    "вода из-под крана": {
+      "canonical": "Beverages, drinking, tap, water",
+      "default_state": "unknown",
+      "category": "water"
+    },
+    "sesame seeds": {
+      "canonical": "Seeds, dried, whole, sesame seeds",
+      "default_state": "dry",
+      "category": "sesame_seed"
+    },
+    "white sesame seeds": {
+      "canonical": "Seeds, dried, whole, sesame seeds",
+      "default_state": "dry",
+      "category": "sesame_seed"
+    },
+    "black sesame seeds": {
+      "canonical": "Seeds, dried, whole, sesame seeds",
+      "default_state": "dry",
+      "category": "sesame_seed"
+    },
+    "sesame": {
+      "canonical": "Seeds, dried, whole, sesame seeds",
+      "default_state": "dry",
+      "category": "sesame_seed"
+    },
+    "семена кунжута": {
+      "canonical": "Seeds, dried, whole, sesame seeds",
+      "default_state": "dry",
+      "category": "sesame_seed"
+    },
+    "белый кунжут": {
+      "canonical": "Seeds, dried, whole, sesame seeds",
+      "default_state": "dry",
+      "category": "sesame_seed"
+    },
+    "черный кунжут": {
+      "canonical": "Seeds, dried, whole, sesame seeds",
+      "default_state": "dry",
+      "category": "sesame_seed"
+    },
+    "чёрный кунжут": {
+      "canonical": "Seeds, dried, whole, sesame seeds",
+      "default_state": "dry",
+      "category": "sesame_seed"
+    },
+    "кунжут белый": {
+      "canonical": "Seeds, dried, whole, sesame seeds",
+      "default_state": "dry",
+      "category": "sesame_seed"
+    },
+    "кунжут черный": {
+      "canonical": "Seeds, dried, whole, sesame seeds",
+      "default_state": "dry",
+      "category": "sesame_seed"
+    },
+    "кунжут чёрный": {
+      "canonical": "Seeds, dried, whole, sesame seeds",
+      "default_state": "dry",
+      "category": "sesame_seed"
+    },
+    "tahini": {
+      "canonical": "Seeds, from roasted and toasted kernels (most common type), tahini, sesame butter",
+      "default_state": "unknown",
+      "category": "sesame_paste"
+    },
+    "тахини": {
+      "canonical": "Seeds, from roasted and toasted kernels (most common type), tahini, sesame butter",
+      "default_state": "unknown",
+      "category": "sesame_paste"
+    },
+    "кунжутная паста": {
+      "canonical": "Seeds, from roasted and toasted kernels (most common type), tahini, sesame butter",
+      "default_state": "unknown",
+      "category": "sesame_paste"
     }
   }
 }
