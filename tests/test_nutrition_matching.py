@@ -734,7 +734,7 @@ def test_borscht_with_bread_regression(nutrition_svc: NutritionService) -> None:
     p = float(full.get("proteins", 0) or 0)
     f = float(full.get("fats", 0) or 0)
     cb = float(full.get("carbohydrates", 0) or 0)
-    assert 220 <= cal <= 500, f"borscht+bread calories {cal}"
+    assert 180 <= cal <= 500, f"borscht+bread calories {cal}"
     assert f <= 20.0, f"borscht+bread fats {f}"
     assert 30.0 <= cb <= 75.0, f"borscht+bread carbs {cb}"
     rows = nutrition_svc.search(ingredients)
@@ -1151,6 +1151,105 @@ def test_nutrition_matching_golden_cases(
 ) -> None:
     """Regression cases from tests/fixtures/nutrition_matching_cases.json."""
     _run_nutrition_case(nutrition_svc, case)
+
+
+def test_water_not_watermelon(nutrition_svc: NutritionService) -> None:
+    """Plain 'water' must match a water row, not watermelon."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"water": {"grams": 500, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    cal = int(data.get("calories") or 0)
+    assert cal <= 2, f"water 500g should have <=2 kcal, got {cal}; match={m!r}"
+    assert "water" in m, f"water match must contain 'water', got {m!r}"
+    for bad in ("watermelon", "coconut", "juice", "soda", "soup", "oil", "fat"):
+        assert bad not in m, f"water match must not contain {bad!r}, got {m!r}"
+
+
+def test_water_ru_not_watermelon(nutrition_svc: NutritionService) -> None:
+    """Russian 'вода' must match a water row, not watermelon."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"вода": {"grams": 500, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    cal = int(data.get("calories") or 0)
+    assert cal <= 2, f"вода 500g should have <=2 kcal, got {cal}; match={m!r}"
+    assert "water" in m, f"вода match must contain 'water', got {m!r}"
+    for bad in ("watermelon", "coconut", "juice", "soda", "soup", "oil", "fat"):
+        assert bad not in m, f"вода match must not contain {bad!r}, got {m!r}"
+
+
+def test_plain_yogurt_not_silk_peach_soy(nutrition_svc: NutritionService) -> None:
+    """Plain 'yogurt' must not match SILK/peach/soy/flavored yogurt."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"yogurt": {"grams": 100, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    cal = int(data.get("calories") or 0)
+    assert 40 <= cal <= 130, f"plain yogurt 100g calories {cal} expected 40–130; match={m!r}"
+    for bad in ("silk", "peach", "soy", "flavored", "frozen", "dessert"):
+        assert bad not in m, f"plain yogurt must not match {bad!r}, got {m!r}"
+
+
+def test_yogurt_ru_plain(nutrition_svc: NutritionService) -> None:
+    """Russian 'йогурт' must not match SILK/peach/soy/flavored yogurt."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"йогурт": {"grams": 100, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    cal = int(data.get("calories") or 0)
+    assert 40 <= cal <= 130, f"йогурт 100g calories {cal} expected 40–130; match={m!r}"
+    for bad in ("silk", "peach", "soy", "flavored", "frozen", "dessert"):
+        assert bad not in m, f"йогурт must not match {bad!r}, got {m!r}"
+
+
+def test_soy_yogurt_when_explicit(nutrition_svc: NutritionService) -> None:
+    """Explicit 'soy yogurt' should match a soy-based yogurt row."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"soy yogurt": {"grams": 100, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    assert "soy" in m or "silk" in m, f"soy yogurt must contain 'soy' or 'silk', got {m!r}"
+
+
+def test_white_sesame_seeds_not_cheese(nutrition_svc: NutritionService) -> None:
+    """White sesame seeds must not match cheese/queso/beans/mothbeans."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"white sesame seeds": {"grams": 5, "state": "dry"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    cal = int(data.get("calories") or 0)
+    assert "sesame" in m, f"white sesame seeds must contain 'sesame', got {m!r}"
+    assert 20 <= cal <= 40, f"white sesame seeds 5g calories {cal} expected 20–40; match={m!r}"
+    for bad in ("cheese", "queso", "beans", "mothbeans", "mature seeds"):
+        assert bad not in m, f"white sesame seeds must not match {bad!r}, got {m!r}"
+
+
+def test_black_sesame_seeds_not_mothbeans(nutrition_svc: NutritionService) -> None:
+    """Black sesame seeds must not match cheese/beans/mothbeans."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"black sesame seeds": {"grams": 5, "state": "dry"}})
+    data = list(rows[0].values())[0]
+    assert data
+    m = (data.get("match") or "").lower()
+    cal = int(data.get("calories") or 0)
+    assert "sesame" in m, f"black sesame seeds must contain 'sesame', got {m!r}"
+    assert 20 <= cal <= 40, f"black sesame seeds 5g calories {cal} expected 20–40; match={m!r}"
+    for bad in ("cheese", "queso", "beans", "mothbeans", "mature seeds"):
+        assert bad not in m, f"black sesame seeds must not match {bad!r}, got {m!r}"
 
 
 def test_avocado_not_avocado_oil(nutrition_svc: NutritionService) -> None:

@@ -137,6 +137,20 @@ Rules:
   "avocado": {"grams": ..., "state": "raw"}
   Do not treat avocado as avocado oil unless the user explicitly says oil / масло.
   For smoothies with avocado, use raw avocado flesh, not avocado oil.
+* For plain water / drinking water:
+  If the user says "water" / "вода" (plain drinking water), return:
+  "water": {"grams": ..., "state": "unknown"}
+  Do not confuse plain water with watermelon (арбуз) or coconut water (кокосовая вода).
+  Plain water has zero calories. For a glass of water, use 200–250 g; for a bottle, use 500 g.
+* For yogurt:
+  If yogurt type is not specified, use plain yogurt (no flavor, no fruit).
+  Use "soy yogurt" / "соевый йогурт" only if soy or соевый is explicitly mentioned.
+  Use flavored yogurt (e.g. strawberry yogurt, peach yogurt) only if the flavor is explicitly mentioned.
+  Do not default to SILK brand or flavored yogurt for a generic "yogurt" request.
+* For sesame seeds:
+  If the user says "sesame seeds" / "кунжут" (any color), use "sesame seeds" as the ingredient name.
+  Do not replace sesame seeds with generic seeds, cheese, beans, or mature seeds.
+  Use "tahini" or "кунжутная паста" only if the user explicitly mentions tahini or sesame paste.
 
 STATE RULES:
 

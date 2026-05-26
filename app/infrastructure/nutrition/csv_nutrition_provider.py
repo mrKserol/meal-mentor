@@ -43,6 +43,11 @@ from app.infrastructure.nutrition.ingredient_input import (
     is_tea_drink_query,
     is_tuna_like_ingredient,
     parse_ingredients_dict,
+    is_water_like_ingredient,
+    is_yogurt_like_ingredient,
+    is_plain_yogurt_like_ingredient,
+    is_soy_yogurt_like_ingredient,
+    is_sesame_seed_like_ingredient,
 )
 from app.infrastructure.nutrition.state_match import state_score
 
@@ -366,6 +371,11 @@ class NutritionService:
         seed_q = is_seed_kernel_query(ni)
         avocado_q = is_avocado_like_ingredient(ni)
         oil_q = is_oil_like_ingredient(ni)
+        water_q = is_water_like_ingredient(ni)
+        yogurt_q = is_yogurt_like_ingredient(ni)
+        plain_yogurt_q = is_plain_yogurt_like_ingredient(ni)
+        soy_yogurt_q = is_soy_yogurt_like_ingredient(ni)
+        sesame_q = is_sesame_seed_like_ingredient(ni)
         out: list[NutritionCandidate] = []
         for name_key, text_score in raw_candidates:
             row = self._data.get(name_key) or {}
@@ -380,6 +390,7 @@ class NutritionService:
                 candidate_protein_per100=float(row.get("proteins") or 0),
                 candidate_fat_per100=float(row.get("fats") or 0),
                 candidate_fiber_per100=float(row.get("fiber_g") or 0),
+                candidate_sugar_per100=float(row.get("sugar_g") or 0),
                 categories=ni.categories,
                 is_grain_like=grain,
                 is_legume_like=legume,
@@ -408,6 +419,11 @@ class NutritionService:
                 seed_kernel_q=seed_q,
                 avocado_like_q=avocado_q,
                 oil_like_q=oil_q,
+                water_like_q=water_q,
+                yogurt_like_q=yogurt_q,
+                plain_yogurt_like_q=plain_yogurt_q,
+                soy_yogurt_like_q=soy_yogurt_q,
+                sesame_seed_like_q=sesame_q,
             )
             exact_bonus, exact_reasons = self._exact_row_bonus(ni.canonical_query, display)
             final = float(text_score) + float(st) + exact_bonus

@@ -1238,6 +1238,194 @@ def _egg_whole_boiled_adjustment(n: str, ing: str) -> tuple[float, list[str]]:
     return score, reasons
 
 
+def _water_candidate_adjustment(
+    candidate_name: str,
+    query_lower: str,
+    *,
+    water_like_q: bool = False,
+    candidate_calories_per100: float = 0.0,
+    candidate_carbs_per100: float = 0.0,
+    candidate_fat_per100: float = 0.0,
+    candidate_protein_per100: float = 0.0,
+) -> tuple[float, list[str]]:
+    """Prefer zero-calorie water rows; penalize watermelon, flavored/sweetened beverages."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = candidate_name.lower()
+    ql = query_lower.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if not water_like_q:
+        return 0.0, reasons
+
+    # Bonuses for plain water rows
+    if re.search(r"^water,?\s", nl) or nl.strip() == "water":
+        add(150, "water_exact_match")
+    if "water, bottled" in nl or "bottled, water" in nl:
+        add(100, "water_bottled")
+    if "water, tap" in nl or "tap, water" in nl or "tap water" in nl:
+        add(100, "water_tap")
+    if "drinking water" in nl or "drinking, tap" in nl:
+        add(80, "water_drinking")
+    if "beverage" in nl and "water" in nl:
+        add(60, "water_beverage_water")
+    if "naya" in nl or "perrier" in nl or "poland spring" in nl or "evian" in nl:
+        add(90, "water_brand_bottled")
+
+    # Penalties for non-water items
+    if "watermelon" in nl:
+        add(-300, "water_watermelon")
+    if "coconut water" in nl and "coconut" not in ql:
+        add(-250, "water_coconut_water")
+    for bad in ("flavored", "sweetened", "soda", "juice", "soup", "oil", "fat"):
+        if bad in nl and bad not in ql:
+            add(-220, f"water_bad_{bad}")
+    if "beverage" in nl and candidate_calories_per100 > 5:
+        add(-180, "water_beverage_high_calories")
+    if "tonic" in nl:
+        add(-200, "water_tonic")
+    if "sparkling" in nl and "sparkling" not in ql:
+        add(-100, "water_sparkling")
+
+    # Macro sanity: plain water has ~0 everything
+    if candidate_calories_per100 > 1:
+        add(-300, "water_high_calories")
+    if candidate_carbs_per100 > 0.5:
+        add(-300, "water_high_carbs")
+    if candidate_fat_per100 > 0:
+        add(-300, "water_high_fat")
+    if candidate_protein_per100 > 0:
+        add(-200, "water_high_protein")
+
+    return max(score, -1000.0), reasons
+
+
+def _yogurt_candidate_adjustment(
+    candidate_name: str,
+    query_lower: str,
+    *,
+    yogurt_like_q: bool = False,
+    plain_yogurt_like_q: bool = False,
+    soy_yogurt_like_q: bool = False,
+    candidate_calories_per100: float = 0.0,
+    candidate_fat_per100: float = 0.0,
+    candidate_sugar_per100: float = 0.0,
+) -> tuple[float, list[str]]:
+    """Prefer plain/Greek yogurt for plain queries; penalize flavored/soy/SILK for plain queries."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = candidate_name.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if not yogurt_like_q:
+        return 0.0, reasons
+
+    # Bonuses for yogurt rows
+    if "yogurt" in nl:
+        add(100, "yogurt_word")
+    if "plain" in nl and plain_yogurt_like_q:
+        add(70, "yogurt_plain_word")
+    if any(x in nl for x in ("whole milk", "low fat", "lowfat", "nonfat")):
+        add(50, "yogurt_milk_type")
+    if "greek" in nl:
+        add(40, "yogurt_greek")
+    if "soy" in nl and soy_yogurt_like_q:
+        add(50, "yogurt_soy_aligned")
+
+    # Penalties for plain yogurt query
+    if plain_yogurt_like_q:
+        if any(x in nl for x in ("soy", "silk")):
+            add(-150, "yogurt_plain_soy_silk_penalty")
+        if any(x in nl for x in ("peach", "strawberry", "vanilla", "flavored", "raspberry", "blueberry", "cherry", "lime", "banana", "key lime")):
+            add(-130, "yogurt_plain_flavored_penalty")
+        if "fruit" in nl:
+            add(-120, "yogurt_plain_fruit_penalty")
+        if any(x in nl for x in ("sweetened", "dessert", "frozen")):
+            add(-100, "yogurt_plain_sweet_frozen")
+        if "babyfood" in nl:
+            add(-120, "yogurt_plain_babyfood")
+        # Macro sanity for plain yogurt
+        if candidate_calories_per100 > 150:
+            add(-120, "yogurt_high_calories")
+        if candidate_fat_per100 > 12:
+            add(-120, "yogurt_high_fat")
+        if candidate_sugar_per100 > 15:
+            add(-100, "yogurt_high_sugar")
+
+    return max(score, -500.0), reasons
+
+
+def _sesame_seed_candidate_adjustment(
+    candidate_name: str,
+    query_lower: str,
+    *,
+    sesame_seed_like_q: bool = False,
+) -> tuple[float, list[str]]:
+    """Prefer sesame seed rows; aggressively penalize cheese/beans/oil/paste for sesame queries."""
+    reasons: list[str] = []
+    score = 0.0
+    nl = candidate_name.lower()
+    ql = query_lower.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    if not sesame_seed_like_q:
+        return 0.0, reasons
+
+    # Bonuses
+    if "sesame" in nl:
+        add(150, "sesame_word")
+    if "sesame seeds" in nl or "sesame seed" in nl:
+        add(120, "sesame_seeds_phrase")
+    if "seeds" in nl or "seed" in nl:
+        add(80, "sesame_seed_word")
+    if "dried" in nl or re.search(r"\bdry\b", nl):
+        add(50, "sesame_dried")
+    if "whole" in nl:
+        add(30, "sesame_whole")
+
+    # Penalties for non-sesame or non-seed items
+    if any(x in nl for x in ("cheese", "queso")):
+        add(-300, "sesame_bad_cheese")
+    if any(x in nl for x in ("mothbeans", "moth beans")):
+        add(-250, "sesame_bad_mothbeans")
+    if "mature seeds" in nl and "sesame" not in nl:
+        add(-250, "sesame_bad_mature_seeds")
+    if re.search(r"\bbean", nl) and "sesame" not in nl:
+        add(-220, "sesame_bad_bean")
+    if "flour" in nl and "flour" not in ql:
+        add(-200, "sesame_bad_flour")
+    if any(x in nl for x in ("paste", "tahini", "sesame butter")) and "tahini" not in ql and "paste" not in ql:
+        add(-180, "sesame_bad_paste")
+    if "oil" in nl and "oil" not in ql:
+        add(-180, "sesame_bad_oil")
+    if "sauce" in nl and "sauce" not in ql:
+        add(-150, "sesame_bad_sauce")
+    if "babyfood" in nl:
+        add(-150, "sesame_bad_babyfood")
+    if "cracker" in nl and "cracker" not in ql:
+        add(-120, "sesame_bad_cracker")
+    if "chicken" in nl and "chicken" not in ql:
+        add(-100, "sesame_bad_chicken")
+    if "candy" in nl or "candies" in nl:
+        add(-120, "sesame_bad_candy")
+    if "meal" in nl and "sesame" not in nl and "meal" not in ql:
+        add(-180, "sesame_bad_meal")
+
+    return max(score, -600.0), reasons
+
+
 def _avocado_candidate_adjustment(
     n: str,
     query_lower: str,
@@ -1575,6 +1763,12 @@ def state_score(
     seed_kernel_q: bool = False,
     avocado_like_q: bool = False,
     oil_like_q: bool = False,
+    water_like_q: bool = False,
+    yogurt_like_q: bool = False,
+    plain_yogurt_like_q: bool = False,
+    soy_yogurt_like_q: bool = False,
+    sesame_seed_like_q: bool = False,
+    candidate_sugar_per100: float = 0.0,
 ) -> tuple[float, list[str]]:
     """
     Returns (score_adjustment, reason strings).
@@ -1915,5 +2109,41 @@ def state_score(
         )
         score += av
         reasons.extend(avr)
+
+    if water_like_q:
+        wa, war = _water_candidate_adjustment(
+            candidate_name,
+            query_lower,
+            water_like_q=water_like_q,
+            candidate_calories_per100=candidate_calories_per100,
+            candidate_carbs_per100=candidate_carbs_per100,
+            candidate_fat_per100=candidate_fat_per100,
+            candidate_protein_per100=candidate_protein_per100,
+        )
+        score += wa
+        reasons.extend(war)
+
+    if yogurt_like_q:
+        yo, yor = _yogurt_candidate_adjustment(
+            candidate_name,
+            query_lower,
+            yogurt_like_q=yogurt_like_q,
+            plain_yogurt_like_q=plain_yogurt_like_q,
+            soy_yogurt_like_q=soy_yogurt_like_q,
+            candidate_calories_per100=candidate_calories_per100,
+            candidate_fat_per100=candidate_fat_per100,
+            candidate_sugar_per100=candidate_sugar_per100,
+        )
+        score += yo
+        reasons.extend(yor)
+
+    if sesame_seed_like_q:
+        se, ser = _sesame_seed_candidate_adjustment(
+            candidate_name,
+            query_lower,
+            sesame_seed_like_q=sesame_seed_like_q,
+        )
+        score += se
+        reasons.extend(ser)
 
     return score, reasons

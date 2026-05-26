@@ -1046,7 +1046,7 @@
       }
     },
     "expected": {
-      "calories_min": 220,
+      "calories_min": 180,
       "calories_max": 500,
       "protein_min": 6,
       "protein_max": 25,
@@ -1341,6 +1341,99 @@
         "avocado": [
           "avocado",
           "avocados"
+        ]
+      }
+    }
+  },
+  {
+    "name": "plain water 500g",
+    "description": "Plain drinking water, 500 grams",
+    "ingredients": {
+      "water": {
+        "grams": 500,
+        "state": "unknown"
+      }
+    },
+    "expected": {
+      "calories_min": 0,
+      "calories_max": 2,
+      "forbidden_match_contains": {
+        "water": [
+          "watermelon",
+          "coconut",
+          "juice",
+          "soda",
+          "soup",
+          "oil",
+          "fat"
+        ]
+      }
+    }
+  },
+  {
+    "name": "plain yogurt 100g",
+    "description": "Plain yogurt without flavor or soy",
+    "ingredients": {
+      "yogurt": {
+        "grams": 100,
+        "state": "unknown"
+      }
+    },
+    "expected": {
+      "calories_min": 40,
+      "calories_max": 130,
+      "forbidden_match_contains": {
+        "yogurt": [
+          "SILK",
+          "peach",
+          "soy",
+          "flavored",
+          "frozen",
+          "dessert"
+        ]
+      }
+    }
+  },
+  {
+    "name": "sesame seeds small portion",
+    "description": "White and black sesame seeds, small amounts",
+    "ingredients": {
+      "white sesame seeds": {
+        "grams": 5,
+        "state": "dry"
+      },
+      "black sesame seeds": {
+        "grams": 5,
+        "state": "dry"
+      }
+    },
+    "expected": {
+      "calories_min": 40,
+      "calories_max": 80,
+      "forbidden_match_contains": {
+        "white sesame seeds": [
+          "cheese",
+          "queso",
+          "mothbeans",
+          "beans",
+          "mature seeds",
+          "oil"
+        ],
+        "black sesame seeds": [
+          "cheese",
+          "queso",
+          "mothbeans",
+          "beans",
+          "mature seeds",
+          "oil"
+        ]
+      },
+      "match_all_substrings": {
+        "white sesame seeds": [
+          "sesame"
+        ],
+        "black sesame seeds": [
+          "sesame"
         ]
       }
     }

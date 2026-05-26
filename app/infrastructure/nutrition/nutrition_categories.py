@@ -48,6 +48,11 @@ class NutritionCategory(str, Enum):
     COCONUT_CREAM = "coconut_cream"
     OIL = "oil"
     AVOCADO = "avocado"
+    YOGURT = "yogurt"
+    SOY_YOGURT = "soy_yogurt"
+    WATER = "water"
+    SESAME_SEED = "sesame_seed"
+    SESAME_PASTE = "sesame_paste"
     UNKNOWN = "unknown"
 
 
@@ -215,6 +220,60 @@ def detect_ingredient_categories(
         reasons.append(reason)
 
     ac = (alias_category or "").strip().lower()
+
+    # --- Water: check before anything else (avoid watermelon/coconut water confusion) ---
+    if ac == "water" or (
+        ("water" in blob or "вода" in blob)
+        and not any(x in blob for x in (
+            "watermelon", "арбуз",
+            "coconut water", "coconut juice", "кокосовая вода", "вода кокоса", "вода из кокоса",
+            "water buffalo", "water chestnut", "водяной орех",
+            "tonic water", "soda water", "sparkling water",
+            "water biscuit", "water cracker", "prepared with water", "cooked with water",
+            "with water",
+        ))
+    ) and (
+        ac == "water"
+        or any(x in blob for x in ("water, generic", "water, bottled", "tap, water", "drinking, tap", "naya", "perrier", "poland spring", "well, tap"))
+        or (ac == "water")
+    ):
+        # Only trigger if alias category is water OR the canonical/input is clearly water-only
+        if ac == "water":
+            mark(
+                NutritionCategory.WATER,
+                NutritionCategory.BEVERAGE,
+                reason="water_like",
+            )
+
+    # --- Soy yogurt ---
+    if ac == "soy_yogurt" or any(x in blob for x in ("soy yogurt", "soya yogurt", "соевый йогурт")):
+        mark(
+            NutritionCategory.SOY_YOGURT,
+            NutritionCategory.YOGURT,
+            reason="soy_yogurt_like",
+        )
+    # --- Plain yogurt ---
+    elif ac == "yogurt" or any(x in blob for x in ("yogurt", "yoghurt", "йогурт", "йогур")):
+        mark(
+            NutritionCategory.YOGURT,
+            NutritionCategory.DAIRY,
+            reason="yogurt_like",
+        )
+
+    # --- Tahini / sesame paste ---
+    if ac == "sesame_paste" or any(x in blob for x in ("tahini", "тахини", "кунжутная паста")):
+        mark(
+            NutritionCategory.SESAME_PASTE,
+            NutritionCategory.SEED,
+            reason="sesame_paste_like",
+        )
+    # --- Sesame seeds ---
+    elif ac == "sesame_seed" or any(x in blob for x in ("sesame seed", "sesame seeds", "кунжут", "семена кунжута")):
+        mark(
+            NutritionCategory.SESAME_SEED,
+            NutritionCategory.SEED,
+            reason="sesame_seed_like",
+        )
 
     # Most specific first.
     if "beer" in blob or "пиво" in blob or ac == "alcoholic_beverage":
@@ -501,6 +560,11 @@ def detect_ingredient_categories(
         "coconut_cream": (NutritionCategory.COCONUT_CREAM, NutritionCategory.DAIRY),
         "oil": (NutritionCategory.OIL,),
         "avocado": (NutritionCategory.AVOCADO, NutritionCategory.FRUIT),
+        "yogurt": (NutritionCategory.YOGURT, NutritionCategory.DAIRY),
+        "soy_yogurt": (NutritionCategory.SOY_YOGURT, NutritionCategory.YOGURT),
+        "water": (NutritionCategory.WATER, NutritionCategory.BEVERAGE),
+        "sesame_seed": (NutritionCategory.SESAME_SEED, NutritionCategory.SEED),
+        "sesame_paste": (NutritionCategory.SESAME_PASTE, NutritionCategory.SEED),
     }
     if ac in alias_map:
         vals = alias_map[ac]
@@ -541,6 +605,11 @@ def detect_ingredient_categories(
     if primary == NutritionCategory.UNKNOWN:
         # Prefer a sensible generic primary if only generic categories were found.
         for candidate in (
+            NutritionCategory.WATER,
+            NutritionCategory.SOY_YOGURT,
+            NutritionCategory.YOGURT,
+            NutritionCategory.SESAME_SEED,
+            NutritionCategory.SESAME_PASTE,
             NutritionCategory.COCONUT_WATER,
             NutritionCategory.COCONUT_MILK,
             NutritionCategory.COCONUT_CREAM,
