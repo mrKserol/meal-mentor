@@ -52,6 +52,11 @@ from app.infrastructure.nutrition.ingredient_input import (
     is_sesame_seed_like_ingredient,
     is_egg_like_ingredient,
     is_plain_whole_egg_query,
+    is_passion_fruit_like_ingredient,
+    is_crepe_like_ingredient,
+    is_pancake_like_ingredient,
+    is_chocolate_truffle_like_ingredient,
+    is_chocolate_candy_like_ingredient,
 )
 from app.infrastructure.nutrition.state_match import state_score
 
@@ -384,6 +389,11 @@ class NutritionService:
         sesame_q = is_sesame_seed_like_ingredient(ni)
         egg_q = is_egg_like_ingredient(ni)
         plain_egg_q = is_plain_whole_egg_query(ni)
+        passion_fruit_q = is_passion_fruit_like_ingredient(ni)
+        crepe_q = is_crepe_like_ingredient(ni)
+        pancake_q = is_pancake_like_ingredient(ni)
+        chocolate_truffle_q = is_chocolate_truffle_like_ingredient(ni)
+        chocolate_candy_q = is_chocolate_candy_like_ingredient(ni)
         out: list[NutritionCandidate] = []
         for name_key, text_score in raw_candidates:
             row = self._data.get(name_key) or {}
@@ -436,6 +446,11 @@ class NutritionService:
                 plain_whole_egg_q=plain_egg_q,
                 beef_steak_like_q=beef_steak_q,
                 fat_tallow_like_q=fat_tallow_q,
+                passion_fruit_like_q=passion_fruit_q,
+                crepe_like_q=crepe_q,
+                pancake_like_q=pancake_q,
+                chocolate_truffle_like_q=chocolate_truffle_q,
+                chocolate_candy_like_q=chocolate_candy_q,
             )
             exact_bonus, exact_reasons = self._exact_row_bonus(ni.canonical_query, display)
             final = float(text_score) + float(st) + exact_bonus

@@ -976,6 +976,67 @@ def is_fat_or_tallow_like_ingredient(ni: NormalizedIngredient) -> bool:
     )
 
 
+def is_passion_fruit_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True if query is for raw passion fruit (not juice/drink)."""
+    if NutritionCategory.PASSION_FRUIT.value in ni.categories:
+        return True
+    blob = _ingredient_blob(ni)
+    juice_markers = ("juice", "drink", "сок", "напиток")
+    if any(x in blob for x in juice_markers):
+        return False
+    passion_terms = (
+        "passion fruit", "passionfruit", "passion-fruit", "granadilla",
+        "маракуй", "маракуйя", "гранадилла",
+    )
+    return any(x in blob for x in passion_terms)
+
+
+def is_fruit_juice_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True if query is for fruit juice (including passion fruit juice)."""
+    if NutritionCategory.FRUIT_JUICE.value in ni.categories:
+        return True
+    blob = _ingredient_blob(ni)
+    juice_markers = ("juice", "drink", "сок", "напиток")
+    return any(x in blob for x in juice_markers)
+
+
+def is_crepe_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True if query is for crepes/thin pancakes."""
+    if NutritionCategory.CREPE.value in ni.categories:
+        return True
+    if ni.alias_category == "crepe":
+        return True
+    blob = _ingredient_blob(ni)
+    return any(x in blob for x in ("crepe", "crepes", "блин", "блины", "блинчик"))
+
+
+def is_pancake_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True if query is for pancakes."""
+    if NutritionCategory.PANCAKE.value in ni.categories:
+        return True
+    if ni.alias_category == "pancake":
+        return True
+    blob = _ingredient_blob(ni)
+    return any(x in blob for x in ("pancake", "pancakes", "оладь"))
+
+
+def is_chocolate_truffle_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True if query is for chocolate truffles."""
+    if NutritionCategory.CHOCOLATE_CANDY.value not in ni.categories:
+        return False
+    blob = _ingredient_blob(ni)
+    return any(x in blob for x in ("truffle", "трюфель"))
+
+
+def is_chocolate_candy_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True if query is for chocolate candy (including truffles)."""
+    if NutritionCategory.CHOCOLATE_CANDY.value in ni.categories:
+        return True
+    if ni.alias_category == "chocolate_candy":
+        return True
+    return False
+
+
 def is_poultry_breast_query(ni: NormalizedIngredient) -> bool:
     blob = f"{ni.input_name} {ni.canonical_query}".lower()
     if "wing" in blob or "thigh" in blob or "drumstick" in blob:

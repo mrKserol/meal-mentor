@@ -159,6 +159,21 @@ Rules:
   Do NOT use beef tallow, beef fat, or fat-only rows for steak meat.
   Use "beef tallow" only if pure rendered fat/oil is explicitly shown or mentioned.
 
+* Passion fruit / маракуйя:
+  "passion fruit" / "маракуйя" = fresh tropical fruit, state "raw". It is a fruit with edible pulp and seeds.
+  Do NOT confuse with passion fruit juice, drinks, or beverages.
+  Return: "passion fruit": {"grams": ..., "state": "raw"}
+
+* Crepes / блины:
+  "crepes" / "блины" / "блинчики" = thin cooked crepes or pancakes, state "cooked".
+  Do NOT confuse with cookies, crackers, or biscuits.
+  Return: "crepes": {"grams": ..., "state": "cooked"}
+
+* Chocolate truffle / шоколадный трюфель:
+  "chocolate truffle" / "шоколадный трюфель" / "трюфель" = chocolate candy confectionery, state "unknown".
+  Do NOT confuse with chocolate syrup, fudge sauce, cocoa powder, or chocolate beverages.
+  Return: "chocolate truffle": {"grams": ..., "state": "unknown"}
+
 STATE RULES:
 
 * Always assign a "state" to each ingredient

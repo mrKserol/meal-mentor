@@ -1595,6 +1595,56 @@
       "canonical": "Chives, raw",
       "default_state": "unknown"
     },
+    "chocolate truffle": {
+      "canonical": "Candies, prepared-from-recipe, truffles",
+      "category": "chocolate_candy",
+      "default_state": "unknown"
+    },
+    "chocolate truffles": {
+      "canonical": "Candies, prepared-from-recipe, truffles",
+      "category": "chocolate_candy",
+      "default_state": "unknown"
+    },
+    "truffle candy": {
+      "canonical": "Candies, prepared-from-recipe, truffles",
+      "category": "chocolate_candy",
+      "default_state": "unknown"
+    },
+    "chocolate candy truffle": {
+      "canonical": "Candies, prepared-from-recipe, truffles",
+      "category": "chocolate_candy",
+      "default_state": "unknown"
+    },
+    "шоколадный трюфель": {
+      "canonical": "Candies, prepared-from-recipe, truffles",
+      "category": "chocolate_candy",
+      "default_state": "unknown"
+    },
+    "трюфель шоколадный": {
+      "canonical": "Candies, prepared-from-recipe, truffles",
+      "category": "chocolate_candy",
+      "default_state": "unknown"
+    },
+    "конфета трюфель": {
+      "canonical": "Candies, prepared-from-recipe, truffles",
+      "category": "chocolate_candy",
+      "default_state": "unknown"
+    },
+    "шоколадная конфета трюфель": {
+      "canonical": "Candies, prepared-from-recipe, truffles",
+      "category": "chocolate_candy",
+      "default_state": "unknown"
+    },
+    "трюфельная конфета": {
+      "canonical": "Candies, prepared-from-recipe, truffles",
+      "category": "chocolate_candy",
+      "default_state": "unknown"
+    },
+    "трюфель": {
+      "canonical": "Candies, prepared-from-recipe, truffles",
+      "category": "chocolate_candy",
+      "default_state": "unknown"
+    },
     "chocolate-flavored hazelnut spread": {
       "canonical": "Chocolate-flavored hazelnut spread",
       "default_state": "unknown"
@@ -1818,6 +1868,56 @@
     "cream substitute, powdered": {
       "canonical": "Cream substitute, powdered",
       "default_state": "unknown"
+    },
+    "crepe": {
+      "canonical": "Pancakes, prepared from recipe, plain",
+      "category": "crepe",
+      "default_state": "cooked"
+    },
+    "crepes": {
+      "canonical": "Pancakes, prepared from recipe, plain",
+      "category": "crepe",
+      "default_state": "cooked"
+    },
+    "plain crepes": {
+      "canonical": "Pancakes, prepared from recipe, plain",
+      "category": "crepe",
+      "default_state": "cooked"
+    },
+    "cooked crepes": {
+      "canonical": "Pancakes, prepared from recipe, plain",
+      "category": "crepe",
+      "default_state": "cooked"
+    },
+    "блины": {
+      "canonical": "Pancakes, prepared from recipe, plain",
+      "category": "crepe",
+      "default_state": "cooked"
+    },
+    "блин": {
+      "canonical": "Pancakes, prepared from recipe, plain",
+      "category": "crepe",
+      "default_state": "cooked"
+    },
+    "блинчики": {
+      "canonical": "Pancakes, prepared from recipe, plain",
+      "category": "crepe",
+      "default_state": "cooked"
+    },
+    "тонкие блины": {
+      "canonical": "Pancakes, prepared from recipe, plain",
+      "category": "crepe",
+      "default_state": "cooked"
+    },
+    "домашние блины": {
+      "canonical": "Pancakes, prepared from recipe, plain",
+      "category": "crepe",
+      "default_state": "cooked"
+    },
+    "блины домашние": {
+      "canonical": "Pancakes, prepared from recipe, plain",
+      "category": "crepe",
+      "default_state": "cooked"
     },
     "croissants, apple": {
       "canonical": "Croissants, apple",
@@ -3633,6 +3733,26 @@
       "canonical": "PACE, Triple Pepper Salsa",
       "default_state": "unknown"
     },
+    "pancake": {
+      "canonical": "Pancakes, prepared from recipe, plain",
+      "category": "pancake",
+      "default_state": "cooked"
+    },
+    "pancakes": {
+      "canonical": "Pancakes, prepared from recipe, plain",
+      "category": "pancake",
+      "default_state": "cooked"
+    },
+    "plain pancakes": {
+      "canonical": "Pancakes, prepared from recipe, plain",
+      "category": "pancake",
+      "default_state": "cooked"
+    },
+    "оладьи": {
+      "canonical": "Pancakes, prepared from recipe, plain",
+      "category": "pancake",
+      "default_state": "cooked"
+    },
     "papa john's 14\" cheese pizza, original crust": {
       "canonical": "PAPA JOHN'S 14\" Cheese Pizza, Original Crust",
       "default_state": "unknown"
@@ -3676,6 +3796,76 @@
     "parsnips, raw": {
       "canonical": "Parsnips, raw",
       "default_state": "unknown"
+    },
+    "passion fruit": {
+      "canonical": "Passion-fruit, raw, purple, (granadilla)",
+      "category": "passion_fruit",
+      "default_state": "raw"
+    },
+    "passionfruit": {
+      "canonical": "Passion-fruit, raw, purple, (granadilla)",
+      "category": "passion_fruit",
+      "default_state": "raw"
+    },
+    "passion-fruit": {
+      "canonical": "Passion-fruit, raw, purple, (granadilla)",
+      "category": "passion_fruit",
+      "default_state": "raw"
+    },
+    "granadilla": {
+      "canonical": "Passion-fruit, raw, purple, (granadilla)",
+      "category": "passion_fruit",
+      "default_state": "raw"
+    },
+    "purple passion fruit": {
+      "canonical": "Passion-fruit, raw, purple, (granadilla)",
+      "category": "passion_fruit",
+      "default_state": "raw"
+    },
+    "маракуйя": {
+      "canonical": "Passion-fruit, raw, purple, (granadilla)",
+      "category": "passion_fruit",
+      "default_state": "raw"
+    },
+    "маракуя": {
+      "canonical": "Passion-fruit, raw, purple, (granadilla)",
+      "category": "passion_fruit",
+      "default_state": "raw"
+    },
+    "плод маракуйи": {
+      "canonical": "Passion-fruit, raw, purple, (granadilla)",
+      "category": "passion_fruit",
+      "default_state": "raw"
+    },
+    "фрукт маракуйя": {
+      "canonical": "Passion-fruit, raw, purple, (granadilla)",
+      "category": "passion_fruit",
+      "default_state": "raw"
+    },
+    "гранадилла": {
+      "canonical": "Passion-fruit, raw, purple, (granadilla)",
+      "category": "passion_fruit",
+      "default_state": "raw"
+    },
+    "passion fruit juice": {
+      "canonical": "Passion-fruit juice, raw, purple",
+      "category": "fruit_juice",
+      "default_state": "raw"
+    },
+    "сок маракуйи": {
+      "canonical": "Passion-fruit juice, raw, purple",
+      "category": "fruit_juice",
+      "default_state": "raw"
+    },
+    "маракуйевый сок": {
+      "canonical": "Passion-fruit juice, raw, purple",
+      "category": "fruit_juice",
+      "default_state": "raw"
+    },
+    "напиток маракуйя": {
+      "canonical": "Passion-fruit juice, raw, purple",
+      "category": "fruit_juice",
+      "default_state": "raw"
     },
     "pasta with sliced franks in tomato sauce, canned entree": {
       "canonical": "Pasta with Sliced Franks in Tomato Sauce, canned entree",

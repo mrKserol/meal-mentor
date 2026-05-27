@@ -1521,5 +1521,79 @@
         ]
       }
     }
+  },
+  {
+    "name": "fresh passion fruit",
+    "description": "Fresh passion fruit (50g raw)",
+    "ingredients": {
+      "passion fruit": {
+        "grams": 50,
+        "state": "raw"
+      }
+    },
+    "expected": {
+      "calories_min": 20,
+      "calories_max": 70,
+      "match_any_substrings": {
+        "passion fruit": ["passion", "granadilla"]
+      },
+      "forbidden_match_contains": {
+        "passion fruit": ["beverage", "juice", "drink", "v8", "splash", "nectar", "syrup"]
+      }
+    }
+  },
+  {
+    "name": "crepes with passion fruit and strawberries",
+    "description": "Crepes with passion fruit and strawberries",
+    "ingredients": {
+      "crepes": {
+        "grams": 150,
+        "state": "cooked"
+      },
+      "passion fruit": {
+        "grams": 50,
+        "state": "raw"
+      },
+      "strawberries": {
+        "grams": 60,
+        "state": "raw"
+      }
+    },
+    "expected": {
+      "calories_min": 250,
+      "calories_max": 550,
+      "protein_min": 5,
+      "fat_max": 25,
+      "carbohydrates_min": 40,
+      "match_any_substrings": {
+        "crepes": ["crepe", "pancake"],
+        "passion fruit": ["passion", "granadilla"]
+      },
+      "forbidden_match_contains": {
+        "crepes": ["keebler", "cookie", "cookies", "sweet cremes", "cracker", "wafer"],
+        "passion fruit": ["beverage", "juice", "drink", "v8", "splash"]
+      }
+    }
+  },
+  {
+    "name": "small chocolate truffle",
+    "description": "A small chocolate truffle candy (15g)",
+    "ingredients": {
+      "chocolate truffle": {
+        "grams": 15,
+        "state": "unknown"
+      }
+    },
+    "expected": {
+      "calories_min": 50,
+      "calories_max": 120,
+      "fat_max": 9,
+      "match_any_substrings": {
+        "chocolate truffle": ["chocolate"]
+      },
+      "forbidden_match_contains": {
+        "chocolate truffle": ["syrup", "fudge-type", "sauce", "topping", "powder", "beverage", "baking"]
+      }
+    }
   }
 ]

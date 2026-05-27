@@ -1461,3 +1461,125 @@ def test_egg_salad_can_match_non_plain_when_explicit(nutrition_svc: NutritionSer
     # Must not match obviously unrelated items
     for bad in ("eggnog", "eggplant", "babyfood"):
         assert bad not in m, f"egg salad must not match {bad!r}, got {m!r}"
+
+
+# ===== Passion fruit tests =====
+
+def test_passion_fruit_not_juice_drink(nutrition_svc: NutritionService) -> None:
+    """passion fruit 50g raw must match raw fruit, not beverage/juice/drink/V8/SPLASH."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"passion fruit": {"grams": 50, "state": "raw"}})
+    data = list(rows[0].values())[0]
+    assert data, "passion fruit 50g raw: no match found"
+    m = (data.get("match") or "").lower()
+    assert any(x in m for x in ("passion", "granadilla")), (
+        f"passion fruit match must contain passion/granadilla, got {m!r}"
+    )
+    for bad in ("beverage", "juice", "drink", "v8", "splash", "nectar", "syrup"):
+        assert bad not in m, f"passion fruit must not match {bad!r}, got {m!r}"
+    cal = int(data.get("calories") or 0)
+    assert 20 <= cal <= 60, f"passion fruit 50g calories {cal} expected 20–60"
+
+
+def test_passion_fruit_ru_not_juice_drink(nutrition_svc: NutritionService) -> None:
+    """Russian маракуйя 50g raw must match raw fruit, not beverage/juice/drink."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"маракуйя": {"grams": 50, "state": "raw"}})
+    data = list(rows[0].values())[0]
+    assert data, "маракуйя 50g raw: no match found"
+    m = (data.get("match") or "").lower()
+    assert any(x in m for x in ("passion", "granadilla")), (
+        f"маракуйя match must contain passion/granadilla, got {m!r}"
+    )
+    for bad in ("beverage", "juice", "drink", "v8", "splash", "nectar", "syrup"):
+        assert bad not in m, f"маракуйя must not match {bad!r}, got {m!r}"
+    cal = int(data.get("calories") or 0)
+    assert 20 <= cal <= 60, f"маракуйя 50g calories {cal} expected 20–60"
+
+
+# ===== Crepe tests =====
+
+def test_crepes_not_cookies(nutrition_svc: NutritionService) -> None:
+    """crepes 150g cooked must match cooked crepe/pancake, not KEEBLER/cookie."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"crepes": {"grams": 150, "state": "cooked"}})
+    data = list(rows[0].values())[0]
+    assert data, "crepes 150g cooked: no match found"
+    m = (data.get("match") or "").lower()
+    assert any(x in m for x in ("crepe", "pancake")), (
+        f"crepes match must contain crepe/pancake, got {m!r}"
+    )
+    for bad in ("keebler", "cookie", "cookies", "sweet cremes", "cracker", "wafer", "cereal"):
+        assert bad not in m, f"crepes must not match {bad!r}, got {m!r}"
+    cal = int(data.get("calories") or 0)
+    assert 200 <= cal <= 450, f"crepes 150g calories {cal} expected 200–450"
+    carbs = float(data.get("carbohydrates") or 0)
+    assert carbs >= 25, f"crepes 150g carbs {carbs} expected >= 25"
+
+
+def test_crepes_ru_not_cookies(nutrition_svc: NutritionService) -> None:
+    """Russian блины 150g cooked must match cooked crepe/pancake, not KEEBLER/cookie."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"блины": {"grams": 150, "state": "cooked"}})
+    data = list(rows[0].values())[0]
+    assert data, "блины 150g cooked: no match found"
+    m = (data.get("match") or "").lower()
+    assert any(x in m for x in ("crepe", "pancake")), (
+        f"блины match must contain crepe/pancake, got {m!r}"
+    )
+    for bad in ("keebler", "cookie", "cookies", "sweet cremes", "cracker", "wafer", "cereal"):
+        assert bad not in m, f"блины must not match {bad!r}, got {m!r}"
+    cal = int(data.get("calories") or 0)
+    assert 200 <= cal <= 450, f"блины 150g calories {cal} expected 200–450"
+    carbs = float(data.get("carbohydrates") or 0)
+    assert carbs >= 25, f"блины 150g carbs {carbs} expected >= 25"
+
+
+# ===== Chocolate truffle tests =====
+
+def test_chocolate_truffle_not_syrup(nutrition_svc: NutritionService) -> None:
+    """chocolate truffle 15g must match chocolate candy, not syrup/fudge-type/sauce."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"chocolate truffle": {"grams": 15, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data, "chocolate truffle 15g: no match found"
+    m = (data.get("match") or "").lower()
+    assert "chocolate" in m, f"chocolate truffle match must contain 'chocolate', got {m!r}"
+    assert any(x in m for x in ("truffle", "candy", "candies", "confectionery")), (
+        f"chocolate truffle match must contain truffle/candy/candies/confectionery, got {m!r}"
+    )
+    for bad in ("syrup", "fudge-type", "sauce", "topping", "powder", "beverage", "baking"):
+        assert bad not in m, f"chocolate truffle must not match {bad!r}, got {m!r}"
+    cal = int(data.get("calories") or 0)
+    assert 50 <= cal <= 120, f"chocolate truffle 15g calories {cal} expected 50–120"
+    fat = float(data.get("fats") or 0)
+    assert 2 <= fat <= 9, f"chocolate truffle 15g fat {fat} expected 2–9"
+    carbs = float(data.get("carbohydrates") or 0)
+    assert 4 <= carbs <= 15, f"chocolate truffle 15g carbs {carbs} expected 4–15"
+
+
+def test_chocolate_truffle_ru_not_syrup(nutrition_svc: NutritionService) -> None:
+    """Russian шоколадный трюфель 15g must match chocolate candy, not syrup/sauce."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"шоколадный трюфель": {"grams": 15, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data, "шоколадный трюфель 15g: no match found"
+    m = (data.get("match") or "").lower()
+    assert "chocolate" in m, f"шоколадный трюфель match must contain 'chocolate', got {m!r}"
+    assert any(x in m for x in ("truffle", "candy", "candies", "confectionery")), (
+        f"шоколадный трюфель match must contain truffle/candy/candies/confectionery, got {m!r}"
+    )
+    for bad in ("syrup", "fudge-type", "sauce", "topping", "powder", "beverage", "baking"):
+        assert bad not in m, f"шоколадный трюфель must not match {bad!r}, got {m!r}"
+    cal = int(data.get("calories") or 0)
+    assert 50 <= cal <= 120, f"шоколадный трюфель 15g calories {cal} expected 50–120"
+    fat = float(data.get("fats") or 0)
+    assert 2 <= fat <= 9, f"шоколадный трюфель 15g fat {fat} expected 2–9"
+    carbs = float(data.get("carbohydrates") or 0)
+    assert 4 <= carbs <= 15, f"шоколадный трюфель 15g carbs {carbs} expected 4–15"

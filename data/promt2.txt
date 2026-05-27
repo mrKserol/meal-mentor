@@ -157,6 +157,15 @@ STATE RULES:
   "beef steak": {"grams": ..., "state": "grilled"} (or "cooked" if not clearly grilled)
   Do NOT use beef tallow, beef fat, or fat-only rows for steak meat.
   Use "beef tallow" only if pure rendered fat/oil is explicitly mentioned.
+* Passion fruit / маракуйя:
+  "passion fruit" / "маракуйя" = fresh tropical fruit, state "raw". Not juice or drink.
+  Return: "passion fruit": {"grams": ..., "state": "raw"}
+* Crepes / блины:
+  "crepes" / "блины" / "блинчики" = cooked crepes, state "cooked". Not cookies or crackers.
+  Return: "crepes": {"grams": ..., "state": "cooked"}
+* Chocolate truffle / шоколадный трюфель:
+  "chocolate truffle" / "шоколадный трюфель" = chocolate candy, state "unknown". Not syrup or sauce.
+  Return: "chocolate truffle": {"grams": ..., "state": "unknown"}
 * Do NOT assume "dry" unless explicitly stated or clearly implied
 * If the dish is described in Russian without specifying preparation (e.g., "гречка", "рис", "макароны"), assume it is cooked unless stated otherwise.
 * If the description does not contain any food, return an empty JSON object {}

@@ -1902,6 +1902,194 @@ def _beef_steak_candidate_adjustment(
     return max(score, -900.0), reasons
 
 
+def _passion_fruit_candidate_adjustment(
+    n: str,
+    query_lower: str,
+    *,
+    passion_fruit_like_q: bool = False,
+    candidate_calories_per100: float = 0.0,
+    candidate_fat_per100: float = 0.0,
+) -> tuple[float, list[str]]:
+    """Prefer raw passion fruit rows; aggressively penalize beverages/juices/drinks."""
+    if not passion_fruit_like_q:
+        return 0.0, []
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    # Bonuses
+    if "passion-fruit" in nl:
+        add(150, "passion_fruit_hyphen")
+    elif "passion fruit" in nl:
+        add(140, "passion_fruit_phrase")
+    if re.search(r"\braw\b", nl) or ", raw" in nl:
+        add(100, "passion_fruit_raw")
+    if "fruit" in nl and "passion" in nl:
+        add(80, "passion_fruit_word")
+    if "granadilla" in nl:
+        add(50, "passion_fruit_granadilla")
+
+    # Penalties for beverage/juice rows
+    if any(x in nl for x in ("beverage", "beverages")):
+        add(-300, "passion_fruit_beverage_penalty")
+    if "juice" in nl:
+        add(-280, "passion_fruit_juice_penalty")
+    if "drink" in nl:
+        add(-260, "passion_fruit_drink_penalty")
+    if "v8" in nl:
+        add(-240, "passion_fruit_v8_penalty")
+    if any(x in nl for x in ("splash", "cocktail")):
+        add(-220, "passion_fruit_splash_cocktail_penalty")
+    if "nectar" in nl:
+        add(-200, "passion_fruit_nectar_penalty")
+    if "syrup" in nl:
+        add(-180, "passion_fruit_syrup_penalty")
+    if "sweetened" in nl:
+        add(-160, "passion_fruit_sweetened_penalty")
+
+    # Macro sanity: raw passion fruit ~97 kcal/100g, fat ~0.1g
+    if candidate_calories_per100 > 150:
+        add(-180, "passion_fruit_high_calories")
+    if candidate_fat_per100 > 5:
+        add(-180, "passion_fruit_high_fat")
+
+    _ = query_lower
+    return max(score, -700.0), reasons
+
+
+def _crepe_candidate_adjustment(
+    n: str,
+    query_lower: str,
+    *,
+    crepe_like_q: bool = False,
+    pancake_like_q: bool = False,
+    candidate_calories_per100: float = 0.0,
+    candidate_fat_per100: float = 0.0,
+    candidate_sugar_per100: float = 0.0,
+) -> tuple[float, list[str]]:
+    """Prefer cooked crepe/pancake rows; aggressively penalize cookies/crackers/KEEBLER."""
+    if not crepe_like_q and not pancake_like_q:
+        return 0.0, []
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    ql = query_lower.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    # Bonuses
+    if "crepe" in nl or "crepes" in nl:
+        add(160, "crepe_word")
+    elif "pancake" in nl:
+        add(120, "pancake_word")
+    if "plain" in nl:
+        add(80, "crepe_plain")
+    if "prepared" in nl or "cooked" in nl:
+        add(60, "crepe_prepared_cooked")
+    if "from recipe" in nl or "from mix" in nl:
+        add(40, "crepe_from_recipe_mix")
+
+    # Penalties for cookie/cracker/snack rows
+    if any(x in nl for x in ("cookie", "cookies")):
+        add(-320, "crepe_cookie_penalty")
+    if "sweet cremes" in nl:
+        add(-300, "crepe_sweet_cremes_penalty")
+    if "keebler" in nl:
+        add(-260, "crepe_keebler_penalty")
+    if any(x in nl for x in ("cracker", "wafer")):
+        add(-220, "crepe_cracker_wafer_penalty")
+    if "cereal" in nl and "cereal" not in ql:
+        add(-200, "crepe_cereal_penalty")
+    if "cake" in nl and "cake" not in ql:
+        add(-180, "crepe_cake_penalty")
+    if "dessert" in nl and "dessert" not in ql:
+        add(-160, "crepe_dessert_penalty")
+    if "frozen" in nl and "frozen" not in ql:
+        add(-150, "crepe_frozen_penalty")
+
+    # Macro sanity: cooked crepes/pancakes ~190-270 kcal/100g
+    if candidate_calories_per100 > 450:
+        add(-160, "crepe_too_high_calories")
+    if candidate_fat_per100 > 25:
+        add(-140, "crepe_too_high_fat")
+    if candidate_sugar_per100 > 30:
+        add(-120, "crepe_too_high_sugar")
+
+    return max(score, -700.0), reasons
+
+
+def _chocolate_truffle_candidate_adjustment(
+    n: str,
+    query_lower: str,
+    *,
+    chocolate_truffle_like_q: bool = False,
+    chocolate_candy_like_q: bool = False,
+    candidate_calories_per100: float = 0.0,
+) -> tuple[float, list[str]]:
+    """Prefer chocolate candy/truffle rows; aggressively penalize syrup/fudge-type/sauce."""
+    if not chocolate_truffle_like_q and not chocolate_candy_like_q:
+        return 0.0, []
+    reasons: list[str] = []
+    score = 0.0
+    nl = n.lower()
+    ql = query_lower.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    # Bonuses
+    if "chocolate" in nl and "truffle" in nl:
+        add(180, "chocolate_truffle_phrase")
+    elif "candies" in nl and "chocolate" in nl:
+        add(130, "candies_chocolate_phrase")
+    elif "candy" in nl and "chocolate" in nl:
+        add(120, "candy_chocolate_phrase")
+    if "confectionery" in nl:
+        add(90, "chocolate_confectionery")
+    if "chocolate" in nl:
+        add(80, "chocolate_word")
+    if any(x in nl for x in ("milk chocolate", "dark chocolate")):
+        add(50, "chocolate_type")
+    if "prepared-from-recipe" in nl and "truffle" in nl:
+        add(60, "chocolate_truffle_recipe")
+
+    # Penalties for non-candy rows
+    if "syrup" in nl and "syrup" not in ql:
+        add(-320, "chocolate_syrup_penalty")
+    if "fudge-type" in nl:
+        add(-300, "chocolate_fudge_type_penalty")
+    if "sauce" in nl and "sauce" not in ql:
+        add(-280, "chocolate_sauce_penalty")
+    if "topping" in nl and "topping" not in ql:
+        add(-260, "chocolate_topping_penalty")
+    if any(x in nl for x in ("powder", "cocoa powder")) and "powder" not in ql:
+        add(-220, "chocolate_powder_penalty")
+    if "beverage" in nl and "beverage" not in ql:
+        add(-200, "chocolate_beverage_penalty")
+    if "baking" in nl and "baking" not in ql:
+        add(-180, "chocolate_baking_penalty")
+    if "unsweetened" in nl and "unsweetened" not in ql:
+        add(-180, "chocolate_unsweetened_penalty")
+    if any(x in nl for x in ("oil", "butter")) and not any(x in ql for x in ("oil", "butter")):
+        add(-160, "chocolate_oil_butter_penalty")
+
+    # Macro sanity: chocolate candy should be high calorie (>400 kcal/100g)
+    if candidate_calories_per100 < 250:
+        add(-120, "chocolate_too_low_calories")
+
+    return max(score, -800.0), reasons
+
+
 def state_score(
     requested_state: str,
     candidate_name: str,
@@ -1951,6 +2139,11 @@ def state_score(
     plain_whole_egg_q: bool = False,
     beef_steak_like_q: bool = False,
     fat_tallow_like_q: bool = False,
+    passion_fruit_like_q: bool = False,
+    crepe_like_q: bool = False,
+    pancake_like_q: bool = False,
+    chocolate_truffle_like_q: bool = False,
+    chocolate_candy_like_q: bool = False,
 ) -> tuple[float, list[str]]:
     """
     Returns (score_adjustment, reason strings).
@@ -2357,5 +2550,40 @@ def state_score(
         )
         score += eg
         reasons.extend(egr)
+
+    if passion_fruit_like_q:
+        pf, pfr = _passion_fruit_candidate_adjustment(
+            n,
+            query_lower,
+            passion_fruit_like_q=passion_fruit_like_q,
+            candidate_calories_per100=candidate_calories_per100,
+            candidate_fat_per100=candidate_fat_per100,
+        )
+        score += pf
+        reasons.extend(pfr)
+
+    if crepe_like_q or pancake_like_q:
+        cr, crr = _crepe_candidate_adjustment(
+            n,
+            query_lower,
+            crepe_like_q=crepe_like_q,
+            pancake_like_q=pancake_like_q,
+            candidate_calories_per100=candidate_calories_per100,
+            candidate_fat_per100=candidate_fat_per100,
+            candidate_sugar_per100=candidate_sugar_per100,
+        )
+        score += cr
+        reasons.extend(crr)
+
+    if chocolate_truffle_like_q or chocolate_candy_like_q:
+        ct, ctr = _chocolate_truffle_candidate_adjustment(
+            n,
+            query_lower,
+            chocolate_truffle_like_q=chocolate_truffle_like_q,
+            chocolate_candy_like_q=chocolate_candy_like_q,
+            candidate_calories_per100=candidate_calories_per100,
+        )
+        score += ct
+        reasons.extend(ctr)
 
     return score, reasons

@@ -54,6 +54,11 @@ class NutritionCategory(str, Enum):
     WATER = "water"
     SESAME_SEED = "sesame_seed"
     SESAME_PASTE = "sesame_paste"
+    PASSION_FRUIT = "passion_fruit"
+    FRUIT_JUICE = "fruit_juice"
+    CREPE = "crepe"
+    PANCAKE = "pancake"
+    CHOCOLATE_CANDY = "chocolate_candy"
     UNKNOWN = "unknown"
 
 
@@ -259,6 +264,74 @@ def detect_ingredient_categories(
             NutritionCategory.YOGURT,
             NutritionCategory.DAIRY,
             reason="yogurt_like",
+        )
+
+    # --- Passion fruit (check before generic fruit) ---
+    _passion_juice_markers = ("juice", "drink", "сок", "напиток")
+    _passion_fruit_terms = (
+        "passion fruit", "passionfruit", "passion-fruit", "granadilla",
+        "purple passion fruit", "маракуй", "маракуйя", "гранадилла",
+        "плод маракуйи", "фрукт маракуйя",
+    )
+    if ac == "passion_fruit" or any(x in blob for x in _passion_fruit_terms):
+        if not any(x in blob for x in _passion_juice_markers):
+            mark(
+                NutritionCategory.PASSION_FRUIT,
+                NutritionCategory.FRUIT,
+                reason="passion_fruit_like",
+            )
+        else:
+            mark(
+                NutritionCategory.FRUIT_JUICE,
+                NutritionCategory.BEVERAGE,
+                NutritionCategory.FRUIT,
+                reason="passion_fruit_juice_like",
+            )
+    elif ac == "fruit_juice" or (
+        any(x in blob for x in _passion_fruit_terms)
+        and any(x in blob for x in _passion_juice_markers)
+    ):
+        mark(
+            NutritionCategory.FRUIT_JUICE,
+            NutritionCategory.BEVERAGE,
+            NutritionCategory.FRUIT,
+            reason="fruit_juice_like",
+        )
+
+    # --- Crepes ---
+    if ac == "crepe" or any(x in blob for x in ("crepe", "crepes", "блин", "блины", "блинчик")):
+        mark(
+            NutritionCategory.CREPE,
+            NutritionCategory.PREPARED_DISH,
+            NutritionCategory.GRAIN,
+            reason="crepe_like",
+        )
+    # --- Pancakes ---
+    elif ac == "pancake" or any(x in blob for x in ("pancake", "pancakes", "оладь")):
+        mark(
+            NutritionCategory.PANCAKE,
+            NutritionCategory.PREPARED_DISH,
+            NutritionCategory.GRAIN,
+            reason="pancake_like",
+        )
+
+    # --- Chocolate truffle / chocolate candy ---
+    if ac == "chocolate_candy" or any(x in blob for x in (
+        "chocolate truffle", "truffle candy",
+        "шоколадный трюфель", "трюфель шоколадный",
+        "конфета трюфель", "шоколадная конфета трюфель",
+        "трюфельная конфета",
+    )):
+        mark(
+            NutritionCategory.CHOCOLATE_CANDY,
+            NutritionCategory.SWEET,
+            reason="chocolate_candy_like",
+        )
+    elif any(x in blob for x in ("трюфель",)) and "pate" not in blob:
+        mark(
+            NutritionCategory.CHOCOLATE_CANDY,
+            NutritionCategory.SWEET,
+            reason="truffle_ru_like",
         )
 
     # --- Tahini / sesame paste ---
@@ -601,6 +674,11 @@ def detect_ingredient_categories(
         "water": (NutritionCategory.WATER, NutritionCategory.BEVERAGE),
         "sesame_seed": (NutritionCategory.SESAME_SEED, NutritionCategory.SEED),
         "sesame_paste": (NutritionCategory.SESAME_PASTE, NutritionCategory.SEED),
+        "passion_fruit": (NutritionCategory.PASSION_FRUIT, NutritionCategory.FRUIT),
+        "fruit_juice": (NutritionCategory.FRUIT_JUICE, NutritionCategory.BEVERAGE, NutritionCategory.FRUIT),
+        "crepe": (NutritionCategory.CREPE, NutritionCategory.PREPARED_DISH, NutritionCategory.GRAIN),
+        "pancake": (NutritionCategory.PANCAKE, NutritionCategory.PREPARED_DISH, NutritionCategory.GRAIN),
+        "chocolate_candy": (NutritionCategory.CHOCOLATE_CANDY, NutritionCategory.SWEET),
     }
     if ac in alias_map:
         vals = alias_map[ac]
@@ -646,6 +724,11 @@ def detect_ingredient_categories(
             NutritionCategory.YOGURT,
             NutritionCategory.SESAME_SEED,
             NutritionCategory.SESAME_PASTE,
+            NutritionCategory.PASSION_FRUIT,
+            NutritionCategory.FRUIT_JUICE,
+            NutritionCategory.CHOCOLATE_CANDY,
+            NutritionCategory.CREPE,
+            NutritionCategory.PANCAKE,
             NutritionCategory.COCONUT_WATER,
             NutritionCategory.COCONUT_MILK,
             NutritionCategory.COCONUT_CREAM,
