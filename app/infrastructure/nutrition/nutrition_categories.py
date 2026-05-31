@@ -59,6 +59,8 @@ class NutritionCategory(str, Enum):
     CREPE = "crepe"
     PANCAKE = "pancake"
     CHOCOLATE_CANDY = "chocolate_candy"
+    KOMBUCHA = "kombucha"
+    KOMBUCHA_ZERO = "kombucha_zero"
     UNKNOWN = "unknown"
 
 
@@ -333,6 +335,34 @@ def detect_ingredient_categories(
             NutritionCategory.SWEET,
             reason="truffle_ru_like",
         )
+
+    # --- Kombucha (fermented tea beverage) — check BEFORE generic tea/beverage ---
+    _KOMBUCHA_TERMS = (
+        "kombucha", "комбуча", "камбуча", "чайный гриб", "fermented tea",
+    )
+    _KOMBUCHA_ZERO_TERMS = (
+        "sugar free kombucha", "zero sugar kombucha", "kombucha zero sugar",
+        "комбуча без сахара", "комбуча zero", "комбуча зеро",
+        "без сахара манго киви", "kombucha zero",
+    )
+    _is_kombucha_blob = ac in ("kombucha", "kombucha_zero") or any(t in blob for t in _KOMBUCHA_TERMS)
+    if _is_kombucha_blob:
+        _is_kombucha_zero_blob = ac == "kombucha_zero" or any(
+            t in blob for t in ("zero sugar", "sugar free", "no sugar", "без сахара", "зеро", "kombucha zero")
+        ) or any(t in blob for t in _KOMBUCHA_ZERO_TERMS)
+        if _is_kombucha_zero_blob:
+            mark(
+                NutritionCategory.KOMBUCHA_ZERO,
+                NutritionCategory.KOMBUCHA,
+                NutritionCategory.BEVERAGE,
+                reason="kombucha_zero_like",
+            )
+        else:
+            mark(
+                NutritionCategory.KOMBUCHA,
+                NutritionCategory.BEVERAGE,
+                reason="kombucha_like",
+            )
 
     # --- Tahini / sesame paste ---
     if ac == "sesame_paste" or any(x in blob for x in ("tahini", "тахини", "кунжутная паста")):
@@ -679,6 +709,8 @@ def detect_ingredient_categories(
         "crepe": (NutritionCategory.CREPE, NutritionCategory.PREPARED_DISH, NutritionCategory.GRAIN),
         "pancake": (NutritionCategory.PANCAKE, NutritionCategory.PREPARED_DISH, NutritionCategory.GRAIN),
         "chocolate_candy": (NutritionCategory.CHOCOLATE_CANDY, NutritionCategory.SWEET),
+        "kombucha": (NutritionCategory.KOMBUCHA, NutritionCategory.BEVERAGE),
+        "kombucha_zero": (NutritionCategory.KOMBUCHA_ZERO, NutritionCategory.KOMBUCHA, NutritionCategory.BEVERAGE),
     }
     if ac in alias_map:
         vals = alias_map[ac]
@@ -720,6 +752,8 @@ def detect_ingredient_categories(
         # Prefer a sensible generic primary if only generic categories were found.
         for candidate in (
             NutritionCategory.WATER,
+            NutritionCategory.KOMBUCHA_ZERO,
+            NutritionCategory.KOMBUCHA,
             NutritionCategory.SOY_YOGURT,
             NutritionCategory.YOGURT,
             NutritionCategory.SESAME_SEED,

@@ -166,6 +166,10 @@ STATE RULES:
 * Chocolate truffle / шоколадный трюфель:
   "chocolate truffle" / "шоколадный трюфель" = chocolate candy, state "unknown". Not syrup or sauce.
   Return: "chocolate truffle": {"grams": ..., "state": "unknown"}
+* Kombucha / комбуча / камбуча:
+  "kombucha" / "комбуча" / "камбуча" = fermented tea beverage, state "unknown". Not grain, not buckwheat, not juice.
+  Flavor descriptors like mango, kiwi are flavors only — do NOT treat as separate fruit ingredients.
+  Example: "Комбуча со вкусом манго и киви" → "kombucha": {"grams": 330, "state": "unknown"}
 * Do NOT assume "dry" unless explicitly stated or clearly implied
 * If the dish is described in Russian without specifying preparation (e.g., "гречка", "рис", "макароны"), assume it is cooked unless stated otherwise.
 * If the description does not contain any food, return an empty JSON object {}

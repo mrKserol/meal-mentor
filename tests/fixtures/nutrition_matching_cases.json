@@ -1535,10 +1535,21 @@
       "calories_min": 20,
       "calories_max": 70,
       "match_any_substrings": {
-        "passion fruit": ["passion", "granadilla"]
+        "passion fruit": [
+          "passion",
+          "granadilla"
+        ]
       },
       "forbidden_match_contains": {
-        "passion fruit": ["beverage", "juice", "drink", "v8", "splash", "nectar", "syrup"]
+        "passion fruit": [
+          "beverage",
+          "juice",
+          "drink",
+          "v8",
+          "splash",
+          "nectar",
+          "syrup"
+        ]
       }
     }
   },
@@ -1566,12 +1577,31 @@
       "fat_max": 25,
       "carbohydrates_min": 40,
       "match_any_substrings": {
-        "crepes": ["crepe", "pancake"],
-        "passion fruit": ["passion", "granadilla"]
+        "crepes": [
+          "crepe",
+          "pancake"
+        ],
+        "passion fruit": [
+          "passion",
+          "granadilla"
+        ]
       },
       "forbidden_match_contains": {
-        "crepes": ["keebler", "cookie", "cookies", "sweet cremes", "cracker", "wafer"],
-        "passion fruit": ["beverage", "juice", "drink", "v8", "splash"]
+        "crepes": [
+          "keebler",
+          "cookie",
+          "cookies",
+          "sweet cremes",
+          "cracker",
+          "wafer"
+        ],
+        "passion fruit": [
+          "beverage",
+          "juice",
+          "drink",
+          "v8",
+          "splash"
+        ]
       }
     }
   },
@@ -1589,10 +1619,58 @@
       "calories_max": 120,
       "fat_max": 9,
       "match_any_substrings": {
-        "chocolate truffle": ["chocolate"]
+        "chocolate truffle": [
+          "chocolate"
+        ]
       },
       "forbidden_match_contains": {
-        "chocolate truffle": ["syrup", "fudge-type", "sauce", "topping", "powder", "beverage", "baking"]
+        "chocolate truffle": [
+          "syrup",
+          "fudge-type",
+          "sauce",
+          "topping",
+          "powder",
+          "beverage",
+          "baking"
+        ]
+      }
+    }
+  },
+  {
+    "name": "kombucha mango kiwi can",
+    "description": "Flavored kombucha should match beverage/tea, not buckwheat or raw fruits",
+    "ingredients": {
+      "комбуча со вкусом манго и киви": {
+        "grams": 330,
+        "state": "unknown"
+      }
+    },
+    "expected": {
+      "calories_min": 0,
+      "calories_max": 120,
+      "protein_max": 2,
+      "fat_max": 1,
+      "carbohydrates_max": 30,
+      "match_any_substrings": {
+        "комбуча со вкусом манго и киви": [
+          "tea",
+          "beverage",
+          "drink"
+        ]
+      },
+      "forbidden_match_contains": {
+        "комбуча со вкусом манго и киви": [
+          "buckwheat",
+          "groats",
+          "cereal",
+          "grain",
+          "flour",
+          "raw mango",
+          "kiwi fruit",
+          "syrup",
+          "powder",
+          "dry mix"
+        ]
       }
     }
   }
