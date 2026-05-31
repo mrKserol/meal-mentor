@@ -1583,3 +1583,87 @@ def test_chocolate_truffle_ru_not_syrup(nutrition_svc: NutritionService) -> None
     assert 2 <= fat <= 9, f"шоколадный трюфель 15g fat {fat} expected 2–9"
     carbs = float(data.get("carbohydrates") or 0)
     assert 4 <= carbs <= 15, f"шоколадный трюфель 15g carbs {carbs} expected 4–15"
+
+
+# ===== Kombucha tests =====
+
+def test_kombucha_not_buckwheat(nutrition_svc: NutritionService) -> None:
+    """kombucha 330g unknown must match tea/beverage, not buckwheat/grain."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"kombucha": {"grams": 330, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data, "kombucha 330g: no match found"
+    m = (data.get("match") or "").lower()
+    assert any(x in m for x in ("tea", "beverage", "drink")), (
+        f"kombucha match must contain tea/beverage/drink, got {m!r}"
+    )
+    for bad in ("buckwheat", "groats", "cereal", "grain", "flour", "raw mango", "kiwi fruit"):
+        assert bad not in m, f"kombucha must not match {bad!r}, got {m!r}"
+    cal = int(data.get("calories") or 0)
+    assert 0 <= cal <= 120, f"kombucha 330g calories {cal} expected 0–120"
+    prot = float(data.get("proteins") or 0)
+    assert prot <= 2, f"kombucha 330g protein {prot} expected <= 2"
+    fat = float(data.get("fats") or 0)
+    assert fat <= 1, f"kombucha 330g fat {fat} expected <= 1"
+    carbs = float(data.get("carbohydrates") or 0)
+    assert carbs <= 30, f"kombucha 330g carbs {carbs} expected <= 30"
+
+
+def test_kombucha_ru_not_buckwheat(nutrition_svc: NutritionService) -> None:
+    """Russian комбуча 330g unknown must match tea/beverage, not buckwheat/grain."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"комбуча": {"grams": 330, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data, "комбуча 330g: no match found"
+    m = (data.get("match") or "").lower()
+    assert any(x in m for x in ("tea", "beverage", "drink")), (
+        f"комбуча match must contain tea/beverage/drink, got {m!r}"
+    )
+    for bad in ("buckwheat", "groats", "cereal", "grain", "flour", "dry"):
+        assert bad not in m, f"комбуча must not match {bad!r}, got {m!r}"
+    cal = int(data.get("calories") or 0)
+    assert 0 <= cal <= 120, f"комбуча 330g calories {cal} expected 0–120"
+    prot = float(data.get("proteins") or 0)
+    assert prot <= 2, f"комбуча 330g protein {prot} expected <= 2"
+    fat = float(data.get("fats") or 0)
+    assert fat <= 1, f"комбуча 330g fat {fat} expected <= 1"
+    carbs = float(data.get("carbohydrates") or 0)
+    assert carbs <= 30, f"комбуча 330g carbs {carbs} expected <= 30"
+
+
+def test_kombucha_mango_kiwi_flavor_not_fruit(nutrition_svc: NutritionService) -> None:
+    """Flavored kombucha must match beverage, not raw mango/kiwi or buckwheat."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"комбуча со вкусом манго и киви": {"grams": 330, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data, "комбуча со вкусом манго и киви 330g: no match found"
+    m = (data.get("match") or "").lower()
+    assert any(x in m for x in ("tea", "beverage", "drink")), (
+        f"комбуча манго киви match must contain tea/beverage/drink, got {m!r}"
+    )
+    for bad in ("buckwheat", "groats", "cereal", "grain", "flour", "raw mango", "kiwi fruit", "mango, raw"):
+        assert bad not in m, f"комбуча манго киви must not match {bad!r}, got {m!r}"
+    cal = int(data.get("calories") or 0)
+    assert cal <= 120, f"комбуча манго киви 330g calories {cal} expected <= 120"
+
+
+def test_zero_sugar_kombucha(nutrition_svc: NutritionService) -> None:
+    """Sugar-free kombucha must match low-calorie tea/beverage row, not grain."""
+    if not nutrition_svc.aliases.is_loaded:
+        pytest.skip("food_aliases.json not loaded")
+    rows = nutrition_svc.search({"комбуча без сахара": {"grams": 330, "state": "unknown"}})
+    data = list(rows[0].values())[0]
+    assert data, "комбуча без сахара 330g: no match found"
+    m = (data.get("match") or "").lower()
+    assert any(x in m for x in ("tea", "beverage", "drink")), (
+        f"комбуча без сахара match must contain tea/beverage/drink, got {m!r}"
+    )
+    for bad in ("buckwheat", "groats", "cereal", "grain", "flour"):
+        assert bad not in m, f"комбуча без сахара must not match {bad!r}, got {m!r}"
+    cal = int(data.get("calories") or 0)
+    assert cal <= 120, f"комбуча без сахара 330g calories {cal} expected <= 120"
+    carbs = float(data.get("carbohydrates") or 0)
+    assert carbs <= 10, f"комбуча без сахара 330g carbs {carbs} expected <= 10"

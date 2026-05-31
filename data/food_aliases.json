@@ -8920,6 +8920,141 @@
       "canonical": "Fat, beef tallow",
       "default_state": "unknown",
       "category": "fat"
+    },
+    "kombucha": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "kombucha tea": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "fermented tea": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "fermented tea drink": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "mango kiwi kombucha": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "kombucha mango kiwi": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "mango kombucha": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "kiwi kombucha": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "комбуча": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "камбуча": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "чайный гриб": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "напиток комбуча": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "ферментированный чай": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "комбуча манго киви": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "комбуча со вкусом манго и киви": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "комбуча со вкусом манго": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "комбуча со вкусом киви": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "комбуча манго": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "комбуча киви": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha",
+      "default_state": "unknown"
+    },
+    "sugar free kombucha": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha_zero",
+      "default_state": "unknown"
+    },
+    "zero sugar kombucha": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha_zero",
+      "default_state": "unknown"
+    },
+    "kombucha zero sugar": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha_zero",
+      "default_state": "unknown"
+    },
+    "kombucha zero": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha_zero",
+      "default_state": "unknown"
+    },
+    "комбуча без сахара": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha_zero",
+      "default_state": "unknown"
+    },
+    "комбуча zero": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha_zero",
+      "default_state": "unknown"
+    },
+    "комбуча зеро": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha_zero",
+      "default_state": "unknown"
+    },
+    "комбуча без сахара манго киви": {
+      "canonical": "Beverages, ready to drink, black, tea",
+      "category": "kombucha_zero",
+      "default_state": "unknown"
     }
   }
 }

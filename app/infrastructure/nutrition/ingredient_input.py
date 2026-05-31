@@ -1037,6 +1037,36 @@ def is_chocolate_candy_like_ingredient(ni: NormalizedIngredient) -> bool:
     return False
 
 
+def is_kombucha_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True if query is for kombucha (fermented tea beverage)."""
+    if NutritionCategory.KOMBUCHA.value in ni.categories:
+        return True
+    if NutritionCategory.KOMBUCHA_ZERO.value in ni.categories:
+        return True
+    if ni.alias_category in ("kombucha", "kombucha_zero"):
+        return True
+    blob = _ingredient_blob(ni)
+    return any(
+        t in blob
+        for t in ("kombucha", "комбуча", "камбуча", "чайный гриб", "fermented tea")
+    )
+
+
+def is_zero_kombucha_like_ingredient(ni: NormalizedIngredient) -> bool:
+    """True if query is for sugar-free/zero kombucha."""
+    if NutritionCategory.KOMBUCHA_ZERO.value in ni.categories:
+        return True
+    if ni.alias_category == "kombucha_zero":
+        return True
+    if not is_kombucha_like_ingredient(ni):
+        return False
+    blob = _ingredient_blob(ni)
+    return any(
+        t in blob
+        for t in ("sugar free", "zero sugar", "no sugar", "without sugar", "без сахара", "зеро", "zero")
+    )
+
+
 def is_poultry_breast_query(ni: NormalizedIngredient) -> bool:
     blob = f"{ni.input_name} {ni.canonical_query}".lower()
     if "wing" in blob or "thigh" in blob or "drumstick" in blob:

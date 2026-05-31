@@ -2090,6 +2090,98 @@ def _chocolate_truffle_candidate_adjustment(
     return max(score, -800.0), reasons
 
 
+def _kombucha_candidate_adjustment(
+    candidate_name: str,
+    query_lower: str,
+    *,
+    kombucha_like_q: bool = False,
+    kombucha_zero_like_q: bool = False,
+    candidate_calories_per100: float = 0.0,
+    candidate_protein_per100: float = 0.0,
+    candidate_fat_per100: float = 0.0,
+    candidate_carbs_per100: float = 0.0,
+    candidate_sugar_per100: float = 0.0,
+    candidate_fiber_per100: float = 0.0,
+) -> tuple[float, list[str]]:
+    """Prefer tea/beverage rows for kombucha queries; aggressively penalize grain/cereal/flour rows."""
+    if not kombucha_like_q:
+        return 0.0, []
+    reasons: list[str] = []
+    score = 0.0
+    nl = candidate_name.lower()
+    ql = query_lower.lower()
+
+    def add(val: float, tag: str) -> None:
+        nonlocal score
+        score += val
+        reasons.append(f"{val:+.0f}:{tag}")
+
+    # Bonuses for beverage/tea rows
+    if "kombucha" in nl:
+        add(180, "kombucha_word")
+    elif "fermented tea" in nl:
+        add(140, "kombucha_fermented_tea")
+    elif "tea" in nl and "beverage" in nl:
+        add(100, "kombucha_tea_beverage")
+    elif "beverage" in nl or "beverages" in nl:
+        add(90, "kombucha_beverage")
+    elif "drink" in nl:
+        add(70, "kombucha_drink")
+    elif "tea" in nl:
+        add(50, "kombucha_tea")
+
+    # Penalties for completely wrong food categories
+    if "buckwheat" in nl:
+        add(-350, "kombucha_buckwheat_penalty")
+    if "groats" in nl:
+        add(-320, "kombucha_groats_penalty")
+    if "cereal" in nl or "grain" in nl:
+        add(-300, "kombucha_cereal_grain_penalty")
+    if "flour" in nl:
+        add(-280, "kombucha_flour_penalty")
+    if re.search(r"\bdry\b", nl) and not any(x in nl for x in ("beverage", "drink", "tea")):
+        add(-260, "kombucha_dry_non_beverage_penalty")
+    # raw mango/kiwi row without beverage context
+    if ("mango" in nl or "kiwi" in nl) and not any(x in nl for x in ("beverage", "drink", "tea", "kombucha")):
+        add(-240, "kombucha_raw_fruit_penalty")
+    if re.search(r"\braw\b", nl) and not any(x in nl for x in ("beverage", "drink", "tea", "kombucha")):
+        add(-240, "kombucha_raw_non_beverage_penalty")
+    # juice only if user didn't ask for juice
+    if "juice" in nl and "juice" not in ql and "сок" not in ql:
+        add(-220, "kombucha_juice_mismatch")
+    if "syrup" in nl:
+        add(-220, "kombucha_syrup_penalty")
+    if "powder" in nl or "dry mix" in nl:
+        add(-200, "kombucha_powder_penalty")
+    if "smoothie" in nl:
+        add(-180, "kombucha_smoothie_penalty")
+    if "soda" in nl and "soda" not in ql:
+        add(-180, "kombucha_soda_mismatch")
+
+    # Macro sanity checks for kombucha
+    if candidate_calories_per100 > 80:
+        add(-200, "kombucha_too_high_calories")
+    if candidate_fat_per100 > 1:
+        add(-300, "kombucha_unexpected_fat")
+    if candidate_protein_per100 > 2:
+        add(-200, "kombucha_unexpected_protein")
+    if candidate_fiber_per100 > 1:
+        add(-200, "kombucha_unexpected_fiber")
+    if candidate_carbs_per100 > 25:
+        add(-180, "kombucha_too_many_carbs")
+
+    # Additional penalties for zero-sugar kombucha
+    if kombucha_zero_like_q:
+        if candidate_calories_per100 > 10:
+            add(-250, "kombucha_zero_high_calories")
+        if candidate_carbs_per100 > 3:
+            add(-250, "kombucha_zero_high_carbs")
+        if candidate_sugar_per100 > 2:
+            add(-250, "kombucha_zero_high_sugar")
+
+    return max(score, -900.0), reasons
+
+
 def state_score(
     requested_state: str,
     candidate_name: str,
@@ -2144,6 +2236,8 @@ def state_score(
     pancake_like_q: bool = False,
     chocolate_truffle_like_q: bool = False,
     chocolate_candy_like_q: bool = False,
+    kombucha_like_q: bool = False,
+    kombucha_zero_like_q: bool = False,
 ) -> tuple[float, list[str]]:
     """
     Returns (score_adjustment, reason strings).
@@ -2585,5 +2679,21 @@ def state_score(
         )
         score += ct
         reasons.extend(ctr)
+
+    if kombucha_like_q:
+        kb, kbr = _kombucha_candidate_adjustment(
+            candidate_name,
+            query_lower,
+            kombucha_like_q=kombucha_like_q,
+            kombucha_zero_like_q=kombucha_zero_like_q,
+            candidate_calories_per100=candidate_calories_per100,
+            candidate_protein_per100=candidate_protein_per100,
+            candidate_fat_per100=candidate_fat_per100,
+            candidate_carbs_per100=candidate_carbs_per100,
+            candidate_sugar_per100=candidate_sugar_per100,
+            candidate_fiber_per100=candidate_fiber_per100,
+        )
+        score += kb
+        reasons.extend(kbr)
 
     return score, reasons

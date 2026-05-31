@@ -57,6 +57,8 @@ from app.infrastructure.nutrition.ingredient_input import (
     is_pancake_like_ingredient,
     is_chocolate_truffle_like_ingredient,
     is_chocolate_candy_like_ingredient,
+    is_kombucha_like_ingredient,
+    is_zero_kombucha_like_ingredient,
 )
 from app.infrastructure.nutrition.state_match import state_score
 
@@ -394,6 +396,8 @@ class NutritionService:
         pancake_q = is_pancake_like_ingredient(ni)
         chocolate_truffle_q = is_chocolate_truffle_like_ingredient(ni)
         chocolate_candy_q = is_chocolate_candy_like_ingredient(ni)
+        kombucha_q = is_kombucha_like_ingredient(ni)
+        kombucha_zero_q = is_zero_kombucha_like_ingredient(ni)
         out: list[NutritionCandidate] = []
         for name_key, text_score in raw_candidates:
             row = self._data.get(name_key) or {}
@@ -451,6 +455,8 @@ class NutritionService:
                 pancake_like_q=pancake_q,
                 chocolate_truffle_like_q=chocolate_truffle_q,
                 chocolate_candy_like_q=chocolate_candy_q,
+                kombucha_like_q=kombucha_q,
+                kombucha_zero_like_q=kombucha_zero_q,
             )
             exact_bonus, exact_reasons = self._exact_row_bonus(ni.canonical_query, display)
             final = float(text_score) + float(st) + exact_bonus
