@@ -236,6 +236,7 @@ function MealCorrectionStep({
   onBack,
   onAnalyze,
   isAnalyzing,
+  placeholder = "Например: это цикорий, не кофе; заправка йогуртовая, не майонез",
 }: {
   imageBase64?: string | null;
   value: string;
@@ -243,6 +244,7 @@ function MealCorrectionStep({
   onBack: () => void;
   onAnalyze: () => void;
   isAnalyzing: boolean;
+  placeholder?: string;
 }) {
   return (
     <div className="space-y-3">
@@ -253,7 +255,7 @@ function MealCorrectionStep({
         onChange={(e) => onChange(e.target.value)}
         rows={5}
         className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-base outline-none ring-green-100 focus:border-green-600 focus:ring-2 sm:text-sm"
-        placeholder="Например: это цикорий, не кофе; заправка йогуртовая, не майонез"
+        placeholder={placeholder}
       />
       <div className="flex flex-col gap-2 sm:flex-row">
         <button
@@ -788,9 +790,7 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
                   setUi({
                     kind: "text",
                     mode: ui.mealData.image_base64 ? "after_photo" : "standalone",
-                    hint: ui.mealData.image_base64
-                      ? "Опиши, что нужно исправить в распознавании фото."
-                      : "Опиши, что нужно исправить в составе блюда.",
+                    hint: ui.mealData.image_base64 ? undefined : "Опиши, что нужно исправить в составе блюда.",
                     previousMealData: ui.mealData,
                   });
                 }}
@@ -801,9 +801,6 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
           {ui.kind === "text" ? (
             <div className="space-y-3">
               {scheduleBlock}
-              {ui.mode === "after_photo" || ui.previousMealData?.image_base64 ? (
-                <MealPhotoPreview imageBase64={ui.previousMealData?.image_base64 ?? photoB64Ref.current} />
-              ) : null}
               {ui.hint ? <p className="text-sm text-slate-600">{ui.hint}</p> : null}
               {inlineError ? (
                 <p className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-800">{inlineError}</p>
@@ -814,6 +811,11 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
                   value={textDraft}
                   onChange={setTextDraft}
                   isAnalyzing={false}
+                  placeholder={
+                    ui.mode === "after_photo"
+                      ? "Что исправить в распознавании фото?\nНапример: это цикорий, не кофе; заправка йогуртовая, не майонез"
+                      : undefined
+                  }
                   onBack={() => {
                     setInlineError(null);
                     setTextDraft("");
