@@ -8,6 +8,7 @@ import { CuratorPage } from "../pages/CuratorPage";
 import { CuratorUserDiaryPage } from "../pages/CuratorUserDiaryPage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { DiaryPage } from "../pages/DiaryPage";
+import { DisclaimerPage } from "../pages/DisclaimerPage";
 import { LoginPage } from "../pages/LoginPage";
 import { ProfileOnboardingPage } from "../pages/ProfileOnboardingPage";
 import { RegisterPage } from "../pages/RegisterPage";
@@ -26,6 +27,7 @@ export function AppRouter() {
         <Route path="/onboarding/profile" element={<ProfileOnboardingPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/diary" element={<DiaryPage />} />
+        <Route path="/disclaimer" element={<DisclaimerPage />} />
         <Route element={<AdminRoute />}>
           <Route path="/admin" element={<AdminPage />} />
         </Route>

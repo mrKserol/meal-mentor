@@ -89,7 +89,12 @@ def _filter_nutrients(raw: dict[str, Any]) -> tuple[dict[str, float], list[dict[
 def _normalize_parsed(parsed: dict[str, Any]) -> dict[str, Any]:
     status = (parsed.get("status") or "").strip().lower()
     if status != "success":
-        return _error_response(parsed.get("error") or f"Unexpected status: {status or 'unknown'}")
+        raw_error = parsed.get("error")
+        if isinstance(raw_error, str) and raw_error.strip():
+            return _error_response(raw_error.strip())
+        return _error_response(
+            "Не удалось распознать этикетку. Попробуйте более чёткое фото или заполните добавку вручную.",
+        )
 
     raw_nutrients = parsed.get("nutrients") or {}
     if not isinstance(raw_nutrients, dict):

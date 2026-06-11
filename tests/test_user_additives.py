@@ -15,6 +15,7 @@ from app.db.session import get_db
 from app.main import app
 from app.services.additives import get_user_additive, nutrient_payload_from_dict, record_additive_intake
 from app.services.additive_totals import sum_additive_intakes_for_local_date
+from app.services.additive_ai import _normalize_parsed
 
 
 @pytest.fixture()
@@ -106,6 +107,14 @@ def test_analyze_additive_unknown_to_ignored(client, db_session):
     body = r.json()
     assert body["nutrients"]["vitamin_c_mg"] == 100
     assert len(body["ignored"]) >= 1
+
+
+def test_additive_ai_error_status_has_user_friendly_message():
+    result = _normalize_parsed({"status": "error"})
+
+    assert result["status"] == "error"
+    assert result["error"]
+    assert "Unexpected status" not in result["error"]
 
 
 def test_patch_additive_replaces_nutrients(client, db_session):

@@ -13,6 +13,9 @@ API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))
 BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8000")
 
+# Legal consents
+CURRENT_DISCLAIMER_VERSION = "v1.0"
+
 # OpenAI
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")

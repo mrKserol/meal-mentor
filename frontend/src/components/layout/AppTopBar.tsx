@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, ClipboardList, HelpCircle, LogOut, Shield, User, UserRound } from "lucide-react";
+import { Bell, ChevronDown, ClipboardList, FileText, HelpCircle, LogOut, Shield, User, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
@@ -138,6 +138,19 @@ export function AppTopBar({ title = "Meal Mentor", avatarFallback, onLogout }: A
                   Режим куратора
                 </button>
               ) : null}
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setProfileMenuOpen(false);
+                  navigate("/disclaimer");
+                }}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                <FileText className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+                Дисклеймер
+              </button>
 
               <button
                 type="button"

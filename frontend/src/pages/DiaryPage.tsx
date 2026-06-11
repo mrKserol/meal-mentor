@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Info, X } from "lucide-react";
 
 import { getMyNutritionTarget } from "../api/authApi";
@@ -17,6 +17,7 @@ const MEAL_MENTOR_ACCESS_TOKEN_KEY = "meal_mentor_access_token";
 
 export function DiaryPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, validateSession, logout, getAccessToken } = useAuth();
   const [snapshot, setSnapshot] = useState<DiarySnapshot | null>(null);
   const [nutritionTarget, setNutritionTarget] = useState<NutritionTarget | null>(null);
@@ -123,6 +124,8 @@ export function DiaryPage() {
     user?.first_name?.trim()?.[0] ?? user?.username?.trim()?.[0] ?? user?.email?.trim()?.[0] ?? "U";
 
   const webDiaryToken = getAccessToken() ?? localStorage.getItem(MEAL_MENTOR_ACCESS_TOKEN_KEY) ?? "";
+  const requestedMealIdRaw = searchParams.get("mealId");
+  const requestedMealId = requestedMealIdRaw ? Number(requestedMealIdRaw) : null;
 
   const weightKg = snapshot?.weight.weight_kg ?? user?.weight_kg ?? null;
 
@@ -233,6 +236,7 @@ export function DiaryPage() {
               accessToken={webDiaryToken}
               nutritionTarget={nutritionTarget}
               refreshToken={mealHistoryRefresh}
+              initialOpenMealId={Number.isFinite(requestedMealId) ? requestedMealId : null}
               onMealsChanged={handleMealSaved}
               onAddMealForDay={openAddMealForDate}
             />
