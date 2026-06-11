@@ -99,14 +99,27 @@ class OpenAIVisionService:
         self.temperature = temperature
         self.max_tokens = max_tokens
 
-    def _build_photo_messages(self, image_base64: str) -> list:
+    def _build_photo_messages(self, image_base64: str, user_comment: str | None = None) -> list:
         clean = image_base64.replace("\n", "").replace("\r", "")
         url = f"data:image/jpeg;base64,{clean}"
+        prompt = self.photo_prompt
+        if user_comment and user_comment.strip():
+            prompt = f"""
+{self.photo_prompt}
+
+Пользователь добавил комментарий к фото:
+"{user_comment.strip()}"
+
+Учитывай этот комментарий при распознавании блюда и ингредиентов.
+Если визуальный анализ противоречит комментарию пользователя, отдавай приоритет комментарию, если он выглядит правдоподобно.
+Например, если на фото напиток похож на кофе, но пользователь написал "это цикорий", используй "chicory drink" / "цикорий".
+Если пользователь написал "салат с йогуртовой заправкой", не определяй заправку как майонез без дополнительных оснований.
+""".strip()
         return [
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": self.photo_prompt},
+                    {"type": "text", "text": prompt},
                     {"type": "image_url", "image_url": {"url": url}},
                 ],
             }
@@ -173,11 +186,11 @@ class OpenAIVisionService:
             "error": f"No JSON in response: {content[:100]}",
         }
 
-    def analyze_image(self, image_base64: str) -> dict[str, Any]:
+    def analyze_image(self, image_base64: str, user_comment: str | None = None) -> dict[str, Any]:
         try:
             resp = self.client.chat.completions.create(
                 model=self.model,
-                messages=self._build_photo_messages(image_base64),
+                messages=self._build_photo_messages(image_base64, user_comment=user_comment),
                 max_tokens=self.max_tokens,
                 temperature=self.temperature,
             )
@@ -210,6 +223,8 @@ class OpenAIVisionService:
         user_text: str,
         previous_ingredients: dict[str, Any] | None = None,
         previous_prediction: str | None = None,
+        initial_comment: str | None = None,
+        correction_history: list[str] | None = None,
     ) -> dict[str, Any]:
         """
         Analyze food using both original photo and user's correction/description.
@@ -229,10 +244,26 @@ previous_ingredients:
 {json.dumps(previous_ingredients or {}, ensure_ascii=False, indent=2)}
 """.strip()
 
+            initial_comment_block = ""
+            if initial_comment and initial_comment.strip():
+                initial_comment_block = f"""
+Initial user comment for the photo:
+"{initial_comment.strip()}"
+""".strip()
+
+            history_block = ""
+            clean_history = [item.strip() for item in (correction_history or []) if isinstance(item, str) and item.strip()]
+            if clean_history:
+                history_block = "Correction history:\n" + "\n".join(f"- {item}" for item in clean_history)
+
             prompt = f"""
 {self.photo_prompt}
 
 {previous_block}
+
+{initial_comment_block}
+
+{history_block}
 
 User clarification:
 "{user_text.strip()}"
@@ -346,10 +377,55 @@ Incorrect:
                 "error": str(e),
             }
 
-    def analyze_text(self, user_text: str) -> dict[str, Any]:
+    def analyze_text(
+        self,
+        user_text: str,
+        previous_ingredients: dict[str, Any] | None = None,
+        previous_prediction: str | None = None,
+        correction: str | None = None,
+        correction_history: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Same JSON shape as photo: ingredients + confidence."""
         try:
-            body = f"{self.text_prompt}\n\nMeal description:\n{user_text.strip()}"
+            if correction and correction.strip():
+                previous_block = ""
+                if previous_prediction or previous_ingredients:
+                    previous_block = f"""
+Previous AI recognition:
+prediction: {previous_prediction or ""}
+
+previous_ingredients:
+{json.dumps(previous_ingredients or {}, ensure_ascii=False, indent=2)}
+""".strip()
+                clean_history = [
+                    item.strip() for item in (correction_history or []) if isinstance(item, str) and item.strip()
+                ]
+                history_block = ""
+                if clean_history:
+                    history_block = "Correction history:\n" + "\n".join(f"- {item}" for item in clean_history)
+
+                body = f"""
+{self.text_prompt}
+
+Original meal description:
+"{user_text.strip()}"
+
+{previous_block}
+
+{history_block}
+
+User correction:
+"{correction.strip()}"
+
+Important correction mode:
+- The user is correcting the previous AI recognition.
+- Update the result, preserve correct parts from the previous result, and change only what conflicts with the user's correction.
+- Do not ignore the user's clarification.
+- Do not add ingredients without a basis in the original description or correction.
+- Return ONLY valid JSON in the same format as the original pipeline.
+""".strip()
+            else:
+                body = f"{self.text_prompt}\n\nMeal description:\n{user_text.strip()}"
             resp = self.client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": body}],

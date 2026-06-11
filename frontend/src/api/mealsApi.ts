@@ -9,22 +9,35 @@ if (!API_URL) {
   throw new Error("VITE_API_URL is not defined");
 }
 
+type MealAnalyzeContext = {
+  comment?: string | null;
+  previous_ingredients?: Record<string, IngredientEntry> | null;
+  previous_prediction?: string | null;
+  correction?: string | null;
+  correction_history?: string[];
+};
+
 export async function analyzeMealImageBase64(
   accessToken: string,
   image_base64: string,
+  context: MealAnalyzeContext = {},
 ): Promise<Record<string, unknown>> {
   const { data } = await authClient.post<Record<string, unknown>>(
     "/users/me/meals/analyze",
-    { image_base64 },
+    { image_base64, ...context },
     { headers: { Authorization: `Bearer ${accessToken}` } },
   );
   return data;
 }
 
-export async function analyzeMealText(accessToken: string, text: string): Promise<Record<string, unknown>> {
+export async function analyzeMealText(
+  accessToken: string,
+  text: string,
+  context: Omit<MealAnalyzeContext, "comment"> = {},
+): Promise<Record<string, unknown>> {
   const { data } = await authClient.post<Record<string, unknown>>(
     "/users/me/meals/analyze-text",
-    { text },
+    { text, ...context },
     { headers: { Authorization: `Bearer ${accessToken}` } },
   );
   return data;
@@ -36,6 +49,8 @@ export async function analyzeMealImageWithText(
   text: string,
   previous_ingredients?: Record<string, IngredientEntry> | null,
   previous_prediction?: string | null,
+  comment?: string | null,
+  correction_history?: string[],
 ): Promise<Record<string, unknown>> {
   const { data } = await authClient.post<Record<string, unknown>>(
     "/users/me/meals/analyze-image-text",
@@ -44,6 +59,8 @@ export async function analyzeMealImageWithText(
       text,
       previous_ingredients,
       previous_prediction,
+      comment,
+      correction_history,
     },
     { headers: { Authorization: `Bearer ${accessToken}` } },
   );

@@ -20,7 +20,6 @@ import {
   fileToBase64,
   ingredientDisplayName,
   mealDisplayPrediction,
-  needsUserDescription,
   parseAnalyzeResponse,
   type IngredientEntry,
   type MealCompositionState,
@@ -43,6 +42,7 @@ type MealData = {
 type UiState =
   | { kind: "menu" }
   | { kind: "busy"; message: string }
+  | { kind: "photo_preview" }
   | {
       kind: "recognition";
       mealData: MealData;
@@ -80,19 +80,6 @@ function buildDefaultScheduled(dateYmd: string): ScheduledLocal {
   return { date: dateYmd, time: `${h}:${m}` };
 }
 
-function formatScheduledHint(dateYmd: string, timeHm: string): string {
-  const [y, mo, da] = dateYmd.split("-").map(Number);
-  const [hh, mm] = timeHm.split(":").map(Number);
-  const dt = new Date(y, mo - 1, da, hh, mm);
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(dt);
-}
-
 function toMealLocalDatetime(scheduled: ScheduledLocal): string {
   return `${scheduled.date}T${scheduled.time}`;
 }
@@ -112,69 +99,136 @@ function validateScheduled(scheduled: ScheduledLocal, tomorrowYmd: string): stri
 function MealScheduledTimeBlock({
   scheduled,
   tomorrowYmd,
-  editOpen,
-  onEditOpenChange,
   onScheduledChange,
 }: {
   scheduled: ScheduledLocal;
   tomorrowYmd: string;
-  editOpen: boolean;
-  onEditOpenChange: (open: boolean) => void;
   onScheduledChange: (next: ScheduledLocal) => void;
 }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
+  return (
+    <div className="space-y-2 rounded-xl border border-green-100 bg-green-50/70 p-3">
+      <p className="text-center text-sm font-medium text-green-900">Прием будет записан</p>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_7.5rem] sm:items-center">
+        <input
+          type="date"
+          value={scheduled.date}
+          max={tomorrowYmd}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (!v) return;
+            onScheduledChange({ ...scheduled, date: v > tomorrowYmd ? tomorrowYmd : v });
+          }}
+          className="box-border w-full min-w-0 max-w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+        />
+        <div className="min-w-0 w-full max-w-full overflow-hidden">
+          <input
+            type="time"
+            value={scheduled.time}
+            onChange={(e) => onScheduledChange({ ...scheduled, time: e.target.value })}
+            className="meal-time-input box-border w-full min-w-0 max-w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm sm:px-2.5"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
-  useEffect(() => {
-    if (!editOpen) return;
-    const onPointerDown = (e: PointerEvent) => {
-      const root = wrapRef.current;
-      if (!root || root.contains(e.target as Node)) return;
-      onEditOpenChange(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [editOpen, onEditOpenChange]);
+function mealIngredientsLine(mealData: MealData): string {
+  const items = Object.entries(mealData.ingredients).map(([name, entry]) => ingredientDisplayName(name, entry));
+  return items.length > 0 ? items.join(" • ") : "—";
+}
+
+function MealPredictionConfirmStep({
+  mealData,
+  onConfirm,
+  onCorrection,
+}: {
+  mealData: MealData;
+  onConfirm: () => void;
+  onCorrection: () => void;
+}) {
+  const predictionTitle = mealDisplayPrediction(mealData) || "блюдо";
 
   return (
-    <div ref={wrapRef} className="space-y-2">
-      <button
-        type="button"
-        onClick={() => onEditOpenChange(!editOpen)}
-        className="w-full rounded-xl border border-green-200 bg-green-50 px-3 py-2.5 text-center text-sm text-green-900 transition hover:bg-green-100"
-      >
-        Приём будет записан на {formatScheduledHint(scheduled.date, scheduled.time)}
-      </button>
-      {editOpen ? (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_7.5rem] sm:items-end sm:gap-2">
-            <label className="block min-w-0 max-w-full text-sm">
-              <span className="mb-1 block font-medium text-slate-700">Дата</span>
-              <input
-                type="date"
-                value={scheduled.date}
-                max={tomorrowYmd}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (!v) return;
-                  onScheduledChange({ ...scheduled, date: v > tomorrowYmd ? tomorrowYmd : v });
-                }}
-                className="box-border w-full min-w-0 max-w-full rounded-lg border border-slate-200 px-3 py-2"
-              />
-            </label>
-            <label className="block min-w-0 w-full max-w-full text-sm sm:w-auto sm:max-w-[7.5rem]">
-              <span className="mb-1 block font-medium text-slate-700">Время</span>
-              <div className="min-w-0 w-full max-w-full overflow-hidden">
-                <input
-                  type="time"
-                  value={scheduled.time}
-                  onChange={(e) => onScheduledChange({ ...scheduled, time: e.target.value })}
-                  className="meal-time-input box-border w-full min-w-0 max-w-full rounded-lg border border-slate-200 px-2 py-2 text-sm sm:px-2.5"
-                />
-              </div>
-            </label>
-          </div>
+    <div className="space-y-4">
+      <MealPhotoPreview imageBase64={mealData.image_base64} />
+      <div className="space-y-3 text-center text-sm leading-relaxed text-slate-800">
+        <p>
+          Похоже, что это:{" "}
+          <span className="text-[15px] font-bold leading-snug text-slate-900">{predictionTitle}</span>
+        </p>
+        <div>
+          <p className="font-medium text-slate-900">Примерный состав:</p>
+          <p className="mt-1">{mealIngredientsLine(mealData)}</p>
         </div>
-      ) : null}
+        <p className="font-medium text-slate-900">Я верно определил?</p>
+      </div>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <button
+          type="button"
+          onClick={onConfirm}
+          className="flex-1 rounded-xl bg-green-600 py-3 text-sm font-semibold text-white transition hover:bg-green-700"
+        >
+          Да, верно
+        </button>
+        <button
+          type="button"
+          onClick={onCorrection}
+          className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+        >
+          Нет, коррекция
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MealCorrectionStep({
+  imageBase64,
+  value,
+  onChange,
+  onBack,
+  onAnalyze,
+  isAnalyzing,
+  placeholder = "Например: это цикорий, не кофе; заправка йогуртовая, не майонез",
+}: {
+  imageBase64?: string | null;
+  value: string;
+  onChange: (value: string) => void;
+  onBack: () => void;
+  onAnalyze: () => void;
+  isAnalyzing: boolean;
+  placeholder?: string;
+}) {
+  return (
+    <div className="space-y-3">
+      <MealPhotoPreview imageBase64={imageBase64} />
+      <label className="block text-sm font-medium text-slate-700">Описание блюда</label>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={5}
+        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-base outline-none ring-green-100 focus:border-green-600 focus:ring-2 sm:text-sm"
+        placeholder={placeholder}
+      />
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <button
+          type="button"
+          onClick={onBack}
+          disabled={isAnalyzing}
+          className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+        >
+          Назад
+        </button>
+        <button
+          type="button"
+          onClick={onAnalyze}
+          disabled={!value.trim() || isAnalyzing}
+          className="flex-1 rounded-xl bg-green-600 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isAnalyzing ? "Анализирую…" : "Анализировать"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -185,8 +239,12 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
   const [takeAdditiveOpen, setTakeAdditiveOpen] = useState(false);
   const [waterSaving, setWaterSaving] = useState(false);
   const [textDraft, setTextDraft] = useState("");
+  const [textDescription, setTextDescription] = useState("");
+  const [photoComment, setPhotoComment] = useState("");
+  const [selectedImageBase64, setSelectedImageBase64] = useState<string | null>(null);
+  const [correctionHistory, setCorrectionHistory] = useState<string[]>([]);
+  const [inlineError, setInlineError] = useState<string | null>(null);
   const [scheduled, setScheduled] = useState<ScheduledLocal | null>(null);
-  const [scheduleEditOpen, setScheduleEditOpen] = useState(false);
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const photoB64Ref = useRef<string | null>(null);
@@ -194,6 +252,11 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
   const reset = useCallback(() => {
     setUi({ kind: "menu" });
     setTextDraft("");
+    setTextDescription("");
+    setPhotoComment("");
+    setSelectedImageBase64(null);
+    setCorrectionHistory([]);
+    setInlineError(null);
     photoB64Ref.current = null;
   }, []);
 
@@ -215,7 +278,6 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
       reset();
       setTakeAdditiveOpen(false);
       setWaterSaving(false);
-      setScheduleEditOpen(false);
       if (mealLocalDate) {
         setScheduled(buildDefaultScheduled(mealLocalDate));
       } else {
@@ -229,8 +291,6 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
       <MealScheduledTimeBlock
         scheduled={scheduled}
         tomorrowYmd={tomorrowYmd}
-        editOpen={scheduleEditOpen}
-        onEditOpenChange={setScheduleEditOpen}
         onScheduledChange={setScheduled}
       />
     ) : null;
@@ -244,7 +304,9 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  const runAnalyzeImage = async (file: File) => {
+  const runAnalyzeImage = async () => {
+    if (!selectedImageBase64) return;
+    setInlineError(null);
     setUi({ kind: "busy", message: "Анализирую фото…" });
     try {
       const sessionOk = await validateSession();
@@ -253,24 +315,18 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
         setUi({ kind: "error", message: "Сессия истекла. Войдите снова." });
         return;
       }
-      const b64 = await fileToBase64(file);
-      photoB64Ref.current = b64;
-      const raw = await analyzeMealImageBase64(token, b64);
+      photoB64Ref.current = selectedImageBase64;
+      const raw = await analyzeMealImageBase64(token, selectedImageBase64, {
+        comment: photoComment.trim() || null,
+      });
       const parsed = parseAnalyzeResponse(raw);
       if (parsed.status !== "success") {
-        setUi({ kind: "error", message: parsed.error || "Не удалось разобрать еду на фото." });
+        setUi({ kind: "photo_preview" });
+        setInlineError(parsed.error || "Не удалось разобрать еду на фото. Попробуйте ещё раз или добавьте комментарий.");
         return;
       }
       const { ingredients, confidence, nutrition, prediction, prediction_translated, prediction_language } =
         parsed;
-      if (needsUserDescription(ingredients, confidence)) {
-        setUi({
-          kind: "text",
-          mode: "after_photo",
-          hint: "Распознавание неуверенное. Опиши блюдо на фото и примерные порции.",
-        });
-        return;
-      }
       setUi({
         kind: "recognition",
         mealData: {
@@ -282,13 +338,76 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
           prediction,
           prediction_translated,
           prediction_language,
-          image_base64: b64,
+          user_text: photoComment.trim() || null,
+          image_base64: selectedImageBase64,
+        },
+      });
+    } catch (err) {
+      setUi({ kind: "photo_preview" });
+      const message = axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : "Ошибка сети.";
+      setInlineError(message);
+    }
+  };
+
+  const runAnalyzePhotoCorrection = async (previousMealData: MealData, correction: string) => {
+    const trimmed = correction.trim();
+    if (!selectedImageBase64 || !trimmed) return;
+    const nextHistory = [...correctionHistory, trimmed];
+    setInlineError(null);
+    setUi({ kind: "busy", message: "Учитываю коррекцию…" });
+    try {
+      const sessionOk = await validateSession();
+      const token = getAccessToken();
+      if (!sessionOk || !token) {
+        setUi({ kind: "error", message: "Сессия истекла. Войдите снова." });
+        return;
+      }
+      const raw = await analyzeMealImageWithText(
+        token,
+        selectedImageBase64,
+        trimmed,
+        previousMealData.ingredients,
+        previousMealData.prediction,
+        photoComment.trim() || null,
+        nextHistory,
+      );
+      const parsed = parseAnalyzeResponse(raw);
+      if (parsed.status !== "success") {
+        setUi({
+          kind: "text",
+          mode: "after_photo",
+          hint: parsed.error || "Не удалось учесть коррекцию. Попробуйте сформулировать иначе.",
+          previousMealData,
+        });
+        return;
+      }
+      const { ingredients, confidence, nutrition, prediction, prediction_translated, prediction_language } =
+        parsed;
+      setCorrectionHistory(nextHistory);
+      setTextDraft("");
+      setUi({
+        kind: "recognition",
+        mealData: {
+          ingredients,
+          confidence,
+          nutrition,
+          source_type: "photo",
+          telegram_file_id: null,
+          prediction,
+          prediction_translated,
+          prediction_language,
+          user_text: [photoComment.trim(), ...nextHistory].filter(Boolean).join("\n"),
+          image_base64: selectedImageBase64,
         },
       });
     } catch (err) {
       setUi({
-        kind: "error",
-        message: axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : "Ошибка сети.",
+        kind: "text",
+        mode: "after_photo",
+        hint: axios.isAxiosError(err)
+          ? String(err.response?.data?.detail ?? err.message)
+          : "Не удалось учесть коррекцию. Попробуйте ещё раз.",
+        previousMealData,
       });
     }
   };
@@ -296,6 +415,7 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
   const runAnalyzeText = async (text: string, mode: "standalone" | "after_photo") => {
     const trimmed = text.trim();
     const previousMealData = ui.kind === "text" ? ui.previousMealData : null;
+    setInlineError(null);
     if (!trimmed) {
       setUi({ kind: "error", message: "Введите описание блюда." });
       return;
@@ -319,26 +439,38 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
               trimmed,
               previousMealData?.ingredients ?? null,
               previousMealData?.prediction ?? null,
+              photoComment.trim() || null,
+              previousMealData ? [...correctionHistory, trimmed] : correctionHistory,
             )
-          : await analyzeMealText(token, trimmed);
+          : await analyzeMealText(
+              token,
+              previousMealData ? textDescription : trimmed,
+              previousMealData
+                ? {
+                    previous_ingredients: previousMealData.ingredients,
+                    previous_prediction: previousMealData.prediction,
+                    correction: trimmed,
+                    correction_history: [...correctionHistory, trimmed],
+                  }
+                : {},
+            );
       const parsed = parseAnalyzeResponse(raw);
       if (parsed.status !== "success") {
-        setUi({ kind: "error", message: parsed.error || "Ошибка анализа текста." });
+        setUi({
+          kind: "text",
+          mode,
+          hint: parsed.error || "Ошибка анализа текста.",
+          previousMealData,
+        });
         return;
       }
       const { ingredients, confidence, nutrition, prediction, prediction_translated, prediction_language } =
         parsed;
-      if (needsUserDescription(ingredients, confidence)) {
-        setUi({
-          kind: "text",
-          mode,
-          hint:
-            mode === "after_photo"
-              ? "Не получилось выделить еду. Уточни подробнее: что на фото и примерные порции."
-              : "По описанию мало данных. Добавь деталей: что именно и сколько примерно по весу.",
-          previousMealData,
-        });
-        return;
+      if (!previousMealData && mode === "standalone") {
+        setTextDescription(trimmed);
+      }
+      if (previousMealData) {
+        setCorrectionHistory((history) => [...history, trimmed]);
       }
       const mealData: MealData = {
         ingredients,
@@ -354,15 +486,14 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
           ? { image_base64: photoB64Ref.current }
           : {}),
       };
-      if (mode === "after_photo") {
-        setUi({ kind: "confirm", mealData });
-      } else {
-        setUi({ kind: "recognition", mealData });
-      }
+      setTextDraft("");
+      setUi({ kind: "recognition", mealData });
     } catch (err) {
       setUi({
-        kind: "error",
-        message: axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : "Ошибка сети.",
+        kind: "text",
+        mode,
+        hint: axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : "Ошибка сети.",
+        previousMealData,
       });
     }
   };
@@ -371,7 +502,19 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
     const f = e.target.files?.[0];
     e.target.value = "";
     if (!f) return;
-    void runAnalyzeImage(f);
+    void (async () => {
+      try {
+        const b64 = await fileToBase64(f);
+        setSelectedImageBase64(b64);
+        photoB64Ref.current = b64;
+        setPhotoComment("");
+        setTextDraft("");
+        setCorrectionHistory([]);
+        setUi({ kind: "photo_preview" });
+      } catch {
+        setUi({ kind: "error", message: "Не удалось прочитать файл." });
+      }
+    })();
   };
 
   const confirmSave = async () => {
@@ -380,7 +523,6 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
       const err = validateScheduled(scheduled, tomorrowYmd);
       if (err) {
         setUi({ kind: "error", message: err });
-        setScheduleEditOpen(true);
         return;
       }
     }
@@ -475,6 +617,9 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
                 type="button"
                 onClick={() => {
                   setTextDraft("");
+                  setTextDescription("");
+                  setCorrectionHistory([]);
+                  setInlineError(null);
                   photoB64Ref.current = null;
                   setUi({ kind: "text", mode: "standalone" });
                 }}
@@ -540,6 +685,41 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
             </div>
           ) : null}
 
+          {ui.kind === "photo_preview" ? (
+            <div className="space-y-4">
+              {scheduleBlock}
+              <MealPhotoPreview imageBase64={selectedImageBase64} />
+              {inlineError ? (
+                <p className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-800">{inlineError}</p>
+              ) : null}
+              <label className="block text-sm font-medium text-slate-700">Комментарий</label>
+              <textarea
+                value={photoComment}
+                onChange={(e) => setPhotoComment(e.target.value)}
+                rows={4}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-base outline-none ring-green-100 focus:border-green-600 focus:ring-2 sm:text-sm"
+                placeholder="Например: это цикорий, не кофе; салат с йогуртовой заправкой; мясо без масла"
+              />
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={reset}
+                  className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Назад
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void runAnalyzeImage()}
+                  disabled={!selectedImageBase64}
+                  className="flex-1 rounded-xl bg-green-600 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Анализировать
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           {ui.kind === "busy" ? (
             <div className="flex flex-col items-center justify-center gap-3 py-12 text-slate-600">
               <Loader2 className="h-10 w-10 animate-spin text-green-600" aria-hidden />
@@ -550,89 +730,81 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
           {ui.kind === "recognition" ? (
             <div className="space-y-4">
               {scheduleBlock}
-              <MealPhotoPreview imageBase64={ui.mealData.image_base64} />
-              <div className="space-y-3 text-center text-sm leading-relaxed text-slate-800">
-                {mealDisplayPrediction(ui.mealData) ? (
-                  <p>
-                    Похоже, что это:{" "}
-                    <span className="text-[15px] font-bold leading-snug text-slate-900">
-                      {mealDisplayPrediction(ui.mealData)}
-                    </span>
-                  </p>
-                ) : null}
-                <p className="font-medium text-slate-900">Примерный состав:</p>
-                <p>
-                  {Object.keys(ui.mealData.ingredients).length
-                    ? Object.entries(ui.mealData.ingredients)
-                        .map(([name, entry]) => ingredientDisplayName(name, entry))
-                        .join(" • ")
-                    : "—"}
-                </p>
-                <p>Я верно определил?</p>
-              </div>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setUi({
-                      kind: "confirm",
-                      mealData: ui.mealData,
-                    })
-                  }
-                  className="flex-1 rounded-xl bg-green-600 py-3 text-sm font-semibold text-white transition hover:bg-green-700"
-                >
-                  Да, верно
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTextDraft("");
-                    setUi({
-                      kind: "text",
-                      mode: "after_photo",
-                      hint: "Опиши блюдо на фото и примерные порции.",
-                      previousMealData: ui.mealData,
-                    });
-                  }}
-                  className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
-                >
-                  Нет, коррекция
-                </button>
-              </div>
+              <MealPredictionConfirmStep
+                mealData={ui.mealData}
+                onConfirm={() => setUi({ kind: "confirm", mealData: ui.mealData })}
+                onCorrection={() => {
+                  setTextDraft("");
+                  setInlineError(null);
+                  setUi({
+                    kind: "text",
+                    mode: ui.mealData.image_base64 ? "after_photo" : "standalone",
+                    hint: ui.mealData.image_base64 ? undefined : "Опиши, что нужно исправить в составе блюда.",
+                    previousMealData: ui.mealData,
+                  });
+                }}
+              />
             </div>
           ) : null}
 
           {ui.kind === "text" ? (
             <div className="space-y-3">
               {scheduleBlock}
-              {ui.mode === "after_photo" ? (
-                <MealPhotoPreview imageBase64={photoB64Ref.current} />
-              ) : null}
               {ui.hint ? <p className="text-sm text-slate-600">{ui.hint}</p> : null}
-              <label className="block text-sm font-medium text-slate-700">Описание блюда</label>
-              <textarea
-                value={textDraft}
-                onChange={(e) => setTextDraft(e.target.value)}
-                rows={5}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-base outline-none ring-green-100 focus:border-green-600 focus:ring-2 sm:text-sm"
-                placeholder="Например: гречка с курицей 300 г, салат из огурцов 150 г"
-              />
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={() => void runAnalyzeText(textDraft, ui.mode)}
-                  className="flex-1 rounded-xl bg-green-600 py-3 text-sm font-semibold text-white transition hover:bg-green-700"
-                >
-                  Анализировать
-                </button>
-                <button
-                  type="button"
-                  onClick={reset}
-                  className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  Назад
-                </button>
-              </div>
+              {inlineError ? (
+                <p className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-800">{inlineError}</p>
+              ) : null}
+              {ui.previousMealData ? (
+                <MealCorrectionStep
+                  imageBase64={ui.previousMealData.image_base64}
+                  value={textDraft}
+                  onChange={setTextDraft}
+                  isAnalyzing={false}
+                  placeholder={
+                    ui.mode === "after_photo"
+                      ? "Что исправить в распознавании фото?\nНапример: это цикорий, не кофе; заправка йогуртовая, не майонез"
+                      : undefined
+                  }
+                  onBack={() => {
+                    setInlineError(null);
+                    setTextDraft("");
+                    setUi({ kind: "recognition", mealData: ui.previousMealData as MealData });
+                  }}
+                  onAnalyze={() =>
+                    ui.mode === "after_photo" && ui.previousMealData
+                      ? void runAnalyzePhotoCorrection(ui.previousMealData, textDraft)
+                      : void runAnalyzeText(textDraft, ui.mode)
+                  }
+                />
+              ) : (
+                <>
+                  <label className="block text-sm font-medium text-slate-700">Описание блюда</label>
+                  <textarea
+                    value={textDraft}
+                    onChange={(e) => setTextDraft(e.target.value)}
+                    rows={5}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-base outline-none ring-green-100 focus:border-green-600 focus:ring-2 sm:text-sm"
+                    placeholder="Например: гречка с курицей 300 г, салат из огурцов 150 г"
+                  />
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => void runAnalyzeText(textDraft, ui.mode)}
+                      disabled={!textDraft.trim()}
+                      className="flex-1 rounded-xl bg-green-600 py-3 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Анализировать
+                    </button>
+                    <button
+                      type="button"
+                      onClick={reset}
+                      className="flex-1 rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Назад
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ) : null}
 
