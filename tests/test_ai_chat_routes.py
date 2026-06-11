@@ -100,6 +100,23 @@ def test_ai_chat_consent_accept_and_bootstrap(client, db_session):
     assert db_session.query(AiChatMessage).filter(AiChatMessage.user_id == user.id).count() == 1
 
 
+def test_bootstrap_uses_fallback_welcome_when_openai_unavailable(client, db_session, monkeypatch):
+    monkeypatch.setattr(
+        "app.routers.ai_chat.generate_ai_chat_welcome",
+        lambda context: (_ for _ in ()).throw(RuntimeError("OpenAI unavailable")),
+    )
+    user, token = _user(db_session, email="welcome-fallback@test.com")
+    _accept(db_session, user)
+
+    response = client.get("/api/ai-chat/bootstrap", headers=_auth(token))
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["disclaimer_required"] is False
+    assert body["messages"][0]["role"] == "assistant"
+    assert "Meal-Mentor" in body["messages"][0]["content"]
+
+
 def test_message_saves_user_and_assistant_messages_with_medical_risk_context(client, db_session, monkeypatch):
     captured = {}
 

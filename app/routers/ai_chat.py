@@ -20,6 +20,13 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/ai-chat", tags=["ai-chat"])
 
+FALLBACK_WELCOME_MESSAGE = (
+    "Привет! Я Meal-Mentor — твой ИИ-помощник по дневнику питания.\n\n"
+    "Пока я не буду делать поспешных выводов. Можешь спросить меня о рационе за последние дни, "
+    "белке, клетчатке, воде или о том, что лучше улучшить сегодня.\n\n"
+    "Будем двигаться спокойно и без пищевой паники."
+)
+
 
 def _message_response(row: AiChatMessage) -> AiChatMessageResponse:
     return AiChatMessageResponse.from_orm(row)
@@ -115,11 +122,9 @@ def bootstrap_ai_chat(
             content, meta = generate_ai_chat_welcome(context)
         except Exception as exc:
             logger.exception("AI chat welcome generation failed: %s", exc)
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Не удалось загрузить чат. Попробуйте позже.",
-            ) from exc
-        meta = {**meta, "kind": "welcome"}
+            content = FALLBACK_WELCOME_MESSAGE
+            meta = {"kind": "welcome_fallback", "error": exc.__class__.__name__}
+        meta = {**meta, "kind": meta.get("kind") or "welcome"}
         welcome = _add_message(
             db,
             thread=thread,
