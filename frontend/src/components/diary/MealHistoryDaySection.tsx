@@ -1,5 +1,19 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Apple, Beef, ChevronLeft, ChevronRight, Coffee, EggFried, Flame, Leaf, Salad, Target, Wheat, X } from "lucide-react";
+import {
+  Apple,
+  Beef,
+  ChevronLeft,
+  ChevronRight,
+  Coffee,
+  Droplet,
+  EggFried,
+  Flame,
+  Leaf,
+  Salad,
+  Target,
+  Wheat,
+  X,
+} from "lucide-react";
 
 import { getMyNutritionTarget } from "../../api/authApi";
 import type { MyNutritionTargetEnvelope } from "../../types/auth";
@@ -14,15 +28,15 @@ import { formatIntRu, formatMacroGramsRu } from "../../utils/recentMeals";
 
 const DELETE_PANEL_PX = 96;
 
-type GoalIconKind = "calories" | "protein" | "fat" | "carbs" | "fiber";
+type GoalIconKind = "calories" | "protein" | "fat" | "carbs" | "fiber" | "water";
 
 type DayGoalItem = {
   id: string;
   label: string;
   current: string;
-  target: string;
-  percent: number;
-  tone: "green" | "orange" | "slate";
+  target?: string;
+  percent?: number;
+  tone: "green" | "orange" | "slate" | "blue";
   icon: GoalIconKind;
 };
 
@@ -56,11 +70,11 @@ function getMealIcon(mt: string | null) {
 
 function pctCurrentTarget(current: number, target: number): number {
   if (target <= 0) return 0;
-  return Math.min(100, Math.round((100 * current) / target));
+  return Math.round((100 * current) / target);
 }
 
 function goalToneFromPercent(percent: number): DayGoalItem["tone"] {
-  if (percent >= 100) return "orange";
+  if (percent > 100) return "orange";
   if (percent >= 60) return "green";
   return "slate";
 }
@@ -70,18 +84,21 @@ function getGoalIcon(icon: GoalIconKind) {
   if (icon === "protein") return Beef;
   if (icon === "fat") return EggFried;
   if (icon === "fiber") return Leaf;
+  if (icon === "water") return Droplet;
   return Wheat;
 }
 
 function goalStrokeClass(tone: DayGoalItem["tone"]): string {
   if (tone === "green") return "stroke-green-600";
   if (tone === "orange") return "stroke-orange-500";
+  if (tone === "blue") return "stroke-sky-500";
   return "stroke-slate-700";
 }
 
 function goalIconClass(tone: DayGoalItem["tone"]): string {
   if (tone === "green") return "text-green-600";
   if (tone === "orange") return "text-orange-500";
+  if (tone === "blue") return "text-sky-600";
   return "text-slate-700";
 }
 
@@ -99,8 +116,9 @@ function buildDayGoals(
       fat_g: acc.fat_g + (meal.fat_g ?? 0),
       carbs_g: acc.carbs_g + (meal.carbs_g ?? 0),
       fiber_g: acc.fiber_g + (meal.fiber_g ?? 0),
+      water_g: acc.water_g + (meal.water_g ?? 0),
     }),
-    { calories: 0, protein_g: 0, fat_g: 0, carbs_g: 0, fiber_g: 0 },
+    { calories: 0, protein_g: 0, fat_g: 0, carbs_g: 0, fiber_g: 0, water_g: 0 },
   );
 
   const totals = {
@@ -109,6 +127,7 @@ function buildDayGoals(
     fat_g: mealTotals.fat_g + additiveTotals.fat_g,
     carbs_g: mealTotals.carbs_g + additiveTotals.carbs_g,
     fiber_g: mealTotals.fiber_g + additiveTotals.fiber_g,
+    water_g: mealTotals.water_g + additiveTotals.water_g,
   };
 
   const c = pctCurrentTarget(totals.calories, nutritionTarget.target_calories);
@@ -163,6 +182,13 @@ function buildDayGoals(
       tone: goalToneFromPercent(fib),
       icon: "fiber",
     },
+    {
+      id: "water",
+      label: "Вода",
+      current: `${formatIntRu(totals.water_g)} мл`,
+      tone: "blue",
+      icon: "water",
+    },
   ];
 }
 
@@ -170,6 +196,7 @@ function DayGoalProgress({ item }: { item: DayGoalItem }) {
   const Icon = getGoalIcon(item.icon);
   const strokeClass = goalStrokeClass(item.tone);
   const iconClass = goalIconClass(item.tone);
+  const ringPercent = item.percent == null ? 100 : Math.min(Math.max(item.percent, 0), 100);
 
   return (
     <div className="flex min-w-0 items-center gap-2">
@@ -182,7 +209,7 @@ function DayGoalProgress({ item }: { item: DayGoalItem }) {
             cy="18"
             fill="none"
             r="16"
-            strokeDasharray={`${item.percent}, 100`}
+            strokeDasharray={`${ringPercent}, 100`}
             strokeLinecap="round"
             strokeWidth="3"
           />
@@ -194,10 +221,12 @@ function DayGoalProgress({ item }: { item: DayGoalItem }) {
       <div className="min-w-0">
         <p className="truncate text-xs font-semibold text-slate-900">{item.label}</p>
         <p className="whitespace-nowrap text-[11px] text-slate-500">
-          {item.current} / {item.target}
+          {item.target ? `${item.current} / ${item.target}` : item.current}
         </p>
       </div>
-      <span className="ml-auto shrink-0 text-xs font-bold text-slate-700">{item.percent}%</span>
+      {item.percent != null ? (
+        <span className="ml-auto shrink-0 text-xs font-bold text-slate-700">{item.percent}%</span>
+      ) : null}
     </div>
   );
 }

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import get_current_user
 from app.auth.security import hash_password
 from app.auth.user_me_payload import serialize_user_me
-from app.db.models import Allergen, User
+from app.db.models import Allergen, User, UserMeasurement
 from app.db.repository import create_meal, delete_meal_for_user, list_meals_for_user_local_date, list_user_measurements, shift_meal_date_for_user
 from app.db.session import get_db
 from app.core.config import FOOD_ALIASES_PATH
@@ -502,7 +502,19 @@ def patch_my_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    data = payload.model_dump(exclude_unset=True)
+    data = (
+        payload.model_dump(exclude_unset=True)
+        if hasattr(payload, "model_dump")
+        else payload.dict(exclude_unset=True)
+    )
+    should_create_initial_weight_measurement = (
+        "weight_kg" in data
+        and data["weight_kg"] is not None
+        and db.query(UserMeasurement.id)
+        .filter(UserMeasurement.user_id == current_user.id, UserMeasurement.weight_kg.isnot(None))
+        .first()
+        is None
+    )
 
     new_email = data.get("email")
     if new_email is not None and new_email != current_user.email:
@@ -549,6 +561,16 @@ def patch_my_profile(
 
     current_user.updated_at = datetime.utcnow()
     db.add(current_user)
+
+    if should_create_initial_weight_measurement:
+        db.add(
+            UserMeasurement(
+                user_id=current_user.id,
+                measured_at=datetime.utcnow(),
+                weight_kg=float(data["weight_kg"]),
+                notes="weight at check-in",
+            )
+        )
 
     create_or_update_active_nutrition_target(db, current_user)
 

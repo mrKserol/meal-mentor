@@ -13,6 +13,8 @@ import type {
 
 const ACCESS_TOKEN_KEY = "meal_mentor_access_token";
 const REFRESH_TOKEN_KEY = "meal_mentor_refresh_token";
+const DISCLAIMER_ACCEPTED_KEY = "meal_mentor_disclaimer_accepted";
+const DISCLAIMER_VERSION_KEY = "meal_mentor_disclaimer_version";
 
 interface AuthContextValue {
   user: User | null;
@@ -53,6 +55,8 @@ function getAccessTokenOrThrow(): string {
 function clearTokens(): void {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
+  localStorage.removeItem(DISCLAIMER_ACCEPTED_KEY);
+  localStorage.removeItem(DISCLAIMER_VERSION_KEY);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
