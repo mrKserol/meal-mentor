@@ -19,6 +19,10 @@ CURRENT_DISCLAIMER_VERSION = "v1.0"
 # OpenAI
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
+OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", "gpt-5.4-mini")
+OPENAI_CHAT_TEMPERATURE = float(os.getenv("OPENAI_CHAT_TEMPERATURE", "0.3"))
+OPENAI_CHAT_MAX_TOKENS = int(os.getenv("OPENAI_CHAT_MAX_TOKENS", "900"))
+AI_CHAT_DISCLAIMER_VERSION = os.getenv("AI_CHAT_DISCLAIMER_VERSION", "ai_chat_v1")
 
 # Prompts (optional env override)
 _default_prompt = DATA_DIR / "promt.txt"

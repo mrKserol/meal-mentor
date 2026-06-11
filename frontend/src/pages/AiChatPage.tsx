@@ -1,0 +1,245 @@
+import axios from "axios";
+import { Send } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+import {
+  acceptAiChatDisclaimer,
+  getAiChatBootstrap,
+  sendAiChatMessage,
+  type AiChatMessage,
+} from "../api/aiChatApi";
+import { AppShell } from "../components/layout/AppShell";
+import { useAuth } from "../hooks/useAuth";
+
+const quickCommands = [
+  "Проанализируй мой рацион за последние 14 дней",
+  "Что мне лучше улучшить сегодня?",
+  "Хватает ли мне белка?",
+  "Что можно съесть на ужин?",
+  "Есть ли перебор по жирам или углеводам?",
+];
+
+function errorMessage(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error) && error.response?.data?.detail != null) {
+    return String(error.response.data.detail);
+  }
+  return fallback;
+}
+
+export function AiChatPage() {
+  const navigate = useNavigate();
+  const { user, validateSession, getAccessToken, logout } = useAuth();
+  const [messages, setMessages] = useState<AiChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
+  const [disclaimerRequired, setDisclaimerRequired] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const avatarFallback = useMemo(() => {
+    return user?.first_name?.trim()?.[0] ?? user?.username?.trim()?.[0] ?? user?.email?.trim()?.[0] ?? "U";
+  }, [user]);
+
+  const bootstrap = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const ok = await validateSession();
+      if (!ok) {
+        navigate("/login", { replace: true });
+        return;
+      }
+      const token = getAccessToken();
+      if (!token) {
+        navigate("/login", { replace: true });
+        return;
+      }
+      const data = await getAiChatBootstrap(token);
+      setDisclaimerRequired(data.disclaimer_required);
+      setMessages(data.messages);
+    } catch (err) {
+      setError(errorMessage(err, "Не удалось загрузить чат. Обновите страницу или попробуйте позже."));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getAccessToken, navigate, validateSession]);
+
+  useEffect(() => {
+    void bootstrap();
+  }, [bootstrap]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages.length, isSending]);
+
+  const handleLogout = useCallback(async () => {
+    await logout();
+    navigate("/login", { replace: true });
+  }, [logout, navigate]);
+
+  const handleAcceptDisclaimer = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const ok = await validateSession();
+      if (!ok) {
+        navigate("/login", { replace: true });
+        return;
+      }
+      const token = getAccessToken();
+      if (!token) {
+        navigate("/login", { replace: true });
+        return;
+      }
+      await acceptAiChatDisclaimer(token);
+      await bootstrap();
+    } catch (err) {
+      setError(errorMessage(err, "Не удалось сохранить согласие. Попробуйте ещё раз."));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [bootstrap, getAccessToken, navigate, validateSession]);
+
+  const handleSend = useCallback(async () => {
+    const text = input.trim();
+    if (!text || isSending) return;
+    setIsSending(true);
+    setError(null);
+    try {
+      const ok = await validateSession();
+      if (!ok) {
+        navigate("/login", { replace: true });
+        return;
+      }
+      const token = getAccessToken();
+      if (!token) {
+        navigate("/login", { replace: true });
+        return;
+      }
+      const data = await sendAiChatMessage(token, text);
+      setMessages((prev) => [...prev, data.user_message, data.assistant_message]);
+      setInput("");
+    } catch (err) {
+      setError(errorMessage(err, "Не удалось получить ответ Meal-Mentor. Попробуйте ещё раз."));
+    } finally {
+      setIsSending(false);
+    }
+  }, [getAccessToken, input, isSending, navigate, validateSession]);
+
+  return (
+    <AppShell activeNav="ai-chat" avatarFallback={avatarFallback} onLogout={handleLogout} showMobileFab={false}>
+      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-6xl flex-col gap-4 p-4 pb-28 lg:p-8 lg:pb-8">
+        <header>
+          <h1 className="text-2xl font-bold text-slate-950">Чат с ИИ</h1>
+          <p className="mt-1 text-sm text-slate-500">Анализ дневника питания</p>
+        </header>
+
+        {isLoading ? (
+          <div className="flex flex-1 items-center justify-center rounded-2xl border border-slate-200 bg-white p-8 text-slate-500">
+            Загружаем чат...
+          </div>
+        ) : disclaimerRequired ? (
+          <div className="flex flex-1 items-center justify-center">
+            <div className="max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+              <h2 className="text-xl font-bold text-slate-950">Перед началом</h2>
+              <div className="mt-4 space-y-3 text-sm leading-6 text-slate-700">
+                <p>
+                  Meal-Mentor помогает анализировать дневник питания, замечать возможные паттерны и подсказывать общие
+                  направления для улучшения рациона.
+                </p>
+                <p>
+                  Ответы ИИ могут содержать ошибки и не являются медицинской консультацией, диагнозом или назначением
+                  лечения.
+                </p>
+                <p>
+                  По вопросам заболеваний, анализов, лекарств, добавок, резких изменений веса, беременности,
+                  расстройств пищевого поведения или плохого самочувствия обратитесь к квалифицированному специалисту.
+                </p>
+              </div>
+              {error ? <p className="mt-4 text-sm font-medium text-red-600">{error}</p> : null}
+              <button
+                type="button"
+                onClick={() => void handleAcceptDisclaimer()}
+                className="mt-6 rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-700"
+              >
+                Я понимаю
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+            <section className="flex min-h-[60vh] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-6 ${
+                        message.role === "user"
+                          ? "bg-green-600 text-white"
+                          : "border border-slate-100 bg-slate-50 text-slate-800"
+                      }`}
+                    >
+                      {message.content}
+                    </div>
+                  </div>
+                ))}
+                {isSending ? <p className="text-sm text-slate-500">Meal-Mentor печатает...</p> : null}
+                <div ref={scrollRef} />
+              </div>
+
+              {error ? <p className="border-t border-red-100 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</p> : null}
+
+              <div className="border-t border-slate-100 p-3 sm:p-4">
+                <textarea
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void handleSend();
+                    }
+                  }}
+                  rows={3}
+                  placeholder="Напишите вопрос о дневнике питания..."
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none ring-green-100 focus:border-green-600 focus:ring-2"
+                />
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => void handleSend()}
+                    disabled={!input.trim() || isSending}
+                    className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Send className="h-4 w-4" aria-hidden />
+                    Отправить
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:block">
+              <h2 className="text-sm font-bold text-slate-900">Быстрые команды</h2>
+              <div className="mt-3 flex flex-wrap gap-2 lg:flex-col">
+                {quickCommands.map((command) => (
+                  <button
+                    key={command}
+                    type="button"
+                    onClick={() => setInput(command)}
+                    className="rounded-full border border-slate-200 px-3 py-2 text-left text-xs font-medium text-slate-700 transition hover:border-green-200 hover:bg-green-50 lg:rounded-xl"
+                  >
+                    {command}
+                  </button>
+                ))}
+              </div>
+            </aside>
+          </div>
+        )}
+      </div>
+    </AppShell>
+  );
+}
