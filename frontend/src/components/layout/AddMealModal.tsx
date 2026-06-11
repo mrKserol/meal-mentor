@@ -80,19 +80,6 @@ function buildDefaultScheduled(dateYmd: string): ScheduledLocal {
   return { date: dateYmd, time: `${h}:${m}` };
 }
 
-function formatScheduledHint(dateYmd: string, timeHm: string): string {
-  const [y, mo, da] = dateYmd.split("-").map(Number);
-  const [hh, mm] = timeHm.split(":").map(Number);
-  const dt = new Date(y, mo - 1, da, hh, mm);
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(dt);
-}
-
 function toMealLocalDatetime(scheduled: ScheduledLocal): string {
   return `${scheduled.date}T${scheduled.time}`;
 }
@@ -112,69 +99,36 @@ function validateScheduled(scheduled: ScheduledLocal, tomorrowYmd: string): stri
 function MealScheduledTimeBlock({
   scheduled,
   tomorrowYmd,
-  editOpen,
-  onEditOpenChange,
   onScheduledChange,
 }: {
   scheduled: ScheduledLocal;
   tomorrowYmd: string;
-  editOpen: boolean;
-  onEditOpenChange: (open: boolean) => void;
   onScheduledChange: (next: ScheduledLocal) => void;
 }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!editOpen) return;
-    const onPointerDown = (e: PointerEvent) => {
-      const root = wrapRef.current;
-      if (!root || root.contains(e.target as Node)) return;
-      onEditOpenChange(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [editOpen, onEditOpenChange]);
-
   return (
-    <div ref={wrapRef} className="space-y-2">
-      <button
-        type="button"
-        onClick={() => onEditOpenChange(!editOpen)}
-        className="w-full rounded-xl border border-green-200 bg-green-50 px-3 py-2.5 text-center text-sm text-green-900 transition hover:bg-green-100"
-      >
-        Приём будет записан на {formatScheduledHint(scheduled.date, scheduled.time)}
-      </button>
-      {editOpen ? (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_7.5rem] sm:items-end sm:gap-2">
-            <label className="block min-w-0 max-w-full text-sm">
-              <span className="mb-1 block font-medium text-slate-700">Дата</span>
-              <input
-                type="date"
-                value={scheduled.date}
-                max={tomorrowYmd}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (!v) return;
-                  onScheduledChange({ ...scheduled, date: v > tomorrowYmd ? tomorrowYmd : v });
-                }}
-                className="box-border w-full min-w-0 max-w-full rounded-lg border border-slate-200 px-3 py-2"
-              />
-            </label>
-            <label className="block min-w-0 w-full max-w-full text-sm sm:w-auto sm:max-w-[7.5rem]">
-              <span className="mb-1 block font-medium text-slate-700">Время</span>
-              <div className="min-w-0 w-full max-w-full overflow-hidden">
-                <input
-                  type="time"
-                  value={scheduled.time}
-                  onChange={(e) => onScheduledChange({ ...scheduled, time: e.target.value })}
-                  className="meal-time-input box-border w-full min-w-0 max-w-full rounded-lg border border-slate-200 px-2 py-2 text-sm sm:px-2.5"
-                />
-              </div>
-            </label>
-          </div>
+    <div className="space-y-2 rounded-xl border border-green-100 bg-green-50/70 p-3">
+      <p className="text-center text-sm font-medium text-green-900">Прием будет записан</p>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_7.5rem] sm:items-center">
+        <input
+          type="date"
+          value={scheduled.date}
+          max={tomorrowYmd}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (!v) return;
+            onScheduledChange({ ...scheduled, date: v > tomorrowYmd ? tomorrowYmd : v });
+          }}
+          className="box-border w-full min-w-0 max-w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+        />
+        <div className="min-w-0 w-full max-w-full overflow-hidden">
+          <input
+            type="time"
+            value={scheduled.time}
+            onChange={(e) => onScheduledChange({ ...scheduled, time: e.target.value })}
+            className="meal-time-input box-border w-full min-w-0 max-w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm sm:px-2.5"
+          />
         </div>
-      ) : null}
+      </div>
     </div>
   );
 }
@@ -291,7 +245,6 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
   const [correctionHistory, setCorrectionHistory] = useState<string[]>([]);
   const [inlineError, setInlineError] = useState<string | null>(null);
   const [scheduled, setScheduled] = useState<ScheduledLocal | null>(null);
-  const [scheduleEditOpen, setScheduleEditOpen] = useState(false);
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const photoB64Ref = useRef<string | null>(null);
@@ -325,7 +278,6 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
       reset();
       setTakeAdditiveOpen(false);
       setWaterSaving(false);
-      setScheduleEditOpen(false);
       if (mealLocalDate) {
         setScheduled(buildDefaultScheduled(mealLocalDate));
       } else {
@@ -339,8 +291,6 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
       <MealScheduledTimeBlock
         scheduled={scheduled}
         tomorrowYmd={tomorrowYmd}
-        editOpen={scheduleEditOpen}
-        onEditOpenChange={setScheduleEditOpen}
         onScheduledChange={setScheduled}
       />
     ) : null;
@@ -573,7 +523,6 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
       const err = validateScheduled(scheduled, tomorrowYmd);
       if (err) {
         setUi({ kind: "error", message: err });
-        setScheduleEditOpen(true);
         return;
       }
     }
