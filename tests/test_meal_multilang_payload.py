@@ -7,7 +7,7 @@ from app.core.use_cases.meal_analysis import (
     _meal_result_from_vision_dict,
     enrich_meal_display_fields,
 )
-from app.infrastructure.ai.openai_food_client import _normalize_model_json
+from app.infrastructure.ai.openai_food_client import OpenAIVisionService, _normalize_model_json
 
 
 def test_normalize_model_json_keeps_translated_fields() -> None:
@@ -104,3 +104,65 @@ def test_build_meal_items_with_name_translated() -> None:
     assert items[0]["item_name"] == "rice"
     assert items[0]["name_translated"] == "рис"
     assert items[0]["name_language"] == "ru"
+
+
+def test_photo_messages_include_user_comment() -> None:
+    service = OpenAIVisionService(api_key="test", photo_prompt="PHOTO_PROMPT")
+
+    messages = service._build_photo_messages("abc", user_comment="это цикорий, не кофе")
+    text_blocks = [part["text"] for part in messages[0]["content"] if part["type"] == "text"]
+
+    assert "это цикорий, не кофе" in text_blocks[0]
+    assert "отдавай приоритет комментарию" in text_blocks[0]
+
+
+def test_text_correction_prompt_includes_previous_result_and_history() -> None:
+    captured: dict[str, object] = {}
+
+    class _FakeCompletions:
+        def create(self, **kwargs):
+            captured.update(kwargs)
+
+            class _Message:
+                content = """
+                {
+                  "prediction": "Buckwheat with eggs",
+                  "prediction_translated": "Гречка с яйцами",
+                  "prediction_language": "ru",
+                  "ingredients": {
+                    "buckwheat": {"grams": 200, "state": "cooked", "name_translated": "гречка", "name_language": "ru"}
+                  },
+                  "confidence": 0.9
+                }
+                """
+
+            class _Choice:
+                message = _Message()
+
+            class _Response:
+                choices = [_Choice()]
+
+            return _Response()
+
+    class _FakeChat:
+        completions = _FakeCompletions()
+
+    class _FakeClient:
+        chat = _FakeChat()
+
+    service = OpenAIVisionService(api_key="test", text_prompt="TEXT_PROMPT")
+    service.client = _FakeClient()  # type: ignore[assignment]
+
+    result = service.analyze_text(
+        "гречка и 2 яйца",
+        previous_ingredients={"buckwheat": {"grams": 150, "state": "cooked"}},
+        previous_prediction="Buckwheat",
+        correction="яиц было 3",
+        correction_history=["яиц было 3"],
+    )
+
+    body = captured["messages"][0]["content"]  # type: ignore[index]
+    assert "Original meal description" in body
+    assert "Previous AI recognition" in body
+    assert "яиц было 3" in body
+    assert result["status"] == "success"

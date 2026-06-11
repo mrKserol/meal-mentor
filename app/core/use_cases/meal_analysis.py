@@ -304,17 +304,35 @@ def _meal_result_from_vision_dict(out: dict[str, Any]) -> MealAnalysisResult:
     )
 
 
-def analyze_meal_from_image_base64(image_base64: str) -> MealAnalysisResult:
+def analyze_meal_from_image_base64(
+    image_base64: str,
+    *,
+    user_comment: str | None = None,
+) -> MealAnalysisResult:
     """1) Vision 2) normalize (in client) 3) nutrition lookup 4) return structured result."""
     vision = _get_vision()
-    raw = vision.analyze_image(image_base64)
+    raw = vision.analyze_image(image_base64, user_comment=user_comment)
     return _meal_result_from_vision_dict(raw)
 
 
-def analyze_meal_from_text(user_text: str, *, user_language: str | None = "ru") -> MealAnalysisResult:
+def analyze_meal_from_text(
+    user_text: str,
+    *,
+    user_language: str | None = "ru",
+    previous_ingredients: dict[str, Any] | None = None,
+    previous_prediction: str | None = None,
+    correction: str | None = None,
+    correction_history: list[str] | None = None,
+) -> MealAnalysisResult:
     """Same pipeline as photo, text-only model call."""
     vision = _get_vision()
-    raw = vision.analyze_text(user_text)
+    raw = vision.analyze_text(
+        user_text,
+        previous_ingredients=previous_ingredients,
+        previous_prediction=previous_prediction,
+        correction=correction,
+        correction_history=correction_history,
+    )
     result = _meal_result_from_vision_dict(raw)
     return enrich_meal_display_fields(result, user_language=user_language)
 
@@ -324,6 +342,8 @@ def analyze_meal_from_image_and_text(
     user_text: str,
     previous_ingredients: dict[str, Any] | None = None,
     previous_prediction: str | None = None,
+    initial_comment: str | None = None,
+    correction_history: list[str] | None = None,
 ) -> MealAnalysisResult:
     """
     Analyze meal from original photo + user's correction/description.
@@ -335,6 +355,8 @@ def analyze_meal_from_image_and_text(
         user_text,
         previous_ingredients=previous_ingredients,
         previous_prediction=previous_prediction,
+        initial_comment=initial_comment,
+        correction_history=correction_history,
     )
     return _meal_result_from_vision_dict(raw)
 

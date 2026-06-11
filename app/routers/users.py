@@ -89,17 +89,28 @@ _MAX_LABEL_IMAGE_BYTES = 15 * 1024 * 1024
 
 class WebAnalyzeImageBody(BaseModel):
     image_base64: str
+    comment: str | None = None
+    previous_ingredients: dict[str, Any] | None = None
+    previous_prediction: str | None = None
+    correction: str | None = None
+    correction_history: list[str] | None = None
 
 
 class WebAnalyzeTextBody(BaseModel):
     text: str
+    previous_ingredients: dict[str, Any] | None = None
+    previous_prediction: str | None = None
+    correction: str | None = None
+    correction_history: list[str] | None = None
 
 
 class WebAnalyzeImageTextBody(BaseModel):
     image_base64: str
     text: str
+    comment: str | None = None
     previous_ingredients: dict[str, Any] | None = None
     previous_prediction: str | None = None
+    correction_history: list[str] | None = None
 
 
 @router.post("/me/meals/analyze")
@@ -116,7 +127,21 @@ def analyze_my_meal_image(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid base64: {e}") from e
 
     check_photo_recognition_limits(db, current_user)
-    result = analyze_meal_from_image_base64(body.image_base64)
+    correction = (body.correction or "").strip()
+    if correction:
+        result = analyze_meal_from_image_and_text(
+            body.image_base64,
+            correction,
+            previous_ingredients=body.previous_ingredients,
+            previous_prediction=body.previous_prediction,
+            initial_comment=body.comment,
+            correction_history=body.correction_history,
+        )
+    else:
+        result = analyze_meal_from_image_base64(
+            body.image_base64,
+            user_comment=body.comment,
+        )
     payload = result.to_api_dict()
     if payload.get("status") == "success":
         record_photo_recognition_usage(db, current_user)
@@ -134,7 +159,14 @@ def analyze_my_meal_text(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="text is required")
 
     check_text_ai_limits(db, current_user)
-    result = analyze_meal_from_text(body.text.strip(), user_language=current_user.language or "ru")
+    result = analyze_meal_from_text(
+        body.text.strip(),
+        user_language=current_user.language or "ru",
+        previous_ingredients=body.previous_ingredients,
+        previous_prediction=body.previous_prediction,
+        correction=body.correction,
+        correction_history=body.correction_history,
+    )
     payload = result.to_api_dict()
     if payload.get("status") == "success":
         record_text_ai_usage(db, current_user)
@@ -163,6 +195,8 @@ def analyze_my_meal_image_text(
         body.text.strip(),
         previous_ingredients=body.previous_ingredients,
         previous_prediction=body.previous_prediction,
+        initial_comment=body.comment,
+        correction_history=body.correction_history,
     )
     payload = result.to_api_dict()
     if payload.get("status") == "success":
