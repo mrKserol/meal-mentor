@@ -3,7 +3,7 @@ import { Apple, ChevronRight, Coffee, Salad } from "lucide-react";
 
 import { MealMacroInline } from "../meals/MealMacroLines";
 import type { MealHistoryItem } from "../../utils/recentMeals";
-import { formatIntRu, formatMacroGramsRu } from "../../utils/recentMeals";
+import { formatIntRu } from "../../utils/recentMeals";
 
 function getMealIcon(icon: MealHistoryItem["icon"]) {
   if (icon === "breakfast") return Coffee;
@@ -35,7 +35,7 @@ export function RecentMealsCard({ items }: RecentMealsCardProps) {
           to="/diary"
           className="flex items-center gap-1 text-sm font-bold text-green-700 transition hover:text-green-800"
         >
-          Смотреть все
+          Подробнее
           <ChevronRight className="h-4 w-4" aria-hidden />
         </Link>
       </div>
@@ -53,7 +53,11 @@ export function RecentMealsCard({ items }: RecentMealsCardProps) {
           </div>
         ) : (
           items.map((meal) => (
-            <div key={meal.id} className="flex items-start gap-3 p-4 transition hover:bg-slate-50 md:p-5">
+            <Link
+              key={meal.id}
+              to={`/diary?mealId=${encodeURIComponent(meal.id)}`}
+              className="flex items-start gap-3 p-4 transition hover:bg-slate-50 md:p-5"
+            >
               <div className="flex w-[4.5rem] shrink-0 flex-col items-end pt-0.5 sm:w-16">
                 <span className="text-base font-bold leading-none text-slate-900">{formatIntRu(meal.calories)}</span>
                 <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">kcal</span>
@@ -80,12 +84,8 @@ export function RecentMealsCard({ items }: RecentMealsCardProps) {
                     className="inline-block max-w-full text-left sm:text-right"
                   />
                 </p>
-                <p className="mt-1 text-left text-xs leading-snug text-slate-500 sm:text-right">
-                  Сахар: {formatMacroGramsRu(meal.sugar_g)} г · Соль: {formatMacroGramsRu(meal.sodium_mg / 1000, 2)} г ·
-                  Насыщенные жиры: {formatMacroGramsRu(meal.saturated_fat_g)} г
-                </p>
               </div>
-            </div>
+            </Link>
           ))
         )}
       </div>

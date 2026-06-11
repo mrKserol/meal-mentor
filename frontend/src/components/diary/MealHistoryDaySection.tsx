@@ -650,6 +650,7 @@ interface MealHistoryDaySectionProps {
   /** Увеличивается после сохранения приёма из модалки — перезагрузка списка за выбранный день. */
   refreshToken?: number;
   readonly?: boolean;
+  initialOpenMealId?: number | null;
   getMealsForDay?: (accessToken: string, dateYmd: string) => Promise<WebMealsDayResponse>;
   getNutritionTargetForDay?: (accessToken: string, dateYmd: string) => Promise<MyNutritionTargetEnvelope>;
 }
@@ -661,6 +662,7 @@ export function MealHistoryDaySection({
   onAddMealForDay,
   refreshToken = 0,
   readonly = false,
+  initialOpenMealId = null,
   getMealsForDay = getMyMealsForDay,
   getNutritionTargetForDay = getMyNutritionTarget,
 }: MealHistoryDaySectionProps) {
@@ -675,6 +677,7 @@ export function MealHistoryDaySection({
   const [shiftingMealId, setShiftingMealId] = useState<number | null>(null);
   const [additiveTotals, setAdditiveTotals] = useState<DayNutritionTotals>(zeroDayNutritionTotals);
   const [additiveModalOpen, setAdditiveModalOpen] = useState(false);
+  const openedInitialMealIdRef = useRef<number | null>(null);
 
   const load = useCallback(async () => {
     setPhase("loading");
@@ -701,6 +704,21 @@ export function MealHistoryDaySection({
   useEffect(() => {
     if (refreshToken > 0) void load();
   }, [refreshToken, load]);
+
+  useEffect(() => {
+    if (initialOpenMealId == null) {
+      openedInitialMealIdRef.current = null;
+      return;
+    }
+    if (openedInitialMealIdRef.current === initialOpenMealId) return;
+    if (phase !== "ready") return;
+
+    const meal = items.find((item) => item.id === initialOpenMealId);
+    if (!meal) return;
+
+    setDetail(meal);
+    openedInitialMealIdRef.current = initialOpenMealId;
+  }, [initialOpenMealId, items, phase]);
 
   const todayYmd = useMemo(() => formatLocalYmd(new Date()), []);
   const tomorrowYmd = useMemo(() => addDaysYmd(todayYmd, 1), [todayYmd]);

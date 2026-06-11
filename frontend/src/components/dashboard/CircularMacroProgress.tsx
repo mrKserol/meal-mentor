@@ -17,9 +17,11 @@ export function CircularMacroProgress({
   unit,
   ringClass = "text-primary",
 }: CircularMacroProgressProps) {
-  const progress = target > 0 ? Math.min(current / target, 1) : 0;
+  const ratio = target > 0 ? current / target : 0;
+  const progress = Math.min(Math.max(ratio, 0), 1);
   const dashOffset = CIRC * (1 - progress);
-  const pct = target > 0 ? Math.round(progress * 100) : 0;
+  const pct = target > 0 ? Math.round(ratio * 100) : 0;
+  const isOverTarget = pct > 100;
 
   const currentFmt = Number.isInteger(current) ? String(current) : current.toFixed(1);
   const targetFmt = Number.isInteger(target) ? String(target) : target.toFixed(1);
@@ -38,7 +40,7 @@ export function CircularMacroProgress({
             strokeWidth="8"
           />
           <circle
-            className={ringClass}
+            className={isOverTarget ? "text-orange-500" : ringClass}
             cx="40"
             cy="40"
             r={R}
@@ -50,7 +52,11 @@ export function CircularMacroProgress({
             strokeDashoffset={dashOffset}
           />
         </svg>
-        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-on-surface sm:text-sm">
+        <div
+          className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold sm:text-sm ${
+            isOverTarget ? "text-orange-600" : "text-on-surface"
+          }`}
+        >
           {pct}%
         </div>
       </div>
