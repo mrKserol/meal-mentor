@@ -285,6 +285,10 @@ def save_my_meal(
 
 @router.get("/me", response_model=UserMeResponse)
 def get_me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    target = create_or_update_active_nutrition_target(db, current_user)
+    if target is not None:
+        db.commit()
+        db.refresh(current_user)
     return serialize_user_me(db, current_user)
 
 
@@ -367,7 +371,12 @@ def get_my_nutrition_target(
     db: Session = Depends(get_db),
 ):
     if date_q is None:
-        target = get_active_nutrition_target(db, user_id=current_user.id)
+        target = create_or_update_active_nutrition_target(db, current_user)
+        if target is not None:
+            db.commit()
+            db.refresh(target)
+        else:
+            target = get_active_nutrition_target(db, user_id=current_user.id)
     else:
         tz = _resolve_tz(current_user)
         start_local = datetime.combine(date_q, datetime.min.time(), tzinfo=tz)

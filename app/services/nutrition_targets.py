@@ -111,9 +111,71 @@ def calculate_macros(target_calories: int, weight_kg: float, goal: str | None) -
     return {"protein_g": protein_g, "fat_g": fat_g, "carbs_g": carbs_g}
 
 
-def calculate_target_fiber_g(target_calories: int) -> float:
-    """Fiber norm: 14 g per each 1000 kcal, rounded to 0.1 g."""
-    return round((float(target_calories) / 1000.0) * 14.0, 1)
+def normalize_sex(sex: str | None) -> str:
+    s = str(sex).strip().lower() if sex else ""
+
+    if s in {"male", "m", "м", "муж", "мужской"}:
+        return "male"
+
+    if s in {"female", "f", "ж", "жен", "женский"}:
+        return "female"
+
+    return "unknown"
+
+
+def calculate_fiber_bounds(
+    target_calories: int,
+    sex: str | None,
+    age: int,
+) -> dict[str, float]:
+    """Calculate fiber bounds by calories, sex and age.
+
+    fiber_by_calories follows the 14 g / 1000 kcal rule.
+    min_fiber is used as the current displayed target to avoid over-pressuring users.
+    target is the clamped optimal target and can be used later for ranges/advice.
+    """
+    normalized_sex = normalize_sex(sex)
+    fiber_by_calories = (float(target_calories) / 1000.0) * 14.0
+
+    if normalized_sex == "male" and age <= 50:
+        base = 38.0
+        min_fiber = 30.0
+        max_fiber = 45.0
+    elif normalized_sex == "male" and age > 50:
+        base = 30.0
+        min_fiber = 25.0
+        max_fiber = 38.0
+    elif normalized_sex == "female" and age <= 50:
+        base = 25.0
+        min_fiber = 22.0
+        max_fiber = 35.0
+    else:
+        base = 21.0
+        min_fiber = 20.0
+        max_fiber = 30.0
+
+    target = min(max(fiber_by_calories, base), max_fiber)
+
+    return {
+        "fiber_by_calories": round(fiber_by_calories, 1),
+        "base": round(base, 1),
+        "min_fiber": round(min_fiber, 1),
+        "max_fiber": round(max_fiber, 1),
+        "target": round(target, 1),
+    }
+
+
+def calculate_target_fiber_g(
+    target_calories: int,
+    sex: str | None,
+    age: int,
+) -> float:
+    """Displayed fiber target.
+
+    For now we display the lower bound of the recommended range,
+    not the clamped optimal target, to avoid making the target look intimidating.
+    """
+    return calculate_fiber_bounds(target_calories, sex, age)["min_fiber"]
 
 
 def get_active_nutrition_target(db: Session, *, user_id: int) -> NutritionTarget | None:
@@ -152,11 +214,13 @@ def _target_matches(
     macros: dict[str, int],
     user: User,
 ) -> bool:
+    age = calculate_age(user.birth_date)
     return (
         row.bmr_kcal == bmr_kcal
         and row.tdee_kcal == tdee_kcal
         and row.target_calories == target_calories
-        and round(float(row.target_fiber_g or 0.0), 1) == calculate_target_fiber_g(target_calories)
+        and round(float(row.target_fiber_g or 0.0), 1)
+        == calculate_target_fiber_g(target_calories, user.sex, age)
         and row.target_protein_g == macros["protein_g"]
         and row.target_fat_g == macros["fat_g"]
         and row.target_carbs_g == macros["carbs_g"]
@@ -196,7 +260,8 @@ def create_or_update_active_nutrition_target(
     )
     tdee = calculate_tdee(bmr, user.activity_level)
     target_cal = calculate_target_calories(tdee, user.goal)
-    target_fiber_g = calculate_target_fiber_g(target_cal)
+    age = calculate_age(user.birth_date)
+    target_fiber_g = calculate_target_fiber_g(target_cal, user.sex, age)
     macros = calculate_macros(target_cal, weight_kg, user.goal)
 
     now = datetime.utcnow()
