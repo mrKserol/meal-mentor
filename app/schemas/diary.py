@@ -61,6 +61,8 @@ class DiaryTodayTotals(BaseModel):
     fat_g: int
     carbs_g: int
     fiber_g: float
+    water_g: float = 0.0
+    additive_water_g: float = 0.0
 
 
 class DiaryWeightCard(BaseModel):

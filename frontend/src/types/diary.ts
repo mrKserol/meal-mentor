@@ -53,6 +53,8 @@ export interface DiaryTodayTotals {
   fat_g: number;
   carbs_g: number;
   fiber_g: number;
+  water_g?: number;
+  additive_water_g?: number;
 }
 
 export interface DiaryWeightCard {

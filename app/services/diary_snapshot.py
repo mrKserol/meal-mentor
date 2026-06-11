@@ -420,6 +420,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
     )
     tc = tp = tf = tcb = 0
     tfib = 0.0
+    meal_water = 0.0
     for meal in meals_today:
         nut = _sum_meal_nutrition(meal)
         tc += nut["calories"]
@@ -427,6 +428,7 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
         tf += nut["fat_g"]
         tcb += nut["carbs_g"]
         tfib += float(nut["fiber_g"])
+        meal_water += float(nut.get("water_g", 0) or 0)
 
     additive_today = sum_additive_intakes_for_range(db, user.id, t_start, t_end)
     tc += int(round(additive_today.get("calories", 0) or 0))
@@ -434,8 +436,17 @@ def build_diary_snapshot(db: Session, user: User) -> DiarySnapshotResponse:
     tf += int(round(additive_today.get("fat_g", 0) or 0))
     tcb += int(round(additive_today.get("carbs_g", 0) or 0))
     tfib += float(additive_today.get("fiber_g", 0) or 0)
+    additive_water = float(additive_today.get("water_g", 0) or 0)
 
-    today = DiaryTodayTotals(calories=tc, protein_g=tp, fat_g=tf, carbs_g=tcb, fiber_g=round(tfib, 2))
+    today = DiaryTodayTotals(
+        calories=tc,
+        protein_g=tp,
+        fat_g=tf,
+        carbs_g=tcb,
+        fiber_g=round(tfib, 2),
+        water_g=round(meal_water, 2),
+        additive_water_g=round(additive_water, 2),
+    )
 
     meals_today_desc = sorted(meals_today, key=lambda m: m.meal_datetime, reverse=True)
     today_meals: list[DiaryRecentMeal] = []

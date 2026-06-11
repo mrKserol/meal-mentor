@@ -817,7 +817,7 @@ export function MealHistoryDaySection({
                   onClick={() => setAdditiveModalOpen(true)}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 sm:flex-1"
                 >
-                  Добавки
+                  Дополнительно
                 </button>
               </div>
             ) : null}

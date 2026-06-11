@@ -12,7 +12,15 @@ interface NutritionDiaryCardProps {
   todayTotals: DiaryTodayTotals | null;
 }
 
-const ZERO_TODAY: DiaryTodayTotals = { calories: 0, protein_g: 0, fat_g: 0, carbs_g: 0, fiber_g: 0 };
+const ZERO_TODAY: DiaryTodayTotals = {
+  calories: 0,
+  protein_g: 0,
+  fat_g: 0,
+  carbs_g: 0,
+  fiber_g: 0,
+  water_g: 0,
+  additive_water_g: 0,
+};
 
 export function NutritionDiaryCard({ nutritionTarget, todayTotals }: NutritionDiaryCardProps) {
   const navigate = useNavigate();
@@ -54,6 +62,8 @@ export function NutritionDiaryCard({ nutritionTarget, todayTotals }: NutritionDi
   const calTarget = nutritionTarget.target_calories;
   const fiberTarget = nutritionTarget.target_fiber_g ?? 0;
   const t = todayTotals ?? ZERO_TODAY;
+  const mealWaterMl = Math.round(t.water_g ?? 0);
+  const additiveWaterMl = Math.round(t.additive_water_g ?? 0);
 
   return (
     <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm">
@@ -67,17 +77,23 @@ export function NutritionDiaryCard({ nutritionTarget, todayTotals }: NutritionDi
         <span className="capitalize font-label-sm text-label-sm text-on-surface-variant">{today}</span>
       </div>
 
-      <div className="mb-6 grid grid-cols-1 gap-3 rounded-xl bg-surface-container-low px-5 py-4 sm:grid-cols-2">
+      <div className="mb-6 grid grid-cols-1 gap-3 rounded-xl bg-surface-container-low px-5 py-4 sm:grid-cols-3">
         <div>
-          <p className="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Калории</p>
+          <p className="font-label-sm text-label-sm text-on-surface-variant">Калории</p>
           <p className="mt-1 font-h3 text-h3 text-on-surface">
-            {t.calories} kcal / {calTarget} kcal
+            {t.calories} ккал / {calTarget} ккал
           </p>
         </div>
         <div>
-          <p className="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Клетчатка</p>
+          <p className="font-label-sm text-label-sm text-on-surface-variant">Клетчатка</p>
           <p className="mt-1 font-h3 text-h3 text-on-surface">
             {t.fiber_g ?? 0} г / {fiberTarget} г
+          </p>
+        </div>
+        <div>
+          <p className="font-label-sm text-label-sm text-on-surface-variant">Вода</p>
+          <p className="mt-1 font-h3 text-h3 text-on-surface">
+            {mealWaterMl} + {additiveWaterMl} мл
           </p>
         </div>
       </div>

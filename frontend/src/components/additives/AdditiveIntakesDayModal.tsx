@@ -110,7 +110,7 @@ export function AdditiveIntakesDayModal({ open, dateYmd, accessToken, onClose, o
         >
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">Добавки за день</h2>
+              <h2 className="text-lg font-semibold text-slate-900">Добавки к пище и вода</h2>
               <p className="text-xs text-slate-500 capitalize">{ymdToRuShort(dateYmd)}</p>
             </div>
             <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100">
