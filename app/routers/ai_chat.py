@@ -11,10 +11,23 @@ from app.core.config import AI_CHAT_DISCLAIMER_VERSION, OPENAI_CHAT_MODEL
 from app.db.models import AiChatMessage, AiChatThread, User
 from app.db.session import get_db
 from app.routers.consents import get_current_ai_chat_consent
-from app.schemas.ai_chat import AiChatBootstrapResponse, AiChatMessageResponse, AiChatSendRequest, AiChatSendResponse
+from app.schemas.ai_chat import (
+    AiChatBootstrapResponse,
+    AiChatLimitsResponse,
+    AiChatMessageResponse,
+    AiChatSendRequest,
+    AiChatSendResponse,
+)
+from app.services.feature_access import get_feature_limit, is_feature_enabled
 from app.services.ai_chat_context import build_ai_chat_context
 from app.services.ai_chat_llm import generate_ai_chat_reply, generate_ai_chat_welcome
 from app.services.ai_chat_safety import detect_medical_risk
+from app.services.usage_limits import (
+    check_ai_chat_limits,
+    check_feature_enabled_or_raise,
+    get_usage_count,
+    record_ai_chat_usage,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +127,7 @@ def bootstrap_ai_chat(
             messages=[],
         )
 
+    check_feature_enabled_or_raise(db, current_user.id, "ai_chat_enabled")
     thread = get_or_create_active_thread(db, current_user.id)
     messages = _recent_messages(db, thread.id, limit=50)
     if not messages:
@@ -160,6 +174,7 @@ def send_ai_chat_message(
     if not text:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="message is required")
 
+    check_ai_chat_limits(db, current_user)
     thread = get_or_create_active_thread(db, current_user.id)
     previous_rows = _recent_messages(db, thread.id, limit=20)
     user_message = _add_message(
@@ -198,6 +213,7 @@ def send_ai_chat_message(
         content=content,
         metadata=meta,
     )
+    record_ai_chat_usage(db, current_user)
     db.commit()
     db.refresh(user_message)
     db.refresh(assistant_message)
@@ -220,3 +236,26 @@ def list_ai_chat_messages(
     messages = _recent_messages(db, thread.id, limit=50)
     db.commit()
     return [_message_response(row) for row in messages]
+
+
+@router.get("/limits", response_model=AiChatLimitsResponse)
+def get_ai_chat_limits(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    enabled = is_feature_enabled(db, current_user.id, "ai_chat_enabled", default=False)
+    daily_limit = get_feature_limit(db, current_user.id, "daily_ai_chat_messages_limit", default=0)
+    used_today = get_usage_count(
+        db=db,
+        user_id=current_user.id,
+        feature_key="daily_ai_chat_messages_limit",
+        period_type="daily",
+        timezone=current_user.timezone,
+    )
+    remaining = None if daily_limit == -1 else max(daily_limit - used_today, 0)
+    return AiChatLimitsResponse(
+        enabled=enabled,
+        daily_limit=daily_limit,
+        used_today=used_today,
+        remaining_today=remaining,
+    )

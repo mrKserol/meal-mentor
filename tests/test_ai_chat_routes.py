@@ -6,10 +6,11 @@ from sqlalchemy.pool import StaticPool
 
 from app.auth.security import create_access_token
 from app.core.config import AI_CHAT_DISCLAIMER_VERSION
-from app.db.models import AiChatMessage, AiChatThread, Base, User, UserConsent
+from app.db.models import AiChatMessage, AiChatThread, Base, User, UserConsent, UserFeatureOverride
 from app.db.session import get_db
 from app.main import app
 from app.routers.consents import AI_CHAT_DISCLAIMER_CONSENT_TYPE
+from app.services.usage_limits import get_usage_count, increment_usage
 
 
 @pytest.fixture()
@@ -70,6 +71,32 @@ def _accept(db_session, user: User) -> None:
     db_session.commit()
 
 
+def _enable_ai_chat(db_session, user: User, *, chat_limit: int = 50, ai_limit: int = 100) -> None:
+    db_session.add_all(
+        [
+            UserFeatureOverride(
+                user_id=user.id,
+                feature_key="ai_chat_enabled",
+                value_type="boolean",
+                value_bool=True,
+            ),
+            UserFeatureOverride(
+                user_id=user.id,
+                feature_key="daily_ai_chat_messages_limit",
+                value_type="limit",
+                value_int=chat_limit,
+            ),
+            UserFeatureOverride(
+                user_id=user.id,
+                feature_key="daily_ai_requests_limit",
+                value_type="limit",
+                value_int=ai_limit,
+            ),
+        ]
+    )
+    db_session.commit()
+
+
 def test_message_without_ai_chat_consent_returns_403(client, db_session):
     _, token = _user(db_session, email="no-consent@test.com")
 
@@ -80,6 +107,7 @@ def test_message_without_ai_chat_consent_returns_403(client, db_session):
 
 def test_ai_chat_consent_accept_and_bootstrap(client, db_session):
     user, token = _user(db_session, email="consent@test.com")
+    _enable_ai_chat(db_session, user)
 
     before = client.get("/api/ai-chat/bootstrap", headers=_auth(token))
     assert before.status_code == 200
@@ -107,6 +135,7 @@ def test_bootstrap_uses_fallback_welcome_when_openai_unavailable(client, db_sess
     )
     user, token = _user(db_session, email="welcome-fallback@test.com")
     _accept(db_session, user)
+    _enable_ai_chat(db_session, user)
 
     response = client.get("/api/ai-chat/bootstrap", headers=_auth(token))
 
@@ -127,6 +156,7 @@ def test_message_saves_user_and_assistant_messages_with_medical_risk_context(cli
     monkeypatch.setattr("app.routers.ai_chat.generate_ai_chat_reply", fake_reply)
     user, token = _user(db_session, email="risk@test.com")
     _accept(db_session, user)
+    _enable_ai_chat(db_session, user)
 
     response = client.post(
         "/api/ai-chat/message",
@@ -146,6 +176,8 @@ def test_messages_are_scoped_to_current_user(client, db_session):
     user_b, token_b = _user(db_session, email="b@test.com")
     _accept(db_session, user_a)
     _accept(db_session, user_b)
+    _enable_ai_chat(db_session, user_a)
+    _enable_ai_chat(db_session, user_b)
 
     client.post("/api/ai-chat/message", json={"message": "Сообщение A"}, headers=_auth(token_a))
     client.post("/api/ai-chat/message", json={"message": "Сообщение B"}, headers=_auth(token_b))
@@ -156,3 +188,92 @@ def test_messages_are_scoped_to_current_user(client, db_session):
     assert any("Сообщение A" in item["content"] for item in messages_a)
     assert not any("Сообщение B" in item["content"] for item in messages_a)
     assert any("Сообщение B" in item["content"] for item in messages_b)
+
+
+def test_bootstrap_returns_403_when_ai_chat_disabled(client, db_session):
+    user, token = _user(db_session, email="disabled@test.com")
+    _accept(db_session, user)
+
+    response = client.get("/api/ai-chat/bootstrap", headers=_auth(token))
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "ИИ-чат недоступен на вашем тарифе."
+
+
+def test_message_returns_403_when_daily_chat_limit_zero(client, db_session):
+    user, token = _user(db_session, email="zero-limit@test.com")
+    _accept(db_session, user)
+    _enable_ai_chat(db_session, user, chat_limit=0)
+
+    response = client.post("/api/ai-chat/message", json={"message": "Привет"}, headers=_auth(token))
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Дневной лимит сообщений в ИИ-чате исчерпан для вашего тарифа."
+
+
+def test_message_returns_403_when_daily_chat_limit_exhausted(client, db_session):
+    user, token = _user(db_session, email="exhausted@test.com")
+    _accept(db_session, user)
+    _enable_ai_chat(db_session, user, chat_limit=1)
+    increment_usage(
+        db_session,
+        user.id,
+        "daily_ai_chat_messages_limit",
+        "daily",
+        timezone=user.timezone,
+    )
+
+    response = client.post("/api/ai-chat/message", json={"message": "Привет"}, headers=_auth(token))
+
+    assert response.status_code == 403
+
+
+def test_message_records_usage_after_successful_assistant_response(client, db_session):
+    user, token = _user(db_session, email="usage@test.com")
+    _accept(db_session, user)
+    _enable_ai_chat(db_session, user, chat_limit=5, ai_limit=5)
+
+    response = client.post("/api/ai-chat/message", json={"message": "Привет"}, headers=_auth(token))
+
+    assert response.status_code == 200
+    assert get_usage_count(db_session, user.id, "daily_ai_chat_messages_limit", "daily", user.timezone) == 1
+    assert get_usage_count(db_session, user.id, "daily_ai_requests_limit", "daily", user.timezone) == 1
+
+
+def test_message_does_not_record_usage_when_openai_fails(client, db_session, monkeypatch):
+    monkeypatch.setattr(
+        "app.routers.ai_chat.generate_ai_chat_reply",
+        lambda **kwargs: (_ for _ in ()).throw(RuntimeError("OpenAI unavailable")),
+    )
+    user, token = _user(db_session, email="usage-fail@test.com")
+    _accept(db_session, user)
+    _enable_ai_chat(db_session, user, chat_limit=5, ai_limit=5)
+
+    response = client.post("/api/ai-chat/message", json={"message": "Привет"}, headers=_auth(token))
+
+    assert response.status_code == 503
+    assert get_usage_count(db_session, user.id, "daily_ai_chat_messages_limit", "daily", user.timezone) == 0
+    assert get_usage_count(db_session, user.id, "daily_ai_requests_limit", "daily", user.timezone) == 0
+
+
+def test_limits_endpoint_returns_remaining_messages(client, db_session):
+    user, token = _user(db_session, email="limits@test.com")
+    _enable_ai_chat(db_session, user, chat_limit=5, ai_limit=5)
+    increment_usage(
+        db_session,
+        user.id,
+        "daily_ai_chat_messages_limit",
+        "daily",
+        amount=2,
+        timezone=user.timezone,
+    )
+
+    response = client.get("/api/ai-chat/limits", headers=_auth(token))
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "enabled": True,
+        "daily_limit": 5,
+        "used_today": 2,
+        "remaining_today": 3,
+    }

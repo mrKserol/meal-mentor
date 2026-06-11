@@ -298,3 +298,35 @@ def record_text_ai_usage(db: Session, user: User) -> None:
         ],
         timezone=user.timezone,
     )
+
+
+def check_ai_chat_limits(db: Session, user: User) -> None:
+    """
+    Проверяет доступность ИИ-чата по тарифу и дневные лимиты.
+    Использовать перед вызовом OpenAI.
+    """
+    check_feature_enabled_or_raise(db, user.id, "ai_chat_enabled")
+    check_limit_only_or_raise(
+        db=db,
+        user_id=user.id,
+        limit_feature_key="daily_ai_chat_messages_limit",
+        period_type="daily",
+        timezone=user.timezone,
+    )
+    check_daily_ai_request_limit(db, user)
+
+
+def record_ai_chat_usage(db: Session, user: User) -> None:
+    """
+    Увеличивает usage counters после успешного ответа OpenAI.
+    Считаем только успешные assistant replies.
+    """
+    increment_many_usage(
+        db=db,
+        user_id=user.id,
+        increments=[
+            ("daily_ai_chat_messages_limit", "daily"),
+            ("daily_ai_requests_limit", "daily"),
+        ],
+        timezone=user.timezone,
+    )
