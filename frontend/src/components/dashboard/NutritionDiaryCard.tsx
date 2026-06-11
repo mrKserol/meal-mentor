@@ -64,6 +64,7 @@ export function NutritionDiaryCard({ nutritionTarget, todayTotals }: NutritionDi
   const t = todayTotals ?? ZERO_TODAY;
   const mealWaterMl = Math.round(t.water_g ?? 0);
   const additiveWaterMl = Math.round(t.additive_water_g ?? 0);
+  const totalWaterMl = mealWaterMl + additiveWaterMl;
 
   return (
     <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm">
@@ -79,21 +80,21 @@ export function NutritionDiaryCard({ nutritionTarget, todayTotals }: NutritionDi
 
       <div className="mb-6 grid grid-cols-1 gap-3 rounded-xl bg-surface-container-low px-5 py-4 sm:grid-cols-3">
         <div>
-          <p className="font-label-sm text-label-sm text-on-surface-variant">Калории</p>
-          <p className="mt-1 font-h3 text-h3 text-on-surface">
+          <p className="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">КАЛОРИИ</p>
+          <p className="mt-1 text-lg font-semibold text-on-surface">
             {t.calories} ккал / {calTarget} ккал
           </p>
         </div>
         <div>
-          <p className="font-label-sm text-label-sm text-on-surface-variant">Клетчатка</p>
-          <p className="mt-1 font-h3 text-h3 text-on-surface">
+          <p className="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">КЛЕТЧАТКА</p>
+          <p className="mt-1 text-lg font-semibold text-on-surface">
             {t.fiber_g ?? 0} г / {fiberTarget} г
           </p>
         </div>
         <div>
-          <p className="font-label-sm text-label-sm text-on-surface-variant">Вода</p>
-          <p className="mt-1 font-h3 text-h3 text-on-surface">
-            {mealWaterMl} + {additiveWaterMl} мл
+          <p className="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">ВОДА</p>
+          <p className="mt-1 text-lg font-semibold text-on-surface">
+            {totalWaterMl} мл
           </p>
         </div>
       </div>
