@@ -9,10 +9,13 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    JSON,
     String,
     Text,
     UniqueConstraint,
+    text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -67,6 +70,11 @@ class User(Base):
     )
     auth_identities = relationship(
         "UserAuthIdentity",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    consents = relationship(
+        "UserConsent",
         back_populates="user",
         cascade="all, delete-orphan",
     )
@@ -134,6 +142,36 @@ class UserAuthIdentity(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship("User", back_populates="auth_identities")
+
+
+class UserConsent(Base):
+    __tablename__ = "user_consents"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "consent_type",
+            "consent_version",
+            name="uq_user_consent_type_version",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    consent_type = Column(String(50), nullable=False)
+    consent_version = Column(String(20), nullable=False)
+    accepted_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    ip_address = Column(Text, nullable=True)
+    user_agent = Column(Text, nullable=True)
+    extra_metadata = Column(
+        "metadata",
+        JSON().with_variant(JSONB, "postgresql"),
+        nullable=False,
+        default=dict,
+        server_default=text("'{}'"),
+    )
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="consents")
 
 
 class NutritionTarget(Base):

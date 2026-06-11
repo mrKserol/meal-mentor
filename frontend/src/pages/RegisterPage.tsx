@@ -314,7 +314,7 @@ export function RegisterPage() {
             <button
               className="w-full bg-primary-container hover:bg-on-primary-container text-on-primary-container font-h3 text-h3 py-4 rounded-lg shadow-md transition-all active:scale-[0.98] mt-md disabled:opacity-60"
               type="submit"
-              disabled={isSubmitting}
+              disabled={!form.terms || isSubmitting}
             >
               {isSubmitting ? "Создание..." : "Создать аккаунт"}
             </button>
