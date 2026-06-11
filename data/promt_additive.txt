@@ -24,7 +24,8 @@ Rules:
 - Return numeric values only.
 - If serving size is visible, return it in serving_label, for example "3 tablets" or "1 scoop 35g".
 - If serving weight in grams is visible, return serving_size_g.
-- If the image is unreadable, return status "error".
+- If at least one serving or nutrient value is readable, return status "success" with the values you can extract.
+- If the image is unreadable, return status "error" and include an "error" string explaining why.
 
 JSON schema:
 {
@@ -41,5 +42,6 @@ JSON schema:
       "reason": "field_not_supported | unreadable | no_amount"
     }
   ],
-  "confidence": number
+  "confidence": number,
+  "error": "string or null"
 }

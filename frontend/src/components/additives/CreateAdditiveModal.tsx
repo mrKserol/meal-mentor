@@ -69,8 +69,8 @@ export function CreateAdditiveModal({ open, accessToken, onClose, onSaved }: Pro
       setImageB64(b64);
       const res = await analyzeAdditiveImageBase64(accessToken, b64);
       if (res.status !== "success") {
-        setPhase("error");
-        setError(res.error || "Не удалось распознать этикетку.");
+        setPhase("form");
+        setError(res.error || "Не удалось распознать этикетку. Заполните добавку вручную.");
         return;
       }
       setServingLabel(res.serving_label ?? "");
@@ -79,8 +79,12 @@ export function CreateAdditiveModal({ open, accessToken, onClose, onSaved }: Pro
       setIgnored(res.ignored ?? []);
       setPhase("form");
     } catch (err) {
-      setPhase("error");
-      setError(err instanceof Error ? err.message : "Ошибка анализа");
+      setPhase("form");
+      setError(
+        err instanceof Error
+          ? `${err.message}. Заполните добавку вручную или попробуйте другое фото.`
+          : "Ошибка анализа. Заполните добавку вручную или попробуйте другое фото.",
+      );
     }
   };
 
