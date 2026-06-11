@@ -27,6 +27,13 @@ export interface AiChatDisclaimerStatus {
   accepted_at: string | null;
 }
 
+export interface AiChatLimitsResponse {
+  enabled: boolean;
+  daily_limit: number;
+  used_today: number;
+  remaining_today: number | null;
+}
+
 export async function getAiChatBootstrap(accessToken: string): Promise<AiChatBootstrapResponse> {
   const { data } = await authClient.get<AiChatBootstrapResponse>("/api/ai-chat/bootstrap", {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -49,6 +56,13 @@ export async function acceptAiChatDisclaimer(accessToken: string): Promise<void>
 
 export async function getAiChatDisclaimerStatus(accessToken: string): Promise<AiChatDisclaimerStatus> {
   const { data } = await authClient.get<AiChatDisclaimerStatus>("/api/consents/ai-chat/status", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  return data;
+}
+
+export async function getAiChatLimits(accessToken: string): Promise<AiChatLimitsResponse> {
+  const { data } = await authClient.get<AiChatLimitsResponse>("/api/ai-chat/limits", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   return data;

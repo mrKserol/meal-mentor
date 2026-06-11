@@ -27,7 +27,7 @@ class AiChatThreadResponse(BaseModel):
 
 
 class AiChatSendRequest(BaseModel):
-    message: str = Field(min_length=1, max_length=4000)
+    message: str = Field(min_length=1, max_length=2000)
 
 
 class AiChatSendResponse(BaseModel):
@@ -41,3 +41,10 @@ class AiChatBootstrapResponse(BaseModel):
     disclaimer_required: bool
     disclaimer_version: str
     messages: list[AiChatMessageResponse] = []
+
+
+class AiChatLimitsResponse(BaseModel):
+    enabled: bool
+    daily_limit: int
+    used_today: int
+    remaining_today: int | None

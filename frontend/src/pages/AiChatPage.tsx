@@ -6,9 +6,12 @@ import { useNavigate } from "react-router-dom";
 import {
   acceptAiChatDisclaimer,
   getAiChatBootstrap,
+  getAiChatLimits,
   sendAiChatMessage,
+  type AiChatLimitsResponse,
   type AiChatMessage,
 } from "../api/aiChatApi";
+import MessageMarkdown from "../components/ai-chat/MessageMarkdown";
 import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
 
@@ -19,6 +22,8 @@ const quickCommands = [
   "Что можно съесть на ужин?",
   "Есть ли перебор по жирам или углеводам?",
 ];
+
+const INPUT_LIMIT = 2000;
 
 function errorMessage(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error) && error.response?.data?.detail != null) {
@@ -36,6 +41,8 @@ export function AiChatPage() {
   const [isSending, setIsSending] = useState(false);
   const [disclaimerRequired, setDisclaimerRequired] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [limits, setLimits] = useState<AiChatLimitsResponse | null>(null);
+  const [accessMessage, setAccessMessage] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const avatarFallback = useMemo(() => {
@@ -45,6 +52,7 @@ export function AiChatPage() {
   const bootstrap = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setAccessMessage(null);
     try {
       const ok = await validateSession();
       if (!ok) {
@@ -59,8 +67,24 @@ export function AiChatPage() {
       const data = await getAiChatBootstrap(token);
       setDisclaimerRequired(data.disclaimer_required);
       setMessages(data.messages);
+      if (!data.disclaimer_required) {
+        const nextLimits = await getAiChatLimits(token);
+        setLimits(nextLimits);
+        if (!nextLimits.enabled) {
+          setAccessMessage("ИИ-чат недоступен на вашем тарифе.");
+        } else if (nextLimits.remaining_today === 0) {
+          setAccessMessage("Дневной лимит сообщений в ИИ-чате исчерпан. Лимит обновится завтра.");
+        }
+      }
     } catch (err) {
-      setError(errorMessage(err, "Не удалось загрузить чат. Обновите страницу или попробуйте позже."));
+      const message = errorMessage(err, "Не удалось загрузить чат. Обновите страницу или попробуйте позже.");
+      if (axios.isAxiosError(err) && err.response?.status === 403) {
+        setDisclaimerRequired(false);
+        setAccessMessage(message);
+        setMessages([]);
+      } else {
+        setError(message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -104,7 +128,7 @@ export function AiChatPage() {
 
   const handleSend = useCallback(async () => {
     const text = input.trim();
-    if (!text || isSending) return;
+    if (!text || isSending || accessMessage || limits?.enabled === false || limits?.remaining_today === 0) return;
     setIsSending(true);
     setError(null);
     try {
@@ -121,12 +145,31 @@ export function AiChatPage() {
       const data = await sendAiChatMessage(token, text);
       setMessages((prev) => [...prev, data.user_message, data.assistant_message]);
       setInput("");
+      const nextLimits = await getAiChatLimits(token);
+      setLimits(nextLimits);
+      if (nextLimits.remaining_today === 0) {
+        setAccessMessage("Дневной лимит сообщений в ИИ-чате исчерпан. Лимит обновится завтра.");
+      }
     } catch (err) {
-      setError(errorMessage(err, "Не удалось получить ответ Meal-Mentor. Попробуйте ещё раз."));
+      const message = errorMessage(err, "Не удалось получить ответ Meal-Mentor. Попробуйте ещё раз.");
+      if (axios.isAxiosError(err) && err.response?.status === 403) {
+        setAccessMessage(message);
+      } else {
+        setError(message);
+      }
     } finally {
       setIsSending(false);
     }
-  }, [getAccessToken, input, isSending, navigate, validateSession]);
+  }, [accessMessage, getAccessToken, input, isSending, limits?.enabled, limits?.remaining_today, navigate, validateSession]);
+
+  const limitsText = useMemo(() => {
+    if (!limits?.enabled) return null;
+    if (limits.daily_limit === -1) {
+      return `Сообщений сегодня: ${limits.used_today}, без дневного лимита`;
+    }
+    const remaining = limits.remaining_today ?? 0;
+    return `Осталось сообщений сегодня: ${remaining} из ${limits.daily_limit}`;
+  }, [limits]);
 
   return (
     <AppShell activeNav="ai-chat" avatarFallback={avatarFallback} onLogout={handleLogout} showMobileFab={false}>
@@ -168,6 +211,13 @@ export function AiChatPage() {
               </button>
             </div>
           </div>
+        ) : accessMessage && limits?.enabled === false ? (
+          <div className="flex flex-1 items-center justify-center">
+            <div className="max-w-xl rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8">
+              <h2 className="text-xl font-bold text-slate-950">ИИ-чат недоступен</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{accessMessage}</p>
+            </div>
+          </div>
         ) : (
           <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
             <section className="flex min-h-[60vh] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -178,13 +228,17 @@ export function AiChatPage() {
                     className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-6 ${
+                      className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6 ${
                         message.role === "user"
                           ? "bg-green-600 text-white"
                           : "border border-slate-100 bg-slate-50 text-slate-800"
                       }`}
                     >
-                      {message.content}
+                      {message.role === "assistant" ? (
+                        <MessageMarkdown content={message.content} />
+                      ) : (
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -192,9 +246,13 @@ export function AiChatPage() {
                 <div ref={scrollRef} />
               </div>
 
+              {accessMessage ? (
+                <p className="border-t border-amber-100 bg-amber-50 px-4 py-2 text-sm text-amber-800">{accessMessage}</p>
+              ) : null}
               {error ? <p className="border-t border-red-100 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</p> : null}
 
               <div className="border-t border-slate-100 p-3 sm:p-4">
+                {limitsText ? <p className="mb-2 text-xs font-medium text-slate-500">{limitsText}</p> : null}
                 <textarea
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
@@ -205,14 +263,17 @@ export function AiChatPage() {
                     }
                   }}
                   rows={3}
+                  maxLength={INPUT_LIMIT}
+                  disabled={isSending || Boolean(accessMessage)}
                   placeholder="Напишите вопрос о дневнике питания..."
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none ring-green-100 focus:border-green-600 focus:ring-2"
                 />
-                <div className="mt-2 flex justify-end">
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <span className="text-xs text-slate-400">{input.length}/{INPUT_LIMIT}</span>
                   <button
                     type="button"
                     onClick={() => void handleSend()}
-                    disabled={!input.trim() || isSending}
+                    disabled={!input.trim() || isSending || Boolean(accessMessage)}
                     className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Send className="h-4 w-4" aria-hidden />
@@ -224,6 +285,7 @@ export function AiChatPage() {
 
             <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:block">
               <h2 className="text-sm font-bold text-slate-900">Быстрые команды</h2>
+              {limitsText ? <p className="mt-2 text-xs leading-5 text-slate-500">{limitsText}</p> : null}
               <div className="mt-3 flex flex-wrap gap-2 lg:flex-col">
                 {quickCommands.map((command) => (
                   <button
