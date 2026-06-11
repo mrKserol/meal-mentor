@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from openai import OpenAI
+from openai import AuthenticationError, BadRequestError, NotFoundError, OpenAI, PermissionDeniedError
 
 from app.core.config import (
     OPENAI_API_KEY,
@@ -49,6 +49,12 @@ WELCOME_USER_MESSAGE = """
 """.strip()
 
 
+class AiChatLlmError(RuntimeError):
+    def __init__(self, code: str, message: str):
+        self.code = code
+        super().__init__(message)
+
+
 def build_context_message(context: dict) -> str:
     return (
         "Ниже JSON-контекст пользователя из базы Meal-Mentor. "
@@ -78,6 +84,41 @@ def _usage_metadata(response: Any) -> dict:
     }
 
 
+def _is_gpt5_model(model: str) -> bool:
+    return model.lower().startswith("gpt-5")
+
+
+def _create_completion(messages: list[dict]) -> Any:
+    base_kwargs: dict[str, Any] = {
+        "model": OPENAI_CHAT_MODEL,
+        "messages": messages,
+        "max_completion_tokens": OPENAI_CHAT_MAX_TOKENS,
+    }
+    if not _is_gpt5_model(OPENAI_CHAT_MODEL):
+        base_kwargs["temperature"] = OPENAI_CHAT_TEMPERATURE
+
+    try:
+        return _client().chat.completions.create(**base_kwargs)
+    except BadRequestError as exc:
+        text = str(exc).lower()
+        if "max_completion_tokens" in text and ("unsupported" in text or "unrecognized" in text):
+            retry_kwargs = dict(base_kwargs)
+            retry_kwargs.pop("max_completion_tokens", None)
+            retry_kwargs["max_tokens"] = OPENAI_CHAT_MAX_TOKENS
+            return _client().chat.completions.create(**retry_kwargs)
+        if "temperature" in text and ("unsupported" in text or "only the default" in text):
+            retry_kwargs = dict(base_kwargs)
+            retry_kwargs.pop("temperature", None)
+            return _client().chat.completions.create(**retry_kwargs)
+        raise AiChatLlmError("bad_request", str(exc)) from exc
+    except AuthenticationError as exc:
+        raise AiChatLlmError("auth_error", "OpenAI authentication failed") from exc
+    except PermissionDeniedError as exc:
+        raise AiChatLlmError("permission_denied", "OpenAI model or project permission denied") from exc
+    except NotFoundError as exc:
+        raise AiChatLlmError("model_not_found", f"OpenAI model is unavailable: {OPENAI_CHAT_MODEL}") from exc
+
+
 def _generate(*, user_message: str, context: dict, previous_messages: list[dict]) -> tuple[str, dict]:
     messages = [
         {"role": "system", "content": MEAL_MENTOR_CHAT_SYSTEM_PROMPT},
@@ -86,12 +127,7 @@ def _generate(*, user_message: str, context: dict, previous_messages: list[dict]
     messages.extend(previous_messages[-20:])
     messages.append({"role": "user", "content": user_message})
 
-    response = _client().chat.completions.create(
-        model=OPENAI_CHAT_MODEL,
-        messages=messages,
-        temperature=OPENAI_CHAT_TEMPERATURE,
-        max_tokens=OPENAI_CHAT_MAX_TOKENS,
-    )
+    response = _create_completion(messages)
     choice = response.choices[0] if response.choices else None
     content = choice.message.content.strip() if choice and choice.message and choice.message.content else ""
     if not content:
