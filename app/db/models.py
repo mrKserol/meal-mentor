@@ -510,6 +510,50 @@ class UserMeasurement(Base):
     user = relationship("User", back_populates="measurements")
 
 
+class AiChatThread(Base):
+    __tablename__ = "ai_chat_threads"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    status = Column(String(32), nullable=False, default="active", index=True)
+    title = Column(String(255), nullable=True)
+    last_message_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User")
+    messages = relationship(
+        "AiChatMessage",
+        back_populates="thread",
+        cascade="all, delete-orphan",
+    )
+
+
+class AiChatMessage(Base):
+    __tablename__ = "ai_chat_messages"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    thread_id = Column(Integer, ForeignKey("ai_chat_threads.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = Column(String(32), nullable=False)
+    content = Column(Text, nullable=False)
+    model = Column(String(100), nullable=True)
+    prompt_tokens = Column(Integer, nullable=True)
+    completion_tokens = Column(Integer, nullable=True)
+    total_tokens = Column(Integer, nullable=True)
+    extra_metadata = Column(
+        "metadata",
+        JSON().with_variant(JSONB, "postgresql"),
+        nullable=False,
+        default=dict,
+        server_default=text("'{}'"),
+    )
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    thread = relationship("AiChatThread", back_populates="messages")
+    user = relationship("User")
+
+
 class Additive(Base):
     __tablename__ = "additives"
 

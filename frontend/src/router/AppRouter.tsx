@@ -4,6 +4,7 @@ import { AdminRoute } from "../components/AdminRoute";
 import { CuratorRoute } from "../components/CuratorRoute";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import { AdminPage } from "../pages/AdminPage";
+import { AiChatPage } from "../pages/AiChatPage";
 import { CuratorPage } from "../pages/CuratorPage";
 import { CuratorUserDiaryPage } from "../pages/CuratorUserDiaryPage";
 import { DashboardPage } from "../pages/DashboardPage";
@@ -27,6 +28,7 @@ export function AppRouter() {
         <Route path="/onboarding/profile" element={<ProfileOnboardingPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/diary" element={<DiaryPage />} />
+        <Route path="/ai-chat" element={<AiChatPage />} />
         <Route path="/disclaimer" element={<DisclaimerPage />} />
         <Route element={<AdminRoute />}>
           <Route path="/admin" element={<AdminPage />} />

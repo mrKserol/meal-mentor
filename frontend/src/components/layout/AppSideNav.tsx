@@ -1,4 +1,4 @@
-import { BarChart3, CalendarDays, LayoutDashboard, Plus, UserRound } from "lucide-react";
+import { BarChart3, CalendarDays, LayoutDashboard, MessageCircle, Plus, UserRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import type { AppNavItem } from "./appNav";
@@ -52,6 +52,14 @@ export function AppSideNav({ activeItem, onNewMeal, onCompositionClick }: AppSid
         >
           <BarChart3 className="h-5 w-5 shrink-0" aria-hidden />
           <span>Состав</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate("/ai-chat")}
+          className={activeItem === "ai-chat" ? navActive : navInactive}
+        >
+          <MessageCircle className="h-5 w-5 shrink-0" aria-hidden />
+          <span>Чат с ИИ</span>
         </button>
         <button
           type="button"

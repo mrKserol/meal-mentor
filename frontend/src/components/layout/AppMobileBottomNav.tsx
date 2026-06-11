@@ -1,4 +1,4 @@
-import { BarChart3, CalendarDays, LayoutDashboard, UserRound } from "lucide-react";
+import { BarChart3, CalendarDays, LayoutDashboard, MessageCircle, UserRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import type { AppNavItem } from "./appNav";
@@ -43,6 +43,14 @@ export function AppMobileBottomNav({ activeItem, onCompositionClick }: AppMobile
       >
         <BarChart3 className="h-6 w-6" aria-hidden />
         Состав
+      </button>
+      <button
+        type="button"
+        onClick={() => navigate("/ai-chat")}
+        className={activeItem === "ai-chat" ? itemActive : itemIdle}
+      >
+        <MessageCircle className="h-6 w-6" aria-hidden strokeWidth={activeItem === "ai-chat" ? 2.5 : 2} />
+        Чат
       </button>
       <button
         type="button"
