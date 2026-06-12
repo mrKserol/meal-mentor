@@ -227,7 +227,7 @@ export function AiChatPage() {
 
   return (
     <AppShell activeNav="ai-chat" avatarFallback={avatarFallback} onLogout={handleLogout} showMobileFab={false}>
-      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-6xl flex-col gap-4 p-4 pb-28 lg:p-8 lg:pb-8">
+      <div className="mx-auto flex h-[calc(100vh-3.5rem)] min-h-0 max-w-6xl flex-col gap-4 p-4 pb-32 lg:p-8 lg:pb-8">
         <header>
           <h1 className="text-2xl font-bold text-slate-950">Чат с ИИ</h1>
           <p className="mt-1 text-sm text-slate-500">Анализ дневника питания</p>
@@ -273,7 +273,7 @@ export function AiChatPage() {
             </div>
           </div>
         ) : (
-          <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <div className="flex min-h-0 flex-1">
             <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
               <div ref={messagesContainerRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
                 {hasMoreMessages ? (
@@ -317,8 +317,28 @@ export function AiChatPage() {
               ) : null}
               {error ? <p className="border-t border-red-100 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</p> : null}
 
-              <div className="border-t border-slate-100 p-3 sm:p-4">
-                {limitsText ? <p className="mb-2 text-xs font-medium text-slate-500">{limitsText}</p> : null}
+              <div className="shrink-0 border-t border-slate-100 bg-white p-3 sm:p-4">
+                <div className="mb-3">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Быстрые команды</h2>
+                    {limitsText ? <p className="text-xs font-medium text-slate-500">{limitsText}</p> : null}
+                  </div>
+
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {quickCommands.map((command) => (
+                      <button
+                        key={command}
+                        type="button"
+                        onClick={() => setInput(command)}
+                        disabled={isSending || Boolean(accessMessage)}
+                        className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-2 text-left text-xs font-medium text-slate-700 transition hover:border-green-200 hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {command}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <textarea
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
@@ -332,7 +352,7 @@ export function AiChatPage() {
                   maxLength={INPUT_LIMIT}
                   disabled={isSending || Boolean(accessMessage)}
                   placeholder="Напишите вопрос о дневнике питания..."
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none ring-green-100 focus:border-green-600 focus:ring-2"
+                  className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none ring-green-100 focus:border-green-600 focus:ring-2"
                 />
                 <div className="mt-2 flex items-center justify-between gap-3">
                   <span className="text-xs text-slate-400">{input.length}/{INPUT_LIMIT}</span>
@@ -348,23 +368,6 @@ export function AiChatPage() {
                 </div>
               </div>
             </section>
-
-            <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:block">
-              <h2 className="text-sm font-bold text-slate-900">Быстрые команды</h2>
-              {limitsText ? <p className="mt-2 text-xs leading-5 text-slate-500">{limitsText}</p> : null}
-              <div className="mt-3 flex flex-wrap gap-2 lg:flex-col">
-                {quickCommands.map((command) => (
-                  <button
-                    key={command}
-                    type="button"
-                    onClick={() => setInput(command)}
-                    className="rounded-full border border-slate-200 px-3 py-2 text-left text-xs font-medium text-slate-700 transition hover:border-green-200 hover:bg-green-50 lg:rounded-xl"
-                  >
-                    {command}
-                  </button>
-                ))}
-              </div>
-            </aside>
           </div>
         )}
       </div>
