@@ -48,12 +48,18 @@ export function AiChatPage() {
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [isLoadingOlder, setIsLoadingOlder] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const shouldScrollToBottomRef = useRef(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   const avatarFallback = useMemo(() => {
     return user?.first_name?.trim()?.[0] ?? user?.username?.trim()?.[0] ?? user?.email?.trim()?.[0] ?? "U";
   }, [user]);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior, block: "end" });
+    });
+  }, []);
 
   const bootstrap = useCallback(async () => {
     setIsLoading(true);
@@ -107,11 +113,10 @@ export function AiChatPage() {
 
   useEffect(() => {
     if (!shouldScrollToBottomRef.current) return;
+    if (isLoading || disclaimerRequired || (accessMessage && limits?.enabled === false)) return;
     shouldScrollToBottomRef.current = false;
-    requestAnimationFrame(() => {
-      scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-    });
-  }, [messages]);
+    scrollToBottom("auto");
+  }, [accessMessage, disclaimerRequired, isLoading, limits?.enabled, messages, scrollToBottom]);
 
   const handleLogout = useCallback(async () => {
     await logout();
@@ -269,8 +274,8 @@ export function AiChatPage() {
           </div>
         ) : (
           <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
-            <section className="flex min-h-[60vh] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div ref={messagesContainerRef} className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+            <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div ref={messagesContainerRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
                 {hasMoreMessages ? (
                   <div className="flex justify-center py-2">
                     <button
@@ -304,7 +309,7 @@ export function AiChatPage() {
                   </div>
                 ))}
                 {isSending ? <p className="text-sm text-slate-500">Meal-Mentor печатает...</p> : null}
-                <div ref={scrollRef} />
+                <div ref={messagesEndRef} />
               </div>
 
               {accessMessage ? (
