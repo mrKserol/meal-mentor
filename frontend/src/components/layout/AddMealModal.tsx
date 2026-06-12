@@ -692,7 +692,7 @@ export function AddMealModal({ open, onClose, onMealSaved, mealLocalDate }: AddM
               {inlineError ? (
                 <p className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-800">{inlineError}</p>
               ) : null}
-              <label className="block text-sm font-medium text-slate-700">Комментарий</label>
+              <label className="block text-sm font-medium text-slate-700">Комментарий (необязательно)</label>
               <textarea
                 value={photoComment}
                 onChange={(e) => setPhotoComment(e.target.value)}
