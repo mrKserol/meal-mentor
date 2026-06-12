@@ -110,22 +110,6 @@ export function AiChatPage() {
   }, [bootstrap]);
 
   useEffect(() => {
-    const prevBodyOverflow = document.body.style.overflow;
-    const prevBodyOverscroll = document.body.style.overscrollBehavior;
-    const prevHtmlOverscroll = document.documentElement.style.overscrollBehavior;
-
-    document.body.style.overflow = "hidden";
-    document.body.style.overscrollBehavior = "none";
-    document.documentElement.style.overscrollBehavior = "none";
-
-    return () => {
-      document.body.style.overflow = prevBodyOverflow;
-      document.body.style.overscrollBehavior = prevBodyOverscroll;
-      document.documentElement.style.overscrollBehavior = prevHtmlOverscroll;
-    };
-  }, []);
-
-  useEffect(() => {
     if (!shouldScrollToBottomRef.current) return;
     if (isLoading || disclaimerRequired || (accessMessage && limits?.enabled === false)) return;
     shouldScrollToBottomRef.current = false;
@@ -240,8 +224,14 @@ export function AiChatPage() {
   }, [limits]);
 
   return (
-    <AppShell activeNav="ai-chat" avatarFallback={avatarFallback} onLogout={handleLogout} showMobileFab={false}>
-      <div className="mx-auto flex h-[calc(100dvh-3.5rem)] min-h-0 max-w-6xl flex-col gap-4 overflow-hidden overscroll-none p-4 pb-32 lg:p-8 lg:pb-8">
+    <AppShell
+      activeNav="ai-chat"
+      avatarFallback={avatarFallback}
+      onLogout={handleLogout}
+      showMobileFab={false}
+      lockViewport
+    >
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-4 overflow-hidden p-4 pb-[calc(7rem+env(safe-area-inset-bottom))] lg:p-8 lg:pb-8">
         <header className="shrink-0">
           <h1 className="text-2xl font-bold text-slate-950">Чат с ИИ</h1>
           <p className="mt-1 text-sm text-slate-500">Анализ дневника питания</p>
@@ -340,7 +330,7 @@ export function AiChatPage() {
                         type="button"
                         onClick={() => setInput(command)}
                         disabled={isSending || Boolean(accessMessage)}
-                        className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-2 text-left text-xs font-medium text-slate-700 transition hover:border-green-200 hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="max-w-[15rem] shrink-0 truncate rounded-full border border-slate-200 bg-white px-3 py-2 text-left text-xs font-medium text-slate-700 transition hover:border-green-200 hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {command}
                       </button>
@@ -357,7 +347,7 @@ export function AiChatPage() {
                       void handleSend();
                     }
                   }}
-                  rows={3}
+                  rows={2}
                   maxLength={INPUT_LIMIT}
                   disabled={isSending || Boolean(accessMessage)}
                   placeholder="Напишите вопрос о дневнике питания..."
