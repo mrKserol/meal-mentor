@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
+import axios from "axios";
 
 import { getConsentStatus } from "../api/consentsApi";
 import { DisclaimerScreen } from "./disclaimer/DisclaimerScreen";
@@ -43,16 +44,20 @@ export function ProtectedRoute() {
       setConsentError(null);
 
       try {
-        const sessionOk = await validateSession();
-        if (isCancelled()) return;
+        let accessToken = getAccessToken();
+        if (!accessToken) {
+          const sessionOk = await validateSession();
+          if (isCancelled()) return;
 
-        if (!sessionOk) {
-          clearDisclaimerCache();
-          setConsentError("Сессия истекла. Войдите заново.");
-          return;
+          if (!sessionOk) {
+            clearDisclaimerCache();
+            setConsentError("Сессия истекла. Войдите заново.");
+            return;
+          }
+
+          accessToken = getAccessToken();
         }
 
-        const accessToken = getAccessToken();
         if (!accessToken) {
           clearDisclaimerCache();
           setConsentError("Сессия не найдена. Войдите заново.");
@@ -68,8 +73,43 @@ export function ProtectedRoute() {
         } else {
           clearDisclaimerCache();
         }
-      } catch {
+        setConsentError(null);
+      } catch (error) {
         if (isCancelled()) return;
+
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          const sessionOk = await validateSession();
+          if (isCancelled()) return;
+
+          if (!sessionOk) {
+            clearDisclaimerCache();
+            setConsentError("Сессия истекла. Войдите заново.");
+            return;
+          }
+
+          const refreshedAccessToken = getAccessToken();
+          if (!refreshedAccessToken) {
+            clearDisclaimerCache();
+            setConsentError("Сессия не найдена. Войдите заново.");
+            return;
+          }
+
+          try {
+            const refreshedStatus = await getConsentStatus(refreshedAccessToken);
+            if (isCancelled()) return;
+
+            setConsentStatus(refreshedStatus);
+            if (refreshedStatus.accepted && !refreshedStatus.required) {
+              cacheDisclaimerAccepted(refreshedStatus.current_version);
+            } else {
+              clearDisclaimerCache();
+            }
+            setConsentError(null);
+            return;
+          } catch {
+            if (isCancelled()) return;
+          }
+        }
 
         if (cachedAccepted && cachedVersion) {
           setConsentStatus({
@@ -94,7 +134,7 @@ export function ProtectedRoute() {
   );
 
   useEffect(() => {
-    if (isLoading || !isAuthenticated || location.pathname === "/disclaimer") {
+    if (isLoading || !isAuthenticated || location.pathname === "/disclaimer" || consentStatus) {
       return;
     }
 
@@ -104,7 +144,7 @@ export function ProtectedRoute() {
     return () => {
       cancelled = true;
     };
-  }, [checkConsent, isAuthenticated, isLoading, location.pathname]);
+  }, [checkConsent, consentStatus, isAuthenticated, isLoading, location.pathname]);
 
   if (isLoading) {
     return (

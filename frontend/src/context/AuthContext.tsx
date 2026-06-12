@@ -16,6 +16,8 @@ const REFRESH_TOKEN_KEY = "meal_mentor_refresh_token";
 const DISCLAIMER_ACCEPTED_KEY = "meal_mentor_disclaimer_accepted";
 const DISCLAIMER_VERSION_KEY = "meal_mentor_disclaimer_version";
 
+let refreshPromise: Promise<AuthResponse> | null = null;
+
 interface AuthContextValue {
   user: User | null;
   isAuthenticated: boolean;
@@ -31,6 +33,11 @@ interface AuthContextValue {
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+function debugAuth(message: string, extra?: unknown): void {
+  if (!import.meta.env.DEV) return;
+  console.debug(`[auth] ${message}`, extra ?? "");
+}
 
 function saveTokens(tokens: AuthResponse): void {
   localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access_token);
@@ -53,10 +60,32 @@ function getAccessTokenOrThrow(): string {
 }
 
 function clearTokens(): void {
+  debugAuth("clearTokens");
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(DISCLAIMER_ACCEPTED_KEY);
   localStorage.removeItem(DISCLAIMER_VERSION_KEY);
+}
+
+async function refreshOnce(refreshToken: string): Promise<AuthResponse> {
+  if (!refreshPromise) {
+    debugAuth("refreshOnce:start");
+    refreshPromise = refresh(refreshToken)
+      .then((tokens) => {
+        debugAuth("refreshOnce:success");
+        saveTokens(tokens);
+        return tokens;
+      })
+      .catch((error) => {
+        debugAuth("refreshOnce:failed", error);
+        throw error;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -64,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const validateSession = useCallback(async (): Promise<boolean> => {
+    debugAuth("validateSession:start");
     const { accessToken, refreshToken } = getTokens();
     if (!accessToken && !refreshToken) {
       setUser(null);
@@ -73,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (accessToken) {
       try {
         const me = await getMe(accessToken);
+        debugAuth("validateSession:getMe:success");
         setUser(me);
         return true;
       } catch (error) {
@@ -80,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
           return false;
         }
+        debugAuth("validateSession:getMe:401");
       }
     }
 
@@ -90,12 +122,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const refreshed = await refresh(refreshToken);
-      saveTokens(refreshed);
+      const refreshed = await refreshOnce(refreshToken);
       const me = await getMe(refreshed.access_token);
       setUser(me);
       return true;
     } catch {
+      const latestAccessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+      if (latestAccessToken && latestAccessToken !== accessToken) {
+        try {
+          const me = await getMe(latestAccessToken);
+          setUser(me);
+          return true;
+        } catch {
+          // Fall through to clearing tokens only if the latest token is also invalid.
+        }
+      }
+
       clearTokens();
       setUser(null);
       return false;
