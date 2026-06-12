@@ -17,11 +17,9 @@ import { AppShell } from "../components/layout/AppShell";
 import { useAuth } from "../hooks/useAuth";
 
 const quickCommands = [
-  "Проанализируй мой рацион за последние 14 дней",
-  "Что мне лучше улучшить сегодня?",
-  "Хватает ли мне белка?",
-  "Что можно съесть на ужин?",
-  "Есть ли перебор по жирам или углеводам?",
+  "Проанализируй мой рацион",
+  "Как мне добрать белок?",
+  "Почему у меня перебор по жирам?",
 ];
 
 const INPUT_LIMIT = 2000;
@@ -110,6 +108,22 @@ export function AiChatPage() {
   useEffect(() => {
     void bootstrap();
   }, [bootstrap]);
+
+  useEffect(() => {
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevBodyOverscroll = document.body.style.overscrollBehavior;
+    const prevHtmlOverscroll = document.documentElement.style.overscrollBehavior;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+    document.documentElement.style.overscrollBehavior = "none";
+
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.body.style.overscrollBehavior = prevBodyOverscroll;
+      document.documentElement.style.overscrollBehavior = prevHtmlOverscroll;
+    };
+  }, []);
 
   useEffect(() => {
     if (!shouldScrollToBottomRef.current) return;
@@ -227,8 +241,8 @@ export function AiChatPage() {
 
   return (
     <AppShell activeNav="ai-chat" avatarFallback={avatarFallback} onLogout={handleLogout} showMobileFab={false}>
-      <div className="mx-auto flex h-[calc(100vh-3.5rem)] min-h-0 max-w-6xl flex-col gap-4 p-4 pb-32 lg:p-8 lg:pb-8">
-        <header>
+      <div className="mx-auto flex h-[calc(100dvh-3.5rem)] min-h-0 max-w-6xl flex-col gap-4 overflow-hidden overscroll-none p-4 pb-32 lg:p-8 lg:pb-8">
+        <header className="shrink-0">
           <h1 className="text-2xl font-bold text-slate-950">Чат с ИИ</h1>
           <p className="mt-1 text-sm text-slate-500">Анализ дневника питания</p>
         </header>
@@ -273,9 +287,9 @@ export function AiChatPage() {
             </div>
           </div>
         ) : (
-          <div className="flex min-h-0 flex-1">
+          <div className="flex min-h-0 flex-1 overflow-hidden overscroll-none">
             <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div ref={messagesContainerRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+              <div ref={messagesContainerRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
                 {hasMoreMessages ? (
                   <div className="flex justify-center py-2">
                     <button
@@ -319,11 +333,6 @@ export function AiChatPage() {
 
               <div className="shrink-0 border-t border-slate-100 bg-white p-3 sm:p-4">
                 <div className="mb-3">
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Быстрые команды</h2>
-                    {limitsText ? <p className="text-xs font-medium text-slate-500">{limitsText}</p> : null}
-                  </div>
-
                   <div className="flex gap-2 overflow-x-auto pb-1">
                     {quickCommands.map((command) => (
                       <button
@@ -355,7 +364,10 @@ export function AiChatPage() {
                   className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none ring-green-100 focus:border-green-600 focus:ring-2"
                 />
                 <div className="mt-2 flex items-center justify-between gap-3">
-                  <span className="text-xs text-slate-400">{input.length}/{INPUT_LIMIT}</span>
+                  <div className="space-y-0.5">
+                    <span className="block text-xs text-slate-400">{input.length}/{INPUT_LIMIT}</span>
+                    {limitsText ? <p className="text-xs font-medium text-slate-500">{limitsText}</p> : null}
+                  </div>
                   <button
                     type="button"
                     onClick={() => void handleSend()}
