@@ -41,6 +41,14 @@ class AiChatBootstrapResponse(BaseModel):
     disclaimer_required: bool
     disclaimer_version: str
     messages: list[AiChatMessageResponse] = []
+    has_more_messages: bool = False
+    oldest_message_id: int | None = None
+
+
+class AiChatMessagesPageResponse(BaseModel):
+    messages: list[AiChatMessageResponse]
+    has_more: bool
+    oldest_message_id: int | None = None
 
 
 class AiChatLimitsResponse(BaseModel):

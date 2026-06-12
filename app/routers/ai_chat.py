@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
@@ -15,6 +15,7 @@ from app.schemas.ai_chat import (
     AiChatBootstrapResponse,
     AiChatLimitsResponse,
     AiChatMessageResponse,
+    AiChatMessagesPageResponse,
     AiChatSendRequest,
     AiChatSendResponse,
 )
@@ -32,6 +33,7 @@ from app.services.usage_limits import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/ai-chat", tags=["ai-chat"])
+CHAT_MESSAGES_PAGE_SIZE = 10
 
 FALLBACK_WELCOME_MESSAGE = (
     "Привет! Я Meal-Mentor — твой ИИ-помощник по дневнику питания.\n\n"
@@ -74,6 +76,25 @@ def _recent_messages(db: Session, thread_id: int, limit: int) -> list[AiChatMess
         .all()
     )
     return list(reversed(rows))
+
+
+def get_latest_messages_page(
+    db: Session,
+    thread_id: int,
+    limit: int = CHAT_MESSAGES_PAGE_SIZE,
+) -> tuple[list[AiChatMessage], bool, int | None]:
+    rows = (
+        db.query(AiChatMessage)
+        .filter(AiChatMessage.thread_id == thread_id)
+        .order_by(AiChatMessage.id.desc())
+        .limit(limit + 1)
+        .all()
+    )
+    has_more = len(rows) > limit
+    page_rows = rows[:limit]
+    messages = list(reversed(page_rows))
+    oldest_message_id = messages[0].id if messages else None
+    return messages, has_more, oldest_message_id
 
 
 def _llm_history(rows: list[AiChatMessage]) -> list[dict]:
@@ -125,11 +146,13 @@ def bootstrap_ai_chat(
             disclaimer_required=True,
             disclaimer_version=AI_CHAT_DISCLAIMER_VERSION,
             messages=[],
+            has_more_messages=False,
+            oldest_message_id=None,
         )
 
     check_feature_enabled_or_raise(db, current_user.id, "ai_chat_enabled")
     thread = get_or_create_active_thread(db, current_user.id)
-    messages = _recent_messages(db, thread.id, limit=50)
+    messages = _recent_messages(db, thread.id, limit=1)
     if not messages:
         context = build_ai_chat_context(db, current_user)
         try:
@@ -149,15 +172,21 @@ def bootstrap_ai_chat(
         )
         db.commit()
         db.refresh(welcome)
-        messages = [welcome]
     else:
         db.commit()
 
+    messages, has_more, oldest_message_id = get_latest_messages_page(
+        db=db,
+        thread_id=thread.id,
+        limit=CHAT_MESSAGES_PAGE_SIZE,
+    )
     return AiChatBootstrapResponse(
         thread_id=thread.id,
         disclaimer_required=False,
         disclaimer_version=AI_CHAT_DISCLAIMER_VERSION,
         messages=[_message_response(row) for row in messages],
+        has_more_messages=has_more,
+        oldest_message_id=oldest_message_id,
     )
 
 
@@ -225,17 +254,38 @@ def send_ai_chat_message(
     )
 
 
-@router.get("/messages", response_model=list[AiChatMessageResponse])
-def list_ai_chat_messages(
+@router.get("/messages", response_model=AiChatMessagesPageResponse)
+def get_ai_chat_messages(
+    before_id: int | None = Query(default=None),
+    limit: int = Query(default=CHAT_MESSAGES_PAGE_SIZE, ge=1, le=50),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     if not _has_ai_chat_consent(db, current_user.id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="AI Chat disclaimer is required")
-    thread = get_or_create_active_thread(db, current_user.id)
-    messages = _recent_messages(db, thread.id, limit=50)
-    db.commit()
-    return [_message_response(row) for row in messages]
+    thread = (
+        db.query(AiChatThread)
+        .filter(AiChatThread.user_id == current_user.id, AiChatThread.status == "active")
+        .order_by(AiChatThread.updated_at.desc(), AiChatThread.id.desc())
+        .first()
+    )
+    if thread is None:
+        return AiChatMessagesPageResponse(messages=[], has_more=False, oldest_message_id=None)
+
+    query = db.query(AiChatMessage).filter(AiChatMessage.thread_id == thread.id)
+    if before_id is not None:
+        query = query.filter(AiChatMessage.id < before_id)
+
+    rows = query.order_by(AiChatMessage.id.desc()).limit(limit + 1).all()
+    has_more = len(rows) > limit
+    page_rows = rows[:limit]
+    messages = list(reversed(page_rows))
+    oldest_message_id = messages[0].id if messages else None
+    return AiChatMessagesPageResponse(
+        messages=[_message_response(row) for row in messages],
+        has_more=has_more,
+        oldest_message_id=oldest_message_id,
+    )
 
 
 @router.get("/limits", response_model=AiChatLimitsResponse)

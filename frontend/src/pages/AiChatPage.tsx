@@ -7,6 +7,7 @@ import {
   acceptAiChatDisclaimer,
   getAiChatBootstrap,
   getAiChatLimits,
+  getAiChatMessagesPage,
   sendAiChatMessage,
   type AiChatLimitsResponse,
   type AiChatMessage,
@@ -43,11 +44,22 @@ export function AiChatPage() {
   const [error, setError] = useState<string | null>(null);
   const [limits, setLimits] = useState<AiChatLimitsResponse | null>(null);
   const [accessMessage, setAccessMessage] = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [oldestMessageId, setOldestMessageId] = useState<number | null>(null);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const shouldScrollToBottomRef = useRef(false);
 
   const avatarFallback = useMemo(() => {
     return user?.first_name?.trim()?.[0] ?? user?.username?.trim()?.[0] ?? user?.email?.trim()?.[0] ?? "U";
   }, [user]);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior, block: "end" });
+    });
+  }, []);
 
   const bootstrap = useCallback(async () => {
     setIsLoading(true);
@@ -66,7 +78,10 @@ export function AiChatPage() {
       }
       const data = await getAiChatBootstrap(token);
       setDisclaimerRequired(data.disclaimer_required);
+      shouldScrollToBottomRef.current = true;
       setMessages(data.messages);
+      setOldestMessageId(data.oldest_message_id);
+      setHasMoreMessages(data.has_more_messages);
       if (!data.disclaimer_required) {
         const nextLimits = await getAiChatLimits(token);
         setLimits(nextLimits);
@@ -82,6 +97,8 @@ export function AiChatPage() {
         setDisclaimerRequired(false);
         setAccessMessage(message);
         setMessages([]);
+        setOldestMessageId(null);
+        setHasMoreMessages(false);
       } else {
         setError(message);
       }
@@ -95,8 +112,11 @@ export function AiChatPage() {
   }, [bootstrap]);
 
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages.length, isSending]);
+    if (!shouldScrollToBottomRef.current) return;
+    if (isLoading || disclaimerRequired || (accessMessage && limits?.enabled === false)) return;
+    shouldScrollToBottomRef.current = false;
+    scrollToBottom("auto");
+  }, [accessMessage, disclaimerRequired, isLoading, limits?.enabled, messages, scrollToBottom]);
 
   const handleLogout = useCallback(async () => {
     await logout();
@@ -143,6 +163,7 @@ export function AiChatPage() {
         return;
       }
       const data = await sendAiChatMessage(token, text);
+      shouldScrollToBottomRef.current = true;
       setMessages((prev) => [...prev, data.user_message, data.assistant_message]);
       setInput("");
       const nextLimits = await getAiChatLimits(token);
@@ -161,6 +182,39 @@ export function AiChatPage() {
       setIsSending(false);
     }
   }, [accessMessage, getAccessToken, input, isSending, limits?.enabled, limits?.remaining_today, navigate, validateSession]);
+
+  const loadOlderMessages = useCallback(async () => {
+    if (!hasMoreMessages || isLoadingOlder || !oldestMessageId) return;
+    const token = getAccessToken();
+    if (!token) return;
+
+    const container = messagesContainerRef.current;
+    const previousScrollHeight = container?.scrollHeight ?? 0;
+    const previousScrollTop = container?.scrollTop ?? 0;
+
+    setIsLoadingOlder(true);
+    try {
+      const page = await getAiChatMessagesPage(token, oldestMessageId, 10);
+      setMessages((prev) => {
+        const existingIds = new Set(prev.map((message) => message.id));
+        const newMessages = page.messages.filter((message) => !existingIds.has(message.id));
+        return [...newMessages, ...prev];
+      });
+      setOldestMessageId(page.oldest_message_id);
+      setHasMoreMessages(page.has_more);
+
+      requestAnimationFrame(() => {
+        const updatedContainer = messagesContainerRef.current;
+        if (!updatedContainer) return;
+        const newScrollHeight = updatedContainer.scrollHeight;
+        updatedContainer.scrollTop = newScrollHeight - previousScrollHeight + previousScrollTop;
+      });
+    } catch (err) {
+      setError(errorMessage(err, "Не удалось загрузить старые сообщения."));
+    } finally {
+      setIsLoadingOlder(false);
+    }
+  }, [getAccessToken, hasMoreMessages, isLoadingOlder, oldestMessageId]);
 
   const limitsText = useMemo(() => {
     if (!limits?.enabled) return null;
@@ -220,8 +274,20 @@ export function AiChatPage() {
           </div>
         ) : (
           <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
-            <section className="flex min-h-[60vh] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+            <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div ref={messagesContainerRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+                {hasMoreMessages ? (
+                  <div className="flex justify-center py-2">
+                    <button
+                      type="button"
+                      onClick={() => void loadOlderMessages()}
+                      disabled={isLoadingOlder}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isLoadingOlder ? "Загружаю..." : "Показать старые сообщения"}
+                    </button>
+                  </div>
+                ) : null}
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -243,7 +309,7 @@ export function AiChatPage() {
                   </div>
                 ))}
                 {isSending ? <p className="text-sm text-slate-500">Meal-Mentor печатает...</p> : null}
-                <div ref={scrollRef} />
+                <div ref={messagesEndRef} />
               </div>
 
               {accessMessage ? (
