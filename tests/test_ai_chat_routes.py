@@ -182,8 +182,8 @@ def test_messages_are_scoped_to_current_user(client, db_session):
     client.post("/api/ai-chat/message", json={"message": "Сообщение A"}, headers=_auth(token_a))
     client.post("/api/ai-chat/message", json={"message": "Сообщение B"}, headers=_auth(token_b))
 
-    messages_a = client.get("/api/ai-chat/messages", headers=_auth(token_a)).json()
-    messages_b = client.get("/api/ai-chat/messages", headers=_auth(token_b)).json()
+    messages_a = client.get("/api/ai-chat/messages", headers=_auth(token_a)).json()["messages"]
+    messages_b = client.get("/api/ai-chat/messages", headers=_auth(token_b)).json()["messages"]
 
     assert any("Сообщение A" in item["content"] for item in messages_a)
     assert not any("Сообщение B" in item["content"] for item in messages_a)

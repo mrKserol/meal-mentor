@@ -12,6 +12,14 @@ export interface AiChatBootstrapResponse {
   disclaimer_required: boolean;
   disclaimer_version: string;
   messages: AiChatMessage[];
+  has_more_messages: boolean;
+  oldest_message_id: number | null;
+}
+
+export interface AiChatMessagesPageResponse {
+  messages: AiChatMessage[];
+  has_more: boolean;
+  oldest_message_id: number | null;
 }
 
 export interface AiChatSendResponse {
@@ -36,6 +44,23 @@ export interface AiChatLimitsResponse {
 
 export async function getAiChatBootstrap(accessToken: string): Promise<AiChatBootstrapResponse> {
   const { data } = await authClient.get<AiChatBootstrapResponse>("/api/ai-chat/bootstrap", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  return data;
+}
+
+export async function getAiChatMessagesPage(
+  accessToken: string,
+  beforeId?: number | null,
+  limit = 10,
+): Promise<AiChatMessagesPageResponse> {
+  const params = new URLSearchParams();
+  params.set("limit", String(limit));
+  if (beforeId) {
+    params.set("before_id", String(beforeId));
+  }
+
+  const { data } = await authClient.get<AiChatMessagesPageResponse>(`/api/ai-chat/messages?${params.toString()}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   return data;
