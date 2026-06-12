@@ -25,7 +25,6 @@ interface AppShellProps {
   onMealSaved?: () => void;
   /** Show floating + on small screens (above bottom nav) */
   showMobileFab?: boolean;
-  lockViewport?: boolean;
   children: AppShellChildren;
 }
 
@@ -35,7 +34,6 @@ export function AppShell({
   onLogout,
   onMealSaved,
   showMobileFab = true,
-  lockViewport = false,
   children,
 }: AppShellProps) {
   const [addMealOpen, setAddMealOpen] = useState(false);
@@ -64,26 +62,17 @@ export function AppShell({
   const openComposition = useCallback(() => setCompositionOpen(true), []);
   const closeComposition = useCallback(() => setCompositionOpen(false), []);
 
-  const rootClassName = lockViewport
-    ? "h-dvh w-full overflow-hidden bg-slate-50 text-slate-900 antialiased"
-    : "min-h-screen w-full overflow-x-hidden bg-slate-50 pb-24 text-slate-900 antialiased lg:pb-8";
-  const shellClassName = lockViewport ? "flex h-dvh min-w-0 overflow-hidden" : "flex min-h-screen min-w-0";
-  const contentClassName = lockViewport
-    ? "flex h-dvh min-w-0 flex-1 flex-col overflow-hidden pt-14 lg:ml-64"
-    : "flex min-h-screen min-w-0 flex-1 flex-col pt-14 lg:ml-64";
-  const mainClassName = lockViewport ? "min-h-0 min-w-0 flex-1 overflow-hidden" : "min-w-0 flex-1";
-
   return (
-    <div className={rootClassName}>
+    <div className="min-h-screen w-full overflow-x-hidden bg-slate-50 pb-24 text-slate-900 antialiased lg:pb-8">
       <AppTopBar avatarFallback={avatarFallback} onLogout={onLogout} />
-      <div className={shellClassName}>
+      <div className="flex min-h-screen min-w-0">
         <AppSideNav
           activeItem={activeNav}
           onNewMeal={openAddMeal}
           onCompositionClick={openComposition}
         />
-        <div className={contentClassName}>
-          <main className={mainClassName}>
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col pt-14 lg:ml-64">
+          <main className="min-w-0 flex-1">
             <AddMealOpenProvider onOpen={openAddMeal}>{renderChildren()}</AddMealOpenProvider>
           </main>
         </div>
