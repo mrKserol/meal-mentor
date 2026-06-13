@@ -46,6 +46,7 @@ def test_v2_response_ingredients_contain_trace_fields(db_session):
                 "product_nutrition_id": 123,
                 "product_nutrition_match_id": 456,
                 "nutrition_source": "usda_fdc",
+                "nutrition_pipeline_version": "v2_usda",
                 "nutrition_match_status": "matched",
                 "nutrition_match_score": 0.92,
             }
@@ -69,5 +70,6 @@ def test_v2_response_ingredients_contain_trace_fields(db_session):
     assert ing["product_nutrition_id"] == 123
     assert ing["product_nutrition_match_id"] == 456
     assert ing["nutrition_source"] == "usda_fdc"
+    assert ing["nutrition_pipeline_version"] == "v2_usda"
     assert ing["nutrition_match_status"] == "matched"
     assert ing["nutrition_match_name"] == "USDA: Bananas, raw"

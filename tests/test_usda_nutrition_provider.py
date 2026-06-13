@@ -103,6 +103,13 @@ def test_aggregate_nutrition_full_returns_internal_keys():
 def test_usda_client_error_does_not_crash_provider():
     service = _service(ErrorUsdaClient())
 
-    assert service.search({"banana": {"grams": 100, "state": "raw"}}) == [{"banana": {}}]
+    assert service.search({"banana": {"grams": 100, "state": "raw"}}) == [
+        {
+            "banana": {
+                "nutrition_pipeline_version": "v2_usda",
+                "nutrition_source": "unknown",
+            }
+        }
+    ]
     assert service.aggregate_nutrition({"banana": {"grams": 100, "state": "raw"}}) is None
     assert service.aggregate_nutrition_full({"banana": {"grams": 100, "state": "raw"}}) is None

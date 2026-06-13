@@ -35,6 +35,7 @@ _SKIP_TOTAL_KEYS = {
     "nutrition_match_score",
     "nutrition_match_name",
     "match_status",
+    "nutrition_pipeline_version",
 }
 
 
@@ -85,6 +86,7 @@ class NutritionService2:
         row["nutrition_match_name"] = match_label
         row["nutrition_match_status"] = nutrition_match_status
         row["nutrition_source"] = nutrition_source
+        row["nutrition_pipeline_version"] = "v2_usda"
         row["source"] = nutrition_source
         row["match_status"] = nutrition_match_status
         if product_nutrition_id is not None:
@@ -113,7 +115,7 @@ class NutritionService2:
             state=state,
             match_label=f"USDA: {product.description}",
             match_score=cached.match_score,
-            nutrition_source=product.source,
+            nutrition_source="product_nutrition_cache",
             nutrition_match_status=cached.match_status,
             product_nutrition_id=product.id,
             product_nutrition_match_id=cached.id,
@@ -136,8 +138,9 @@ class NutritionService2:
         out = dict(row)
         out.setdefault("weight", ni.grams)
         out.setdefault("state", ni.state)
-        out["nutrition_source"] = "local_csv"
-        out["source"] = "local_csv"
+        out["nutrition_pipeline_version"] = "v2_usda"
+        out["nutrition_source"] = "local_csv_fallback"
+        out["source"] = "local_csv_fallback"
         out["nutrition_match_status"] = "fallback_csv"
         out["match_status"] = "fallback_csv"
         if out.get("match"):
@@ -257,7 +260,14 @@ class NutritionService2:
             if v1_row:
                 results.append({ni.input_name: v1_row})
             else:
-                results.append({ni.input_name: {}})
+                results.append(
+                    {
+                        ni.input_name: {
+                            "nutrition_pipeline_version": "v2_usda",
+                            "nutrition_source": "unknown",
+                        }
+                    }
+                )
         return results
 
     def aggregate_nutrition(self, ingredients_weights: dict[str, Any]) -> dict[str, int] | None:

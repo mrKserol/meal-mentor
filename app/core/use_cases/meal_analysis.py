@@ -223,6 +223,16 @@ def build_meal_items_with_nutrition_provider(
                 "name_translated": name_translated,
                 "name_language": name_language,
                 "nutrition_match_name": match_name,
+                "nutrition_pipeline_version": (
+                    row.get("nutrition_pipeline_version")
+                    or (payload.get("nutrition_pipeline_version") if isinstance(payload, dict) else None)
+                    or "v1_csv"
+                ),
+                "nutrition_source": (
+                    row.get("nutrition_source")
+                    or (payload.get("nutrition_source") if isinstance(payload, dict) else None)
+                    or "local_csv"
+                ),
             }
         )
     return items

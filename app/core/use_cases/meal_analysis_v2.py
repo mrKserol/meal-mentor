@@ -53,6 +53,7 @@ def _enrich_ingredients_with_search_trace(
                 "product_nutrition_id",
                 "product_nutrition_match_id",
                 "nutrition_source",
+                "nutrition_pipeline_version",
                 "nutrition_match_score",
                 "nutrition_match_status",
                 "source",
@@ -243,6 +244,8 @@ def _build_item_from_product_nutrition(
         "name_translated": payload.get("name_translated"),
         "name_language": payload.get("name_language"),
         "nutrition_match_name": match_name,
+        "nutrition_pipeline_version": payload.get("nutrition_pipeline_version") or "v2_usda",
+        "nutrition_source": payload.get("nutrition_source") or "product_nutrition_cache",
     }
 
 

@@ -120,7 +120,7 @@ def test_low_confidence_usda_falls_back_to_v1(db_session):
     service = NutritionService2(db=db_session, matcher=matcher, fallback_v1=FakeV1Service())
     out = service.search({"banana": {"grams": 100, "state": "raw"}})
     row = out[0]["banana"]
-    assert row["nutrition_source"] == "local_csv"
+    assert row["nutrition_source"] == "local_csv_fallback"
     assert row["nutrition_match_status"] == "fallback_csv"
     assert db_session.query(ProductNutritionMatch).count() == 0
 
@@ -137,4 +137,4 @@ def test_usda_error_falls_back_to_v1(db_session):
     service = NutritionService2(db=db_session, matcher=matcher, fallback_v1=FakeV1Service())
     out = service.search({"banana": {"grams": 100, "state": "raw"}})
     row = out[0]["banana"]
-    assert row["nutrition_source"] == "local_csv"
+    assert row["nutrition_source"] == "local_csv_fallback"
