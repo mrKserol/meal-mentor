@@ -186,6 +186,7 @@ class WebMealSaveRequest(BaseModel):
         default=None,
         description="Local wall time in user TZ: YYYY-MM-DDTHH:mm (not after end of tomorrow).",
     )
+    pipeline_version: str | None = None
 
 
 class WebMealSaveResponse(BaseModel):

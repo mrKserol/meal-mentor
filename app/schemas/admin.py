@@ -13,6 +13,7 @@ class AdminUserListItem(BaseModel):
     role: str
     status: str
     subscription_status: str
+    nutrition_pipeline_version: str = "global"
     created_at: datetime | None = None
     updated_at: datetime | None = None
     active_subscription_ends_at: datetime | None = None
@@ -22,6 +23,17 @@ class AdminUserUpdateRequest(BaseModel):
     role: str | None = Field(default=None, pattern="^(user|curator|admin)$")
     status: str | None = Field(default=None, pattern="^(active|blocked)$")
     subscription_status: str | None = None
+    nutrition_pipeline_version: str | None = Field(default=None, pattern="^(global|v1_csv|v2_usda)$")
+
+
+class AdminNutritionPipelineSettingsResponse(BaseModel):
+    global_version: str
+    allowed_global_versions: list[str]
+    allowed_user_versions: list[str]
+
+
+class AdminNutritionPipelineSettingsUpdateRequest(BaseModel):
+    global_version: str = Field(pattern="^(v1_csv|v2_usda)$")
 
 
 class AdminPlanFeatureResponse(BaseModel):

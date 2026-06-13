@@ -17,17 +17,22 @@ import {
   getAdminSubscriptions,
   getAdminUser,
   getAdminUsers,
+  getNutritionPipelineSettings,
   grantSubscription,
   updateAdminPlan,
   updateAdminUser,
+  updateNutritionPipelineSettings,
   upsertPlanFeature,
   upsertUserFeatureOverride,
+  type AdminGlobalNutritionPipeline,
   type AdminCuratorUserAssignment,
+  type AdminNutritionPipelineSettings,
   type AdminPlan,
   type AdminPlanFeaturePayload,
   type AdminSubscription,
   type AdminUser,
   type AdminUserDetail,
+  type AdminUserNutritionPipeline,
   type AdminUserOverridePayload,
 } from "../api/adminApi";
 import {
@@ -67,6 +72,17 @@ function errorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback;
 }
 
+const globalPipelineLabels: Record<AdminGlobalNutritionPipeline, string> = {
+  v1_csv: "V1 — nutrition.csv",
+  v2_usda: "V2 — USDA FoodData Central",
+};
+
+const userPipelineLabels: Record<AdminUserNutritionPipeline, string> = {
+  global: "Как у всех",
+  v1_csv: "V1",
+  v2_usda: "V2",
+};
+
 export function AdminPage() {
   const navigate = useNavigate();
   const { user, logout, validateSession, getAccessToken } = useAuth();
@@ -77,6 +93,7 @@ export function AdminPage() {
   const [query, setQuery] = useState("");
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [selectedUser, setSelectedUser] = useState<AdminUserDetail | null>(null);
+  const [nutritionPipelineSettings, setNutritionPipelineSettings] = useState<AdminNutritionPipelineSettings | null>(null);
   const [plans, setPlans] = useState<AdminPlan[]>([]);
   const [subscriptions, setSubscriptions] = useState<AdminSubscription[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
@@ -120,10 +137,11 @@ export function AdminPage() {
       return;
     }
     try {
-      const [usersResult, plansResult, subscriptionsResult] = await Promise.allSettled([
+      const [usersResult, plansResult, subscriptionsResult, nutritionPipelineResult] = await Promise.allSettled([
         getAdminUsers(currentToken, { q: query || undefined }),
         getAdminPlans(currentToken),
         getAdminSubscriptions(currentToken),
+        getNutritionPipelineSettings(currentToken),
       ]);
 
       if (usersResult.status === "fulfilled") {
@@ -135,8 +153,13 @@ export function AdminPage() {
       if (subscriptionsResult.status === "fulfilled") {
         setSubscriptions(subscriptionsResult.value);
       }
+      if (nutritionPipelineResult.status === "fulfilled") {
+        setNutritionPipelineSettings(nutritionPipelineResult.value);
+      }
 
-      const failed = [usersResult, plansResult, subscriptionsResult].filter((result) => result.status === "rejected");
+      const failed = [usersResult, plansResult, subscriptionsResult, nutritionPipelineResult].filter(
+        (result) => result.status === "rejected",
+      );
       if (failed.length > 0) {
         setError("Часть данных админки не загрузилась. Пользователи и тарифы показываются независимо от подписок.");
       }
@@ -316,6 +339,26 @@ export function AdminPage() {
               <p className="mt-2 max-w-2xl text-sm text-slate-600">
                 Пользователи, тарифы, подписки и ручные права в одном месте.
               </p>
+              <div className="mt-4 max-w-md rounded-2xl border border-green-100 bg-green-50 p-3">
+                <label className="text-xs font-semibold uppercase tracking-[0.14em] text-green-800">
+                  NutritionService для всех пользователей
+                </label>
+                <select
+                  value={nutritionPipelineSettings?.global_version ?? "v1_csv"}
+                  disabled={saving || !nutritionPipelineSettings}
+                  onChange={(event) => {
+                    const nextValue = event.target.value as AdminGlobalNutritionPipeline;
+                    void runAction(async () => {
+                      if (!token) return;
+                      await updateNutritionPipelineSettings(token, { global_version: nextValue });
+                    });
+                  }}
+                  className="mt-2 w-full rounded-xl border border-green-100 bg-white px-3 py-2 text-sm font-semibold text-slate-800"
+                >
+                  <option value="v1_csv">{globalPipelineLabels.v1_csv}</option>
+                  <option value="v2_usda">{globalPipelineLabels.v2_usda}</option>
+                </select>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-2 rounded-2xl bg-green-50 p-1 text-sm font-semibold text-slate-700 sm:grid-cols-4">
               {([
@@ -417,6 +460,28 @@ export function AdminPage() {
                                     <option value="curator">curator</option>
                                     <option value="admin">admin</option>
                                   </select>
+                                  <select
+                                    value={adminUser.nutrition_pipeline_version}
+                                    disabled={saving}
+                                    onChange={(e) => {
+                                      const nextValue = e.target.value as AdminUserNutritionPipeline;
+                                      void runAction(async () => {
+                                        if (!token) return;
+                                        await updateAdminUser(token, adminUser.id, {
+                                          nutrition_pipeline_version: nextValue,
+                                        });
+                                        if (selectedUser?.id === adminUser.id) {
+                                          await refreshUserDetail(adminUser.id);
+                                        }
+                                      });
+                                    }}
+                                    className="rounded-full border border-sky-200 bg-white px-2 py-1 text-xs font-semibold text-sky-700"
+                                    title="NutritionService"
+                                  >
+                                    <option value="global">Как у всех</option>
+                                    <option value="v1_csv">V1</option>
+                                    <option value="v2_usda">V2</option>
+                                  </select>
                                   <button
                                     type="button"
                                     disabled={saving}
@@ -457,8 +522,32 @@ export function AdminPage() {
                     <Info label="Статус" value={selectedUser.status} />
                     <Info label="Provider" value={selectedUser.provider || "—"} />
                     <Info label="Подписка" value={selectedUser.subscription_status} />
+                    <Info label="NutritionService" value={selectedUser.nutrition_pipeline_version} />
                     <Info label="Создан" value={formatDate(selectedUser.created_at)} />
                     <Info label="Активна до" value={formatDate(selectedUser.active_subscription_ends_at)} />
+                  </div>
+
+                  <div className="space-y-2 rounded-2xl bg-sky-50 p-3">
+                    <p className="font-semibold text-slate-900">NutritionService для пользователя</p>
+                    <select
+                      value={selectedUser.nutrition_pipeline_version}
+                      disabled={saving}
+                      onChange={(event) => {
+                        const nextValue = event.target.value as AdminUserNutritionPipeline;
+                        void runAction(async () => {
+                          if (!token) return;
+                          await updateAdminUser(token, selectedUser.id, {
+                            nutrition_pipeline_version: nextValue,
+                          });
+                          await refreshUserDetail(selectedUser.id);
+                        });
+                      }}
+                      className="w-full rounded-xl border border-sky-100 bg-white px-3 py-2 text-sm font-semibold text-slate-800"
+                    >
+                      <option value="global">{userPipelineLabels.global}</option>
+                      <option value="v1_csv">{userPipelineLabels.v1_csv}</option>
+                      <option value="v2_usda">{userPipelineLabels.v2_usda}</option>
+                    </select>
                   </div>
 
                   <div className="space-y-2 rounded-2xl bg-green-50 p-3">

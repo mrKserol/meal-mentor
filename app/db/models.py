@@ -46,6 +46,7 @@ class User(Base):
     timezone = Column(String(64), nullable=True)
     # ISO 639-1 codes: ru, en, es, de, fr
     language = Column(String(16), nullable=False, default="ru")
+    nutrition_pipeline_version = Column(String(32), nullable=False, default="global", index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -119,6 +120,14 @@ class CuratorUserAssignment(Base):
     curator = relationship("User", foreign_keys=[curator_id], back_populates="curator_assignments_as_curator")
     user = relationship("User", foreign_keys=[user_id], back_populates="curator_assignments_as_user")
     created_by_admin = relationship("User", foreign_keys=[created_by_admin_id])
+
+
+class AppSetting(Base):
+    __tablename__ = "app_settings"
+
+    key = Column(String(128), primary_key=True)
+    value = Column(Text, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class UserAuthIdentity(Base):

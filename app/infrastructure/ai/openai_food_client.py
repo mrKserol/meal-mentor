@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from typing import Any
 
 from openai import OpenAI
@@ -51,6 +52,15 @@ def _normalize_model_json(parsed: Any) -> tuple[dict[str, Any], float | None]:
                     cleaned[key]["name_translated"] = name_translated.strip()
                 if isinstance(name_language, str) and name_language.strip():
                     cleaned[key]["name_language"] = name_language.strip().lower()
+                usda_search_query = v.get("usda_search_query")
+                if isinstance(usda_search_query, str) and usda_search_query.strip():
+                    cleaned[key]["usda_search_query"] = usda_search_query.strip()
+                ingredient_confidence = v.get("confidence")
+                if ingredient_confidence is not None:
+                    try:
+                        cleaned[key]["confidence"] = float(ingredient_confidence)
+                    except (TypeError, ValueError):
+                        pass
             else:
                 try:
                     float(v)
@@ -84,6 +94,7 @@ class OpenAIVisionService:
         self,
         api_key: str | None = None,
         model: str | None = None,
+        prompt_path: str | None = None,
         photo_prompt: str | None = None,
         text_prompt: str | None = None,
         temperature: float = 0.01,
@@ -94,10 +105,19 @@ class OpenAIVisionService:
             raise ValueError("OPENAI_API_KEY is not set")
         self.client = OpenAI(api_key=self.api_key, timeout=120.0)
         self.model = model or OPENAI_MODEL
-        self.photo_prompt = photo_prompt or PHOTO_PROMPT
-        self.text_prompt = text_prompt or TEXT_PROMPT
+        prompt_from_path = self._read_prompt(prompt_path) if prompt_path else None
+        self.photo_prompt = photo_prompt or prompt_from_path or PHOTO_PROMPT
+        self.text_prompt = text_prompt or prompt_from_path or TEXT_PROMPT
         self.temperature = temperature
         self.max_tokens = max_tokens
+
+    def _read_prompt(self, prompt_path: str | None) -> str | None:
+        if not prompt_path:
+            return None
+        try:
+            return Path(prompt_path).read_text(encoding="utf-8").strip()
+        except OSError:
+            return None
 
     def _build_photo_messages(self, image_base64: str, user_comment: str | None = None) -> list:
         clean = image_base64.replace("\n", "").replace("\r", "")
@@ -142,6 +162,16 @@ class OpenAIVisionService:
         if start != -1 and end != -1 and end >= start:
             try:
                 raw = json.loads(content[start : end + 1])
+                if isinstance(raw, dict) and raw.get("status") == "error":
+                    return {
+                        "status": "error",
+                        "ingredients": {},
+                        "confidence": None,
+                        "prediction": None,
+                        "prediction_translated": None,
+                        "result": {},
+                        "error": str(raw.get("error") or "Model returned error"),
+                    }
                 ingredients, confidence = _normalize_model_json(raw)
                 prediction = None
                 prediction_translated = None

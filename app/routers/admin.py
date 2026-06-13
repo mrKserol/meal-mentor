@@ -25,6 +25,8 @@ from app.schemas.admin import (
     AdminCuratorUserAssignRequest,
     AdminCuratorUserAssignmentResponse,
     AdminGrantSubscriptionRequest,
+    AdminNutritionPipelineSettingsResponse,
+    AdminNutritionPipelineSettingsUpdateRequest,
     AdminPlanCreateRequest,
     AdminPlanFeatureResponse,
     AdminPlanFeatureUpsertRequest,
@@ -36,6 +38,13 @@ from app.schemas.admin import (
     AdminUserFeatureOverrideUpsertRequest,
     AdminUserListItem,
     AdminUserUpdateRequest,
+)
+from app.core.use_cases.nutrition_pipeline_selector import (
+    ALLOWED_GLOBAL_PIPELINES,
+    ALLOWED_USER_PIPELINES,
+    get_global_nutrition_pipeline,
+    normalize_user_pipeline_version,
+    set_global_nutrition_pipeline,
 )
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -104,6 +113,7 @@ def _serialize_user_list_item(db: Session, user: User) -> AdminUserListItem:
         role=user.role,
         status=user.status,
         subscription_status=user.subscription_status,
+        nutrition_pipeline_version=normalize_user_pipeline_version(user.nutrition_pipeline_version),
         created_at=user.created_at,
         updated_at=user.updated_at,
         active_subscription_ends_at=active_sub.ends_at if active_sub else None,
@@ -218,6 +228,34 @@ def update_user(
     db.commit()
     db.refresh(user)
     return _serialize_user_list_item(db, user)
+
+
+@router.get("/nutrition-pipeline-settings", response_model=AdminNutritionPipelineSettingsResponse)
+def get_nutrition_pipeline_settings(
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    _ = admin
+    return AdminNutritionPipelineSettingsResponse(
+        global_version=get_global_nutrition_pipeline(db),
+        allowed_global_versions=sorted(ALLOWED_GLOBAL_PIPELINES),
+        allowed_user_versions=sorted(ALLOWED_USER_PIPELINES),
+    )
+
+
+@router.patch("/nutrition-pipeline-settings", response_model=AdminNutritionPipelineSettingsResponse)
+def update_nutrition_pipeline_settings(
+    payload: AdminNutritionPipelineSettingsUpdateRequest,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    _ = admin
+    saved = set_global_nutrition_pipeline(db, payload.global_version)
+    return AdminNutritionPipelineSettingsResponse(
+        global_version=saved,
+        allowed_global_versions=sorted(ALLOWED_GLOBAL_PIPELINES),
+        allowed_user_versions=sorted(ALLOWED_USER_PIPELINES),
+    )
 
 
 @router.post("/users/{user_id}/block", response_model=AdminUserListItem)

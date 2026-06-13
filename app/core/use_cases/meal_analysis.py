@@ -22,9 +22,12 @@ logger = logging.getLogger(__name__)
 NUTRIENT_FIELD_MAP: dict[str, str] = {
     "calories": "calories",
     "proteins": "protein_g",
+    "protein_g": "protein_g",
     "fats": "fat_g",
+    "fat_g": "fat_g",
     "total_fat_g": "total_fat_g",
     "carbohydrates": "carbs_g",
+    "carbs_g": "carbs_g",
     "fiber_g": "fiber_g",
     "sugar_g": "sugar_g",
     "sodium_mg": "sodium_mg",
@@ -139,15 +142,19 @@ def _scaled_row_to_nutrition_dict(row: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def _build_meal_items(ingredients: dict[str, Any], nutrition_svc: NutritionService) -> list[dict[str, Any]]:
+def build_meal_items_with_nutrition_provider(
+    ingredients: dict[str, Any],
+    nutrition_provider,
+) -> list[dict[str, Any]]:
     """Map ingredients dict to rows for create_meal."""
     items: list[dict[str, Any]] = []
     lookup: dict[str, dict[str, Any]] = {}
     norm_by_name: dict[str, NormalizedIngredient] = {}
+    aliases = getattr(nutrition_provider, "aliases", None)
     if ingredients:
-        norm_by_name = {ni.input_name: ni for ni in parse_ingredients_dict(ingredients, nutrition_svc.aliases)}
-    if nutrition_svc.is_available and ingredients:
-        detailed = nutrition_svc.search(ingredients, search_type="fuzzy")
+        norm_by_name = {ni.input_name: ni for ni in parse_ingredients_dict(ingredients, aliases)}
+    if getattr(nutrition_provider, "is_available", True) and ingredients:
+        detailed = nutrition_provider.search(ingredients, search_type="fuzzy")
         for block in detailed:
             for ing_name, data in block.items():
                 if data and isinstance(data, dict):
@@ -196,6 +203,10 @@ def _build_meal_items(ingredients: dict[str, Any], nutrition_svc: NutritionServi
             }
         )
     return items
+
+
+def _build_meal_items(ingredients: dict[str, Any], nutrition_svc: NutritionService) -> list[dict[str, Any]]:
+    return build_meal_items_with_nutrition_provider(ingredients, nutrition_svc)
 
 
 def build_meal_item_specs_from_ingredients(ingredients: dict[str, Any]) -> list[dict[str, Any]]:

@@ -44,9 +44,20 @@ from app.core.use_cases.meal_analysis import (
     analyze_meal_from_image_and_text,
     analyze_meal_from_image_base64,
     analyze_meal_from_text,
+    build_meal_items_with_nutrition_provider,
     build_meal_item_specs_from_ingredients,
     resolve_meal_photo_urls_for_save,
 )
+from app.core.use_cases.meal_analysis_v2 import (
+    analyze_meal_from_image_and_text_v2_usda,
+    analyze_meal_from_image_base64_v2_usda,
+    analyze_meal_from_text_v2_usda,
+)
+from app.core.use_cases.nutrition_pipeline_selector import (
+    NutritionPipelineVersion,
+    resolve_user_nutrition_pipeline,
+)
+from app.infrastructure.nutrition.usda_nutrition_provider import NutritionService2
 from app.services.usage_limits import (
     check_label_analysis_limits,
     check_photo_recognition_limits,
@@ -94,6 +105,7 @@ class WebAnalyzeImageBody(BaseModel):
     previous_prediction: str | None = None
     correction: str | None = None
     correction_history: list[str] | None = None
+    pipeline_version: str | None = None
 
 
 class WebAnalyzeTextBody(BaseModel):
@@ -102,6 +114,7 @@ class WebAnalyzeTextBody(BaseModel):
     previous_prediction: str | None = None
     correction: str | None = None
     correction_history: list[str] | None = None
+    pipeline_version: str | None = None
 
 
 class WebAnalyzeImageTextBody(BaseModel):
@@ -111,6 +124,18 @@ class WebAnalyzeImageTextBody(BaseModel):
     previous_ingredients: dict[str, Any] | None = None
     previous_prediction: str | None = None
     correction_history: list[str] | None = None
+    pipeline_version: str | None = None
+
+
+def _requested_or_user_pipeline(db: Session, current_user: User, requested: str | None) -> str:
+    if requested in (NutritionPipelineVersion.V1_CSV.value, NutritionPipelineVersion.V2_USDA.value):
+        return requested
+    return resolve_user_nutrition_pipeline(db, current_user)
+
+
+def _with_pipeline(payload: dict[str, Any], pipeline: str) -> dict[str, Any]:
+    payload["nutrition_pipeline"] = pipeline
+    return payload
 
 
 @router.post("/me/meals/analyze")
@@ -127,26 +152,47 @@ def analyze_my_meal_image(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid base64: {e}") from e
 
     check_photo_recognition_limits(db, current_user)
+    pipeline = _requested_or_user_pipeline(db, current_user, body.pipeline_version)
     correction = (body.correction or "").strip()
-    if correction:
-        result = analyze_meal_from_image_and_text(
-            body.image_base64,
-            correction,
-            previous_ingredients=body.previous_ingredients,
-            previous_prediction=body.previous_prediction,
-            initial_comment=body.comment,
-            correction_history=body.correction_history,
-        )
-    else:
-        result = analyze_meal_from_image_base64(
-            body.image_base64,
-            user_comment=body.comment,
-        )
+    result = None
+    actual_pipeline = NutritionPipelineVersion.V1_CSV.value
+    if pipeline == NutritionPipelineVersion.V2_USDA.value:
+        try:
+            if correction:
+                result = analyze_meal_from_image_and_text_v2_usda(
+                    body.image_base64,
+                    correction,
+                    previous_ingredients=body.previous_ingredients,
+                    previous_prediction=body.previous_prediction,
+                    initial_comment=body.comment,
+                    correction_history=body.correction_history,
+                )
+            else:
+                result = analyze_meal_from_image_base64_v2_usda(body.image_base64)
+            if result.status == "success":
+                actual_pipeline = NutritionPipelineVersion.V2_USDA.value
+        except Exception:
+            result = None
+    if result is None or result.status != "success":
+        if correction:
+            result = analyze_meal_from_image_and_text(
+                body.image_base64,
+                correction,
+                previous_ingredients=body.previous_ingredients,
+                previous_prediction=body.previous_prediction,
+                initial_comment=body.comment,
+                correction_history=body.correction_history,
+            )
+        else:
+            result = analyze_meal_from_image_base64(
+                body.image_base64,
+                user_comment=body.comment,
+            )
     payload = result.to_api_dict()
     if payload.get("status") == "success":
         record_photo_recognition_usage(db, current_user)
         payload.setdefault("prediction_language", current_user.language or "ru")
-    return payload
+    return _with_pipeline(payload, actual_pipeline)
 
 
 @router.post("/me/meals/analyze-text")
@@ -159,19 +205,37 @@ def analyze_my_meal_text(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="text is required")
 
     check_text_ai_limits(db, current_user)
-    result = analyze_meal_from_text(
-        body.text.strip(),
-        user_language=current_user.language or "ru",
-        previous_ingredients=body.previous_ingredients,
-        previous_prediction=body.previous_prediction,
-        correction=body.correction,
-        correction_history=body.correction_history,
-    )
+    pipeline = _requested_or_user_pipeline(db, current_user, body.pipeline_version)
+    actual_pipeline = NutritionPipelineVersion.V1_CSV.value
+    result = None
+    if pipeline == NutritionPipelineVersion.V2_USDA.value:
+        try:
+            result = analyze_meal_from_text_v2_usda(
+                body.text.strip(),
+                user_language=current_user.language or "ru",
+                previous_ingredients=body.previous_ingredients,
+                previous_prediction=body.previous_prediction,
+                correction=body.correction,
+                correction_history=body.correction_history,
+            )
+            if result.status == "success":
+                actual_pipeline = NutritionPipelineVersion.V2_USDA.value
+        except Exception:
+            result = None
+    if result is None or result.status != "success":
+        result = analyze_meal_from_text(
+            body.text.strip(),
+            user_language=current_user.language or "ru",
+            previous_ingredients=body.previous_ingredients,
+            previous_prediction=body.previous_prediction,
+            correction=body.correction,
+            correction_history=body.correction_history,
+        )
     payload = result.to_api_dict()
     if payload.get("status") == "success":
         record_text_ai_usage(db, current_user)
         payload.setdefault("prediction_language", current_user.language or "ru")
-    return payload
+    return _with_pipeline(payload, actual_pipeline)
 
 
 @router.post("/me/meals/analyze-image-text")
@@ -190,19 +254,37 @@ def analyze_my_meal_image_text(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid base64: {e}") from e
 
     check_photo_recognition_limits(db, current_user)
-    result = analyze_meal_from_image_and_text(
-        body.image_base64,
-        body.text.strip(),
-        previous_ingredients=body.previous_ingredients,
-        previous_prediction=body.previous_prediction,
-        initial_comment=body.comment,
-        correction_history=body.correction_history,
-    )
+    pipeline = _requested_or_user_pipeline(db, current_user, body.pipeline_version)
+    actual_pipeline = NutritionPipelineVersion.V1_CSV.value
+    result = None
+    if pipeline == NutritionPipelineVersion.V2_USDA.value:
+        try:
+            result = analyze_meal_from_image_and_text_v2_usda(
+                body.image_base64,
+                body.text.strip(),
+                previous_ingredients=body.previous_ingredients,
+                previous_prediction=body.previous_prediction,
+                initial_comment=body.comment,
+                correction_history=body.correction_history,
+            )
+            if result.status == "success":
+                actual_pipeline = NutritionPipelineVersion.V2_USDA.value
+        except Exception:
+            result = None
+    if result is None or result.status != "success":
+        result = analyze_meal_from_image_and_text(
+            body.image_base64,
+            body.text.strip(),
+            previous_ingredients=body.previous_ingredients,
+            previous_prediction=body.previous_prediction,
+            initial_comment=body.comment,
+            correction_history=body.correction_history,
+        )
     payload = result.to_api_dict()
     if payload.get("status") == "success":
         record_photo_recognition_usage(db, current_user)
         payload.setdefault("prediction_language", current_user.language or "ru")
-    return payload
+    return _with_pipeline(payload, actual_pipeline)
 
 
 @router.post("/me/ingredients/resolve", response_model=FoodNameResolveResponse)
@@ -283,7 +365,15 @@ def save_my_meal(
     ingredients: dict[str, Any] = body.ingredients or {}
     if not ingredients:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="ingredients required")
-    items = build_meal_item_specs_from_ingredients(ingredients)
+    pipeline = _requested_or_user_pipeline(db, current_user, body.pipeline_version)
+    items = []
+    if pipeline == NutritionPipelineVersion.V2_USDA.value:
+        try:
+            items = build_meal_items_with_nutrition_provider(ingredients, NutritionService2())
+        except Exception:
+            items = []
+    if not items or not any(item.get("nutrition") for item in items):
+        items = build_meal_item_specs_from_ingredients(ingredients)
     lg, th = resolve_meal_photo_urls_for_save(
         current_user.id,
         image_base64=body.image_base64,

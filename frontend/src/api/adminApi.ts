@@ -2,6 +2,9 @@ import { authClient } from "./authApi";
 
 const authHeaders = (token: string) => ({ Authorization: `Bearer ${token}` });
 
+export type AdminUserNutritionPipeline = "global" | "v1_csv" | "v2_usda";
+export type AdminGlobalNutritionPipeline = "v1_csv" | "v2_usda";
+
 export interface AdminPlanFeature {
   id: number;
   plan_id: number;
@@ -40,6 +43,7 @@ export interface AdminUser {
   role: "user" | "curator" | "admin";
   status: "active" | "blocked";
   subscription_status: string;
+  nutrition_pipeline_version: AdminUserNutritionPipeline;
   created_at: string;
   updated_at: string | null;
   active_subscription_ends_at: string | null;
@@ -98,6 +102,13 @@ export interface AdminUserUpdatePayload {
   role?: "user" | "curator" | "admin";
   status?: "active" | "blocked";
   subscription_status?: string;
+  nutrition_pipeline_version?: AdminUserNutritionPipeline;
+}
+
+export interface AdminNutritionPipelineSettings {
+  global_version: AdminGlobalNutritionPipeline;
+  allowed_global_versions: AdminGlobalNutritionPipeline[];
+  allowed_user_versions: AdminUserNutritionPipeline[];
 }
 
 export interface AdminGrantSubscriptionPayload {
@@ -126,6 +137,25 @@ export const getAdminUser = async (token: string, userId: number) => {
 
 export const updateAdminUser = async (token: string, userId: number, payload: AdminUserUpdatePayload) => {
   const response = await authClient.patch<AdminUser>(`/admin/users/${userId}`, payload, { headers: authHeaders(token) });
+  return response.data;
+};
+
+export const getNutritionPipelineSettings = async (token: string) => {
+  const response = await authClient.get<AdminNutritionPipelineSettings>("/admin/nutrition-pipeline-settings", {
+    headers: authHeaders(token),
+  });
+  return response.data;
+};
+
+export const updateNutritionPipelineSettings = async (
+  token: string,
+  payload: { global_version: AdminGlobalNutritionPipeline },
+) => {
+  const response = await authClient.patch<AdminNutritionPipelineSettings>(
+    "/admin/nutrition-pipeline-settings",
+    payload,
+    { headers: authHeaders(token) },
+  );
   return response.data;
 };
 

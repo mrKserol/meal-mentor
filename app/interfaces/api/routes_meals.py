@@ -1,4 +1,5 @@
 import base64
+import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -14,6 +15,18 @@ from app.core.use_cases.meal_analysis import (
     persist_meal_to_database,
     recalculate_nutrition_from_ingredients,
 )
+from app.core.use_cases.meal_analysis_v2 import (
+    analyze_meal_from_image_and_text_v2_usda,
+    analyze_meal_from_image_base64_v2_usda,
+    analyze_meal_from_text_v2_usda,
+    persist_meal_to_database_v2_usda,
+    recalculate_nutrition_from_ingredients_v2_usda,
+)
+from app.core.use_cases.nutrition_pipeline_selector import (
+    NutritionPipelineVersion,
+    get_global_nutrition_pipeline,
+    resolve_user_nutrition_pipeline,
+)
 from app.db.session import get_db
 from app.db.repository import (
     delete_meal_for_user,
@@ -28,14 +41,28 @@ from app.core.use_cases.meal_items_mutations import (
 )
 
 router = APIRouter(prefix="/meals", tags=["meals"])
+logger = logging.getLogger(__name__)
 
 
 class AnalyzeBody(BaseModel):
     image_base64: str
+    telegram_id: int | None = None
+    pipeline_version: str | None = None
+    comment: str | None = None
+    previous_ingredients: dict[str, Any] | None = None
+    previous_prediction: str | None = None
+    correction: str | None = None
+    correction_history: list[str] | None = None
 
 
 class AnalyzeTextBody(BaseModel):
     text: str
+    telegram_id: int | None = None
+    pipeline_version: str | None = None
+    previous_ingredients: dict[str, Any] | None = None
+    previous_prediction: str | None = None
+    correction: str | None = None
+    correction_history: list[str] | None = None
 
 
 class AnalyzeImageTextBody(BaseModel):
@@ -43,10 +70,16 @@ class AnalyzeImageTextBody(BaseModel):
     text: str
     previous_ingredients: dict[str, Any] | None = None
     previous_prediction: str | None = None
+    comment: str | None = None
+    correction_history: list[str] | None = None
+    telegram_id: int | None = None
+    pipeline_version: str | None = None
 
 
 class RecalculateNutritionBody(BaseModel):
     ingredients: dict[str, Any]
+    telegram_id: int | None = None
+    pipeline_version: str | None = None
 
 
 class SaveMealBody(BaseModel):
@@ -61,6 +94,7 @@ class SaveMealBody(BaseModel):
     image_base64: str | None = None
     meal_photo_large: str | None = None
     meal_photo_thumb: str | None = None
+    pipeline_version: str | None = None
 
 
 class LogMealBody(BaseModel):
@@ -69,6 +103,7 @@ class LogMealBody(BaseModel):
     first_name: str | None = None
     image_base64: str
     telegram_file_id: str | None = None
+    pipeline_version: str | None = None
 
 
 class AddMealItemBody(BaseModel):
@@ -76,8 +111,27 @@ class AddMealItemBody(BaseModel):
     description: str
 
 
+def _resolve_pipeline(
+    db: Session,
+    *,
+    telegram_id: int | None = None,
+    requested: str | None = None,
+) -> str:
+    if requested in (NutritionPipelineVersion.V1_CSV.value, NutritionPipelineVersion.V2_USDA.value):
+        return requested
+    if telegram_id:
+        user = get_user_by_telegram_id(db, telegram_id)
+        return resolve_user_nutrition_pipeline(db, user)
+    return get_global_nutrition_pipeline(db)
+
+
+def _with_pipeline(payload: dict[str, Any], pipeline: str) -> dict[str, Any]:
+    payload["nutrition_pipeline"] = pipeline
+    return payload
+
+
 @router.post("/analyze")
-def analyze_meal_image(body: AnalyzeBody):
+def analyze_meal_image(body: AnalyzeBody, db: Session = Depends(get_db)):
     """Analyze a food photo (base64). Does not write to DB."""
     if not body.image_base64:
         raise HTTPException(status_code=400, detail="image_base64 is required")
@@ -85,19 +139,78 @@ def analyze_meal_image(body: AnalyzeBody):
         base64.b64decode(body.image_base64)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid base64: {e}") from e
-    return analyze_meal_from_image_base64(body.image_base64).to_api_dict()
+    pipeline = _resolve_pipeline(db, telegram_id=body.telegram_id, requested=body.pipeline_version)
+    actual_pipeline = NutritionPipelineVersion.V1_CSV.value
+    result = None
+    correction = (body.correction or "").strip()
+    if pipeline == NutritionPipelineVersion.V2_USDA.value:
+        try:
+            if correction:
+                result = analyze_meal_from_image_and_text_v2_usda(
+                    body.image_base64,
+                    correction,
+                    previous_ingredients=body.previous_ingredients,
+                    previous_prediction=body.previous_prediction,
+                    initial_comment=body.comment,
+                    correction_history=body.correction_history,
+                )
+            else:
+                result = analyze_meal_from_image_base64_v2_usda(body.image_base64)
+            if result.status == "success":
+                actual_pipeline = NutritionPipelineVersion.V2_USDA.value
+        except Exception:
+            logger.exception("V2 USDA analyze failed, fallback to V1")
+            result = None
+    if result is None or result.status != "success":
+        if correction:
+            result = analyze_meal_from_image_and_text(
+                body.image_base64,
+                correction,
+                previous_ingredients=body.previous_ingredients,
+                previous_prediction=body.previous_prediction,
+                initial_comment=body.comment,
+                correction_history=body.correction_history,
+            )
+        else:
+            result = analyze_meal_from_image_base64(body.image_base64, user_comment=body.comment)
+    return _with_pipeline(result.to_api_dict(), actual_pipeline)
 
 
 @router.post("/analyze-text")
-def analyze_meal_text(body: AnalyzeTextBody):
+def analyze_meal_text(body: AnalyzeTextBody, db: Session = Depends(get_db)):
     """Analyze meal from free-text description. Does not write to DB."""
     if not body.text or not body.text.strip():
         raise HTTPException(status_code=400, detail="text is required")
-    return analyze_meal_from_text(body.text.strip()).to_api_dict()
+    pipeline = _resolve_pipeline(db, telegram_id=body.telegram_id, requested=body.pipeline_version)
+    actual_pipeline = NutritionPipelineVersion.V1_CSV.value
+    result = None
+    if pipeline == NutritionPipelineVersion.V2_USDA.value:
+        try:
+            result = analyze_meal_from_text_v2_usda(
+                body.text.strip(),
+                previous_ingredients=body.previous_ingredients,
+                previous_prediction=body.previous_prediction,
+                correction=body.correction,
+                correction_history=body.correction_history,
+            )
+            if result.status == "success":
+                actual_pipeline = NutritionPipelineVersion.V2_USDA.value
+        except Exception:
+            logger.exception("V2 USDA text analyze failed, fallback to V1")
+            result = None
+    if result is None or result.status != "success":
+        result = analyze_meal_from_text(
+            body.text.strip(),
+            previous_ingredients=body.previous_ingredients,
+            previous_prediction=body.previous_prediction,
+            correction=body.correction,
+            correction_history=body.correction_history,
+        )
+    return _with_pipeline(result.to_api_dict(), actual_pipeline)
 
 
 @router.post("/analyze-image-text")
-def analyze_meal_image_text(body: AnalyzeImageTextBody):
+def analyze_meal_image_text(body: AnalyzeImageTextBody, db: Session = Depends(get_db)):
     """
     Analyze meal using original photo + user correction text.
     Does not write to DB.
@@ -113,22 +226,44 @@ def analyze_meal_image_text(body: AnalyzeImageTextBody):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid base64: {e}") from e
 
-    return analyze_meal_from_image_and_text(
-        body.image_base64,
-        body.text.strip(),
-        previous_ingredients=body.previous_ingredients,
-        previous_prediction=body.previous_prediction,
-    ).to_api_dict()
+    pipeline = _resolve_pipeline(db, telegram_id=body.telegram_id, requested=body.pipeline_version)
+    actual_pipeline = NutritionPipelineVersion.V1_CSV.value
+    result = None
+    if pipeline == NutritionPipelineVersion.V2_USDA.value:
+        try:
+            result = analyze_meal_from_image_and_text_v2_usda(
+                body.image_base64,
+                body.text.strip(),
+                previous_ingredients=body.previous_ingredients,
+                previous_prediction=body.previous_prediction,
+                initial_comment=body.comment,
+                correction_history=body.correction_history,
+            )
+            if result.status == "success":
+                actual_pipeline = NutritionPipelineVersion.V2_USDA.value
+        except Exception:
+            logger.exception("V2 USDA image+text analyze failed, fallback to V1")
+            result = None
+    if result is None or result.status != "success":
+        result = analyze_meal_from_image_and_text(
+            body.image_base64,
+            body.text.strip(),
+            previous_ingredients=body.previous_ingredients,
+            previous_prediction=body.previous_prediction,
+            initial_comment=body.comment,
+            correction_history=body.correction_history,
+        )
+    return _with_pipeline(result.to_api_dict(), actual_pipeline)
 
 
 @router.post("/recalculate")
-def recalculate_meal_nutrition(body: RecalculateNutritionBody):
+def recalculate_meal_nutrition(body: RecalculateNutritionBody, db: Session = Depends(get_db)):
     """
     Recalculate nutrition from edited ingredients without AI request.
     Used by web add-meal confirmation UI.
     """
     if not body.ingredients:
-        return {
+        return _with_pipeline({
             "status": "success",
             "ingredients": {},
             "nutrition": {
@@ -137,9 +272,22 @@ def recalculate_meal_nutrition(body: RecalculateNutritionBody):
                 "fats": 0,
                 "carbohydrates": 0,
             },
-        }
+        }, NutritionPipelineVersion.V1_CSV.value)
 
-    return recalculate_nutrition_from_ingredients(body.ingredients).to_api_dict()
+    pipeline = _resolve_pipeline(db, telegram_id=body.telegram_id, requested=body.pipeline_version)
+    actual_pipeline = NutritionPipelineVersion.V1_CSV.value
+    result = None
+    if pipeline == NutritionPipelineVersion.V2_USDA.value:
+        try:
+            result = recalculate_nutrition_from_ingredients_v2_usda(body.ingredients)
+            if result.status == "success":
+                actual_pipeline = NutritionPipelineVersion.V2_USDA.value
+        except Exception:
+            logger.exception("V2 USDA recalculate failed, fallback to V1")
+            result = None
+    if result is None or result.status != "success":
+        result = recalculate_nutrition_from_ingredients(body.ingredients)
+    return _with_pipeline(result.to_api_dict(), actual_pipeline)
 
 
 @router.post("/save")
@@ -147,25 +295,33 @@ def save_meal(body: SaveMealBody, db: Session = Depends(get_db)):
     """Save a confirmed meal to the database (after user tapped Yes)."""
     if not body.ingredients:
         raise HTTPException(status_code=400, detail="ingredients required")
+    pipeline = _resolve_pipeline(db, telegram_id=body.telegram_id, requested=body.pipeline_version)
+    req = MealLogRequest(
+        telegram_id=body.telegram_id,
+        username=body.username,
+        first_name=body.first_name,
+        ingredients=body.ingredients,
+        source_type=body.source_type,
+        telegram_file_id=body.telegram_file_id,
+        prediction=body.prediction,
+        user_text=body.user_text,
+        image_base64=body.image_base64,
+        meal_photo_large=body.meal_photo_large,
+        meal_photo_thumb=body.meal_photo_thumb,
+    )
+    actual_pipeline = NutritionPipelineVersion.V1_CSV.value
+    if pipeline == NutritionPipelineVersion.V2_USDA.value:
+        out = persist_meal_to_database_v2_usda(db, req).to_api_dict()
+        if out.get("status") == "success":
+            return _with_pipeline(out, NutritionPipelineVersion.V2_USDA.value)
+        logger.warning("V2 USDA save failed, fallback to V1: %s", out.get("error"))
     out = persist_meal_to_database(
         db,
-        MealLogRequest(
-            telegram_id=body.telegram_id,
-            username=body.username,
-            first_name=body.first_name,
-            ingredients=body.ingredients,
-            source_type=body.source_type,
-            telegram_file_id=body.telegram_file_id,
-            prediction=body.prediction,
-            user_text=body.user_text,
-            image_base64=body.image_base64,
-            meal_photo_large=body.meal_photo_large,
-            meal_photo_thumb=body.meal_photo_thumb,
-        ),
+        req,
     ).to_api_dict()
     if out.get("status") != "success":
         raise HTTPException(status_code=400, detail=out.get("error", "save failed"))
-    return out
+    return _with_pipeline(out, actual_pipeline)
 
 
 @router.post("/log")
@@ -177,7 +333,33 @@ def log_meal_from_photo(body: LogMealBody, db: Session = Depends(get_db)):
         base64.b64decode(body.image_base64)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid base64: {e}") from e
-    return analyze_and_log_meal_legacy(
+    pipeline = _resolve_pipeline(db, telegram_id=body.telegram_id, requested=body.pipeline_version)
+    if pipeline == NutritionPipelineVersion.V2_USDA.value:
+        try:
+            analyzed = analyze_meal_from_image_base64_v2_usda(body.image_base64)
+            payload = analyzed.to_api_dict()
+            if payload.get("status") == "success":
+                save = persist_meal_to_database_v2_usda(
+                    db,
+                    MealLogRequest(
+                        telegram_id=body.telegram_id,
+                        username=body.username,
+                        first_name=body.first_name,
+                        ingredients=payload.get("ingredients") or {},
+                        source_type="photo",
+                        telegram_file_id=body.telegram_file_id,
+                        prediction=payload.get("prediction"),
+                        prediction_translated=payload.get("prediction_translated"),
+                        prediction_language=payload.get("prediction_language"),
+                        image_base64=body.image_base64,
+                    ),
+                )
+                save_d = save.to_api_dict()
+                if save_d.get("status") == "success":
+                    return _with_pipeline(payload, NutritionPipelineVersion.V2_USDA.value)
+        except Exception:
+            logger.exception("V2 USDA log failed, fallback to V1")
+    payload = analyze_and_log_meal_legacy(
         db,
         telegram_id=body.telegram_id,
         username=body.username,
@@ -185,6 +367,7 @@ def log_meal_from_photo(body: LogMealBody, db: Session = Depends(get_db)):
         telegram_file_id=body.telegram_file_id,
         first_name=body.first_name,
     )
+    return _with_pipeline(payload, NutritionPipelineVersion.V1_CSV.value)
 
 
 def _absolute_url(request: Request, path: str | None) -> str | None:
