@@ -153,9 +153,10 @@ def analyze_meal_image(body: AnalyzeBody, db: Session = Depends(get_db)):
                     previous_prediction=body.previous_prediction,
                     initial_comment=body.comment,
                     correction_history=body.correction_history,
+                    db=db,
                 )
             else:
-                result = analyze_meal_from_image_base64_v2_usda(body.image_base64)
+                result = analyze_meal_from_image_base64_v2_usda(body.image_base64, db=db)
             if result.status == "success":
                 actual_pipeline = NutritionPipelineVersion.V2_USDA.value
         except Exception:
@@ -192,6 +193,7 @@ def analyze_meal_text(body: AnalyzeTextBody, db: Session = Depends(get_db)):
                 previous_prediction=body.previous_prediction,
                 correction=body.correction,
                 correction_history=body.correction_history,
+                db=db,
             )
             if result.status == "success":
                 actual_pipeline = NutritionPipelineVersion.V2_USDA.value
@@ -238,6 +240,7 @@ def analyze_meal_image_text(body: AnalyzeImageTextBody, db: Session = Depends(ge
                 previous_prediction=body.previous_prediction,
                 initial_comment=body.comment,
                 correction_history=body.correction_history,
+                db=db,
             )
             if result.status == "success":
                 actual_pipeline = NutritionPipelineVersion.V2_USDA.value
@@ -279,7 +282,7 @@ def recalculate_meal_nutrition(body: RecalculateNutritionBody, db: Session = Dep
     result = None
     if pipeline == NutritionPipelineVersion.V2_USDA.value:
         try:
-            result = recalculate_nutrition_from_ingredients_v2_usda(body.ingredients)
+            result = recalculate_nutrition_from_ingredients_v2_usda(body.ingredients, db=db)
             if result.status == "success":
                 actual_pipeline = NutritionPipelineVersion.V2_USDA.value
         except Exception:
@@ -336,7 +339,7 @@ def log_meal_from_photo(body: LogMealBody, db: Session = Depends(get_db)):
     pipeline = _resolve_pipeline(db, telegram_id=body.telegram_id, requested=body.pipeline_version)
     if pipeline == NutritionPipelineVersion.V2_USDA.value:
         try:
-            analyzed = analyze_meal_from_image_base64_v2_usda(body.image_base64)
+            analyzed = analyze_meal_from_image_base64_v2_usda(body.image_base64, db=db)
             payload = analyzed.to_api_dict()
             if payload.get("status") == "success":
                 save = persist_meal_to_database_v2_usda(

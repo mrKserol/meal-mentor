@@ -130,6 +130,71 @@ class AppSetting(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class ProductNutrition(Base):
+    __tablename__ = "product_nutrition"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    source = Column(String(32), nullable=False, index=True)
+    source_food_id = Column(String(128), nullable=True, index=True)
+
+    normalized_query = Column(String(512), nullable=True, index=True)
+    state = Column(String(32), nullable=False, default="unknown", index=True)
+
+    description = Column(String(512), nullable=False, index=True)
+    data_type = Column(String(64), nullable=True, index=True)
+    food_category = Column(String(255), nullable=True)
+
+    match_score = Column(Float, nullable=True)
+    match_status = Column(String(32), nullable=False, default="matched", index=True)
+
+    nutrients_per_100g_json = Column(Text, nullable=True)
+    raw_source_json = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+apply_nutrition_columns_to_model(ProductNutrition)
+
+
+class ProductNutritionMatch(Base):
+    __tablename__ = "product_nutrition_matches"
+    __table_args__ = (
+        UniqueConstraint(
+            "normalized_query",
+            "state",
+            "source",
+            name="uq_product_nutrition_match_query_state_source",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    normalized_query = Column(String(512), nullable=False, index=True)
+    state = Column(String(32), nullable=False, default="unknown", index=True)
+    source = Column(String(32), nullable=False, index=True)
+
+    product_nutrition_id = Column(
+        Integer,
+        ForeignKey("product_nutrition.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    match_score = Column(Float, nullable=True)
+    match_status = Column(String(32), nullable=False, default="matched", index=True)
+
+    selected_description = Column(String(512), nullable=True)
+    selected_source_food_id = Column(String(128), nullable=True)
+    selected_data_type = Column(String(64), nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    product = relationship("ProductNutrition")
+
+
 class UserAuthIdentity(Base):
     __tablename__ = "user_auth_identities"
     __table_args__ = (

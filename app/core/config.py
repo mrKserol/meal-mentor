@@ -31,6 +31,7 @@ NUTRITION_PIPELINE_DEFAULT = os.getenv("NUTRITION_PIPELINE_DEFAULT", "v1_csv")
 NUTRITION_PIPELINE_GLOBAL_SETTING_KEY = "nutrition_pipeline_global_version"
 USDA_SEARCH_CACHE_TTL_HOURS = int(os.getenv("USDA_SEARCH_CACHE_TTL_HOURS", "720"))
 USDA_REQUEST_TIMEOUT_SECONDS = float(os.getenv("USDA_REQUEST_TIMEOUT_SECONDS", "10"))
+USDA_MIN_MATCH_SCORE = float(os.getenv("USDA_MIN_MATCH_SCORE", "0.65"))
 
 # Prompts (optional env override)
 _default_prompt = DATA_DIR / "promt.txt"

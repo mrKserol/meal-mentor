@@ -1,5 +1,6 @@
 from app.infrastructure.nutrition.usda_nutrition_provider import NutritionService2
 from app.infrastructure.usda.client import UsdaApiError
+from app.infrastructure.usda.food_matcher import UsdaFoodMatcher
 
 
 class FakeUsdaClient:
@@ -42,8 +43,22 @@ class ErrorUsdaClient:
         raise UsdaApiError("boom")
 
 
+class EmptyNutritionService:
+    is_available = False
+
+    def search(self, *args, **kwargs):
+        return [{"banana": {}}]
+
+
+def _service(client):
+    return NutritionService2(
+        matcher=UsdaFoodMatcher(client=client),
+        fallback_v1=EmptyNutritionService(),
+    )
+
+
 def test_search_returns_csv_compatible_shape():
-    service = NutritionService2(client=FakeUsdaClient())
+    service = _service(FakeUsdaClient())
 
     out = service.search({"banana": {"grams": 100, "state": "raw"}})
 
@@ -56,12 +71,12 @@ def test_search_returns_csv_compatible_shape():
     assert row["match"] == "USDA: Bananas, raw"
     assert row["weight"] == 100
     assert row["state"] == "raw"
-    assert row["fdc_id"] == 173944
+    assert row["fdc_id"] == "173944"
     assert row["data_type"] == "SR Legacy"
 
 
 def test_aggregate_nutrition_returns_legacy_macro_keys():
-    service = NutritionService2(client=FakeUsdaClient())
+    service = _service(FakeUsdaClient())
 
     out = service.aggregate_nutrition({"banana": {"grams": 200, "state": "raw"}})
 
@@ -74,7 +89,7 @@ def test_aggregate_nutrition_returns_legacy_macro_keys():
 
 
 def test_aggregate_nutrition_full_returns_internal_keys():
-    service = NutritionService2(client=FakeUsdaClient())
+    service = _service(FakeUsdaClient())
 
     out = service.aggregate_nutrition_full({"banana": {"grams": 100, "state": "raw"}})
 
@@ -86,7 +101,7 @@ def test_aggregate_nutrition_full_returns_internal_keys():
 
 
 def test_usda_client_error_does_not_crash_provider():
-    service = NutritionService2(client=ErrorUsdaClient())
+    service = _service(ErrorUsdaClient())
 
     assert service.search({"banana": {"grams": 100, "state": "raw"}}) == [{"banana": {}}]
     assert service.aggregate_nutrition({"banana": {"grams": 100, "state": "raw"}}) is None

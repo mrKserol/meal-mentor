@@ -151,6 +151,7 @@ def build_meal_items_with_nutrition_provider(
     lookup: dict[str, dict[str, Any]] = {}
     norm_by_name: dict[str, NormalizedIngredient] = {}
     aliases = getattr(nutrition_provider, "aliases", None)
+    db = getattr(nutrition_provider, "db", None)
     if ingredients:
         norm_by_name = {ni.input_name: ni for ni in parse_ingredients_dict(ingredients, aliases)}
     if getattr(nutrition_provider, "is_available", True) and ingredients:
@@ -165,25 +166,40 @@ def build_meal_items_with_nutrition_provider(
             continue
         sk = name.strip()
         ni = norm_by_name.get(sk)
+        payload = ingredients.get(name)
         w = int(ni.grams) if ni is not None else None
+        if w is None and isinstance(payload, dict):
+            try:
+                w = int(round(float(payload.get("grams"))))
+            except (TypeError, ValueError):
+                w = None
         if w is None and sk in lookup and lookup[sk].get("weight") is not None:
             try:
                 w = int(float(lookup[sk]["weight"]))
             except (TypeError, ValueError):
                 w = None
-        if w is None and ni is None and not isinstance((ingredients or {}).get(name), dict):
+        if w is None and ni is None and not isinstance(payload, dict):
             try:
-                w = int(float((ingredients or {}).get(name)))
+                w = int(float(payload))
             except (TypeError, ValueError):
                 w = None
+
         row = lookup.get(sk, {})
-        nutrition = _scaled_row_to_nutrition_dict(row) if row else None
+        nutrition = None
+        if isinstance(payload, dict) and payload.get("product_nutrition_id") and db is not None:
+            from app.db.models import ProductNutrition
+            from app.infrastructure.nutrition.product_nutrition_repository import scale_product_nutrition
+
+            product = db.query(ProductNutrition).filter(ProductNutrition.id == payload["product_nutrition_id"]).first()
+            if product and w is not None:
+                nutrition = _scaled_row_to_nutrition_dict(scale_product_nutrition(product, w))
+        if nutrition is None and row:
+            nutrition = _scaled_row_to_nutrition_dict(row)
         if nutrition == {}:
             nutrition = None
         ing_state = ni.state if ni is not None else None
         name_translated = None
         name_language = None
-        payload = ingredients.get(name)
         if isinstance(payload, dict):
             raw_translated = payload.get("name_translated")
             if isinstance(raw_translated, str) and raw_translated.strip():
@@ -191,6 +207,13 @@ def build_meal_items_with_nutrition_provider(
             raw_lang = payload.get("name_language")
             if isinstance(raw_lang, str) and raw_lang.strip():
                 name_language = raw_lang.strip().lower()
+            if ing_state is None and payload.get("state"):
+                ing_state = str(payload.get("state"))
+        match_name = None
+        if isinstance(payload, dict) and payload.get("nutrition_match_name"):
+            match_name = payload.get("nutrition_match_name")
+        elif row.get("match") or row.get("nutrition_match_name"):
+            match_name = row.get("match") or row.get("nutrition_match_name")
         items.append(
             {
                 "item_name": name,
@@ -199,7 +222,7 @@ def build_meal_items_with_nutrition_provider(
                 "nutrition": nutrition,
                 "name_translated": name_translated,
                 "name_language": name_language,
-                "nutrition_match_name": row.get("match") or None,
+                "nutrition_match_name": match_name,
             }
         )
     return items

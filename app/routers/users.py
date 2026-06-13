@@ -166,9 +166,10 @@ def analyze_my_meal_image(
                     previous_prediction=body.previous_prediction,
                     initial_comment=body.comment,
                     correction_history=body.correction_history,
+                    db=db,
                 )
             else:
-                result = analyze_meal_from_image_base64_v2_usda(body.image_base64)
+                result = analyze_meal_from_image_base64_v2_usda(body.image_base64, db=db)
             if result.status == "success":
                 actual_pipeline = NutritionPipelineVersion.V2_USDA.value
         except Exception:
@@ -217,6 +218,7 @@ def analyze_my_meal_text(
                 previous_prediction=body.previous_prediction,
                 correction=body.correction,
                 correction_history=body.correction_history,
+                db=db,
             )
             if result.status == "success":
                 actual_pipeline = NutritionPipelineVersion.V2_USDA.value
@@ -266,6 +268,7 @@ def analyze_my_meal_image_text(
                 previous_prediction=body.previous_prediction,
                 initial_comment=body.comment,
                 correction_history=body.correction_history,
+                db=db,
             )
             if result.status == "success":
                 actual_pipeline = NutritionPipelineVersion.V2_USDA.value
@@ -369,7 +372,7 @@ def save_my_meal(
     items = []
     if pipeline == NutritionPipelineVersion.V2_USDA.value:
         try:
-            items = build_meal_items_with_nutrition_provider(ingredients, NutritionService2())
+            items = build_meal_items_with_nutrition_provider(ingredients, NutritionService2(db=db))
         except Exception:
             items = []
     if not items or not any(item.get("nutrition") for item in items):

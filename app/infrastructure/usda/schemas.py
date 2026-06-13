@@ -17,3 +17,5 @@ class UsdaMatchResult:
     nutrients_per_100g: dict[str, float] = field(default_factory=dict)
     nutrients_scaled: dict[str, float] = field(default_factory=dict)
     candidates: list[dict] = field(default_factory=list)
+    raw_food_json: dict | None = None
+    food_category: str | None = None

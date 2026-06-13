@@ -191,6 +191,14 @@ class UsdaFoodMatcher:
         if not per_100g:
             per_100g = normalize_usda_food_nutrients(selected)
 
+        food_category = None
+        if isinstance(details, dict):
+            cat = details.get("foodCategory") or details.get("wweiaFoodCategory")
+            if isinstance(cat, dict):
+                food_category = cat.get("description") or cat.get("name")
+            elif isinstance(cat, str):
+                food_category = cat
+
         return UsdaMatchResult(
             input_name=ni.input_name,
             query=query,
@@ -204,6 +212,8 @@ class UsdaFoodMatcher:
             nutrients_per_100g=per_100g,
             nutrients_scaled=_scaled_nutrients(per_100g, ni.grams),
             candidates=candidates,
+            raw_food_json=details if isinstance(details, dict) else None,
+            food_category=food_category,
         )
 
     def parse_ingredients(self, ingredients: dict[str, Any] | None) -> list[NormalizedIngredient]:
