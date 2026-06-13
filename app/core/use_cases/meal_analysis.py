@@ -111,6 +111,34 @@ def _get_nutrition() -> NutritionService:
     return NutritionService()
 
 
+def _normalize_meal_item_confidence(value: Any) -> int | None:
+    if value is None:
+        return None
+    try:
+        confidence = float(value)
+    except (TypeError, ValueError):
+        return None
+    if 0 <= confidence <= 1:
+        return int(round(confidence * 100))
+    return int(round(confidence))
+
+
+def _item_confidence_from_sources(row: dict[str, Any], payload: Any) -> int | None:
+    raw = row.get("confidence")
+    if raw is None and isinstance(payload, dict):
+        raw = payload.get("confidence")
+    return _normalize_meal_item_confidence(raw)
+
+
+def _item_usda_search_query_from_sources(row: dict[str, Any], payload: Any) -> str | None:
+    query = row.get("usda_search_query")
+    if not query and isinstance(payload, dict):
+        query = payload.get("usda_search_query")
+    if isinstance(query, str) and query.strip():
+        return query.strip()
+    return None
+
+
 def _scaled_row_to_nutrition_dict(row: dict[str, Any]) -> dict[str, Any]:
     """Map CSV search row (scaled) to MealItemNutrition kwargs."""
     out: dict[str, Any] = {}
@@ -219,6 +247,8 @@ def build_meal_items_with_nutrition_provider(
                 "item_name": name,
                 "estimated_weight_g": w,
                 "ingredient_state": ing_state,
+                "confidence": _item_confidence_from_sources(row, payload),
+                "usda_search_query": _item_usda_search_query_from_sources(row, payload),
                 "nutrition": nutrition,
                 "name_translated": name_translated,
                 "name_language": name_language,

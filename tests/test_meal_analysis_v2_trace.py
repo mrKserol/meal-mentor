@@ -31,6 +31,8 @@ def test_v2_response_ingredients_contain_trace_fields(db_session):
                 "state": "raw",
                 "name_translated": "банан",
                 "name_language": "ru",
+                "usda_search_query": "bananas raw",
+                "confidence": 0.88,
             }
         },
         "confidence": 0.9,
@@ -49,6 +51,8 @@ def test_v2_response_ingredients_contain_trace_fields(db_session):
                 "nutrition_pipeline_version": "v2_usda",
                 "nutrition_match_status": "matched",
                 "nutrition_match_score": 0.92,
+                "usda_search_query": "bananas raw",
+                "confidence": 0.88,
             }
         }
     ]
@@ -73,3 +77,5 @@ def test_v2_response_ingredients_contain_trace_fields(db_session):
     assert ing["nutrition_pipeline_version"] == "v2_usda"
     assert ing["nutrition_match_status"] == "matched"
     assert ing["nutrition_match_name"] == "USDA: Bananas, raw"
+    assert ing["usda_search_query"] == "bananas raw"
+    assert ing["confidence"] == 0.88

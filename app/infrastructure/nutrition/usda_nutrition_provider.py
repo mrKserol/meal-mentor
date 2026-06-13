@@ -36,6 +36,8 @@ _SKIP_TOTAL_KEYS = {
     "nutrition_match_name",
     "match_status",
     "nutrition_pipeline_version",
+    "usda_search_query",
+    "confidence",
 }
 
 
@@ -61,6 +63,34 @@ class NutritionService2:
             if isinstance(raw_query, str) and raw_query.strip():
                 return normalize_product_query(raw_query)
         return normalize_product_query(ni.canonical_query or ni.input_name)
+
+    def _resolve_usda_search_query(self, ni, raw_payload: dict | None) -> str | None:
+        if isinstance(raw_payload, dict):
+            raw_query = raw_payload.get("usda_search_query")
+            if isinstance(raw_query, str) and raw_query.strip():
+                return raw_query.strip()
+        normalized = normalize_product_query(ni.canonical_query or ni.input_name)
+        return normalized or None
+
+    def _resolve_ingredient_confidence(self, raw_payload: dict | None) -> float | None:
+        if not isinstance(raw_payload, dict):
+            return None
+        confidence = raw_payload.get("confidence")
+        if confidence is None:
+            return None
+        try:
+            return float(confidence)
+        except (TypeError, ValueError):
+            return None
+
+    def _apply_ingredient_meta(self, row: dict[str, Any], ni, raw_payload: dict | None) -> dict[str, Any]:
+        usda_search_query = self._resolve_usda_search_query(ni, raw_payload)
+        if usda_search_query:
+            row["usda_search_query"] = usda_search_query
+        confidence = self._resolve_ingredient_confidence(raw_payload)
+        if confidence is not None:
+            row["confidence"] = confidence
+        return row
 
     def _build_trace_row(
         self,
@@ -224,6 +254,7 @@ class NutritionService2:
             raw_payload = self.matcher.raw_payload_for(ingredients_weights, ni.input_name)
             cached_row = self._try_cached_match(ni, raw_payload)
             if cached_row:
+                cached_row = self._apply_ingredient_meta(cached_row, ni, raw_payload)
                 if include_candidates:
                     cached_row["candidates"] = []
                 results.append({ni.input_name: cached_row})
@@ -244,6 +275,7 @@ class NutritionService2:
                 and usda_result.match_status == "matched"
             ):
                 row, _, _ = self._persist_usda_match(ni, raw_payload, usda_result)
+                row = self._apply_ingredient_meta(row, ni, raw_payload)
                 if include_candidates:
                     row["candidates"] = usda_result.candidates
                 results.append({ni.input_name: row})
@@ -258,16 +290,15 @@ class NutritionService2:
 
             v1_row = self._try_v1_fallback(ni, ingredients_weights, raw_payload)
             if v1_row:
+                v1_row = self._apply_ingredient_meta(v1_row, ni, raw_payload)
                 results.append({ni.input_name: v1_row})
             else:
-                results.append(
-                    {
-                        ni.input_name: {
-                            "nutrition_pipeline_version": "v2_usda",
-                            "nutrition_source": "unknown",
-                        }
-                    }
-                )
+                empty_row = {
+                    "nutrition_pipeline_version": "v2_usda",
+                    "nutrition_source": "unknown",
+                }
+                empty_row = self._apply_ingredient_meta(empty_row, ni, raw_payload)
+                results.append({ni.input_name: empty_row})
         return results
 
     def aggregate_nutrition(self, ingredients_weights: dict[str, Any]) -> dict[str, int] | None:

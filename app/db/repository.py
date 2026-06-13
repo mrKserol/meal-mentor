@@ -139,6 +139,7 @@ def create_meal(
             nutrition_match_name=spec.get("nutrition_match_name"),
             nutrition_pipeline_version=spec.get("nutrition_pipeline_version"),
             nutrition_source=spec.get("nutrition_source"),
+            usda_search_query=spec.get("usda_search_query"),
         )
         db.add(item)
         db.flush()
@@ -299,6 +300,7 @@ def replace_meal_items_for_user(
             nutrition_match_name=spec.get("nutrition_match_name"),
             nutrition_pipeline_version=spec.get("nutrition_pipeline_version"),
             nutrition_source=spec.get("nutrition_source"),
+            usda_search_query=spec.get("usda_search_query"),
         )
         db.add(row)
         db.flush()
@@ -345,6 +347,7 @@ def append_meal_item_rows(
             nutrition_match_name=spec.get("nutrition_match_name"),
             nutrition_pipeline_version=spec.get("nutrition_pipeline_version"),
             nutrition_source=spec.get("nutrition_source"),
+            usda_search_query=spec.get("usda_search_query"),
         )
         db.add(row)
         db.flush()

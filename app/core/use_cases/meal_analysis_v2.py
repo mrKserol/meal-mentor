@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.config import PROMPT_USDA_V2_PATH
 from app.core.schemas import MacroTotals, MealAnalysisResult, MealLogRequest, MealLogResponse
 from app.core.use_cases.meal_analysis import (
+    _normalize_meal_item_confidence,
     _scaled_row_to_nutrition_dict,
     build_meal_items_with_nutrition_provider,
     enrich_meal_display_fields,
@@ -60,6 +61,10 @@ def _enrich_ingredients_with_search_trace(
             ):
                 if key in row:
                     entry[key] = row[key]
+            if row.get("usda_search_query") and not entry.get("usda_search_query"):
+                entry["usda_search_query"] = row["usda_search_query"]
+            if row.get("confidence") is not None and entry.get("confidence") is None:
+                entry["confidence"] = row["confidence"]
             match_name = row.get("nutrition_match_name") or row.get("match")
             if match_name:
                 entry["nutrition_match_name"] = match_name
@@ -236,10 +241,15 @@ def _build_item_from_product_nutrition(
     if not nutrition:
         return None
     match_name = payload.get("nutrition_match_name") or f"USDA: {product.description}"
+    usda_search_query = payload.get("usda_search_query")
+    if isinstance(usda_search_query, str):
+        usda_search_query = usda_search_query.strip() or None
     return {
         "item_name": name,
         "estimated_weight_g": weight,
         "ingredient_state": payload.get("state") or product.state,
+        "confidence": _normalize_meal_item_confidence(payload.get("confidence")),
+        "usda_search_query": usda_search_query,
         "nutrition": nutrition,
         "name_translated": payload.get("name_translated"),
         "name_language": payload.get("name_language"),
