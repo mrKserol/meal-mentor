@@ -15,6 +15,10 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY . /app
 
+# Load service:app with each supported DB driver before shipping the image.
+# The smoke tests use dummy credentials and do not connect to PostgreSQL.
+RUN python -m pytest -q tests/test_backend_startup.py
+
 EXPOSE 8000
 
 # Railway will use this for the API service.

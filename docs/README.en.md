@@ -276,6 +276,16 @@ python -m app.bot.telegram_bot
 - CORS is permissive (`*`); tighten origins if needed.
 - Rotate `JWT_SECRET_KEY` and OAuth secrets.
 
+Select the PostgreSQL driver explicitly:
+`DATABASE_URL=postgresql+psycopg://user:password@host:5432/mealmentor`.
+The image installs `psycopg[binary]` (Psycopg 3) and `psycopg2-binary`
+(for existing `postgresql+psycopg2://...` URLs). SQLAlchemy stays on the 2.0
+series: 2.1 changes the default driver for `postgresql://...` from `psycopg2`
+to `psycopg`. After changing dependencies, rebuild and redeploy the backend
+image; restarting an existing container does not install new packages.
+The Docker build checks that `service:app` loads with SQLite and both
+PostgreSQL drivers without connecting to the production database.
+
 ---
 
 ## Migrations and scripts

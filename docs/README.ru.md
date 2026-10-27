@@ -280,6 +280,16 @@ python -m app.bot.telegram_bot
 - CORS на API настроен на `*` (при необходимости сузить origins).
 - Обязательно сменить `JWT_SECRET_KEY` и секреты OAuth.
 
+Для PostgreSQL указывайте драйвер явно:
+`DATABASE_URL=postgresql+psycopg://user:password@host:5432/mealmentor`.
+В образ устанавливаются `psycopg[binary]` (Psycopg 3) и `psycopg2-binary`
+(для существующих URL `postgresql+psycopg2://...`). SQLAlchemy ограничен веткой
+2.0: в 2.1 драйвер для `postgresql://...` меняется с `psycopg2` на `psycopg`.
+При изменении зависимостей пересоберите и заново разверните образ backend;
+перезапуск существующего контейнера не устанавливает новые пакеты.
+Docker-сборка проверяет загрузку `service:app` для SQLite и обоих драйверов
+PostgreSQL без подключения к production-базе.
+
 ---
 
 ## Миграции и скрипты
